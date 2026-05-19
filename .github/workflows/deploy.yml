@@ -1,0 +1,85 @@
+# NAS 배포 — build → deploy(Tailscale + scripts)
+# Secrets: NAS_HOST, NAS_USER, NAS_SSH_KEY, NAS_DEPLOY_PATH, TS_AUTH_KEY
+# 스크립트: .github/scripts/ · NAS: scripts/nas/post-deploy.sh
+
+name: Deploy to NAS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-nas
+  cancel-in-progress: true
+
+env:
+  VITE_USE_MOCK: "false"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
+        run: |
+          export VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://iot-api.iwhya.kr}"
+          npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check deploy credentials
+        id: deploy_check
+        env:
+          NAS_HOST: ${{ secrets.NAS_HOST }}
+          NAS_USER: ${{ secrets.NAS_USER }}
+          NAS_SSH_KEY: ${{ secrets.NAS_SSH_KEY }}
+          TS_AUTH_KEY: ${{ secrets.TS_AUTH_KEY }}
+        run: bash .github/scripts/check-deploy-secrets.sh
+
+      - uses: actions/download-artifact@v4
+        if: steps.deploy_check.outputs.skip != 'true'
+        with:
+          name: dist
+          path: dist
+
+      - name: Connect Tailscale
+        if: steps.deploy_check.outputs.skip != 'true'
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTH_KEY }}
+          ping: ${{ secrets.NAS_HOST }}
+
+      - name: Deploy to NAS
+        if: steps.deploy_check.outputs.skip != 'true'
+        env:
+          NAS_HOST: ${{ secrets.NAS_HOST }}
+          NAS_USER: ${{ secrets.NAS_USER }}
+          NAS_DEPLOY_PATH: ${{ secrets.NAS_DEPLOY_PATH }}
+          NAS_SSH_KEY: ${{ secrets.NAS_SSH_KEY }}
+        run: bash .github/scripts/deploy-to-nas.sh
+
+      - name: Deploy skipped
+        if: steps.deploy_check.outputs.skip == 'true'
+        run: echo "NAS secrets 미설정 — build만 완료"

@@ -1,0 +1,15 @@
+.card {
+  background: #1a222c;
+  border-radius: 16px;
+  padding: 1rem 1.125rem;
+  border: 1px solid #2a323c;
+}
+
+.title {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

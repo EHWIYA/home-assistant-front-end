@@ -1,0 +1,59 @@
+---
+description: Windows PowerShell UTF-8, chaining, and agent shell rules for this repo
+alwaysApply: true
+---
+
+# Windows shell · UTF-8 (PowerShell 5.x)
+
+## 환경
+
+- OS: Windows. 기본 셸: **PowerShell 5.x** (Cursor 에이전트·통합 터미널).
+- **로컬 PowerShell에서 `&&` 사용 금지** — 파싱 오류·한글 깨짐 유발. 명령 연결은 `;` 또는 Shell 호출을 분리.
+- **GHA / NAS / SSH bash 스크립트**는 `&&` 사용 가능 (로컬 규칙과 분리).
+
+## UTF-8 3층 구조
+
+1. **전역** `%USERPROFILE%\.cursor\ensure-utf8.ps1` — chcp 65001, Console/Output UTF-8, `PYTHONIOENCODING` / `PYTHONUTF8`
+2. **레포 래퍼** `.cursor/scripts/ensure-utf8.ps1` — 전역 dot-source (없으면 동일 로직 fallback)
+3. **IDE** Cursor User `settings.json` — 터미널 프로필 `PowerShell (UTF-8)` + `terminal-utf8-init.ps1` (전역)
+
+반영: 터미널 전부 닫기 → 새로 열기, 또는 **Developer: Reload Window**.
+
+## 에이전트(Shell 도구) 필수
+
+한글·git·npm 출력이 나올 수 있는 **모든 PowerShell 명령 전** UTF-8 적용:
+
+```powershell
+. .\.cursor\scripts\ensure-utf8.ps1
+```
+
+또는 래퍼 사용 (권장):
+
+```powershell
+.\.cursor\scripts\dev-test.ps1
+.\.cursor\scripts\agent-exec.ps1 -Command 'npm run build'
+```
+
+백그라운드 Shell 세션마다 인코딩이 초기화될 수 있음. 한글이 깨지면 해당 세션에서 `ensure-utf8`을 **다시** dot-source.
+
+## 수동 4줄 (스크립트 없을 때만)
+
+```powershell
+chcp 65001 | Out-Null
+$utf8 = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = $utf8; $OutputEncoding = $utf8
+$env:PYTHONIOENCODING='utf-8'; $env:PYTHONUTF8='1'
+```
+
+## 파일 인코딩
+
+- 소스·`.md`·`.mdc`·커밋 메시지: **UTF-8** (BOM 없음 권장)
+- 워크스페이스: `.vscode/settings.json` → `files.encoding: utf8`, `files.autoGuessEncoding: false`
+
+## 이 레포 표준 명령
+
+| 목적 | 명령 |
+|------|------|
+| 의존성 + lint + build | `.\.cursor\scripts\dev-test.ps1` |
+| 단일 npm 명령 | `.\.cursor\scripts\agent-exec.ps1 -Command 'npm run dev'` |
+| 배포 | GitHub Actions (bash) — 로컬 `&&` 규칙 미적용 |

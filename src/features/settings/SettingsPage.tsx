@@ -1,5 +1,5 @@
 import { Card } from "@/components/Card";
-import { isUsingMock } from "@/api/client";
+import { hasApiKey, isUsingMock } from "@/api/client";
 import styles from "./SettingsPage.module.css";
 
 export function SettingsPage() {
@@ -17,6 +17,10 @@ export function SettingsPage() {
           <div>
             <dt>데이터 소스</dt>
             <dd>{mock ? "Mock (개발)" : "iot-api"}</dd>
+          </div>
+          <div>
+            <dt>API Key</dt>
+            <dd>{mock ? "—" : hasApiKey() ? "빌드에 포함됨" : "미설정 (401 가능)"}</dd>
           </div>
         </dl>
       </Card>

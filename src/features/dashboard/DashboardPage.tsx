@@ -33,7 +33,8 @@ export function DashboardPage() {
       <div className={styles.offline}>
         <p className={styles.message}>연결할 수 없습니다</p>
         <p className={styles.hint}>
-          Tailscale이 켜져 있는지, API 주소가 맞는지 확인하세요.
+          Tailscale·API 주소를 확인하세요. 401이면 GitHub Secret{" "}
+          <code>VITE_API_KEY</code> 후 재배포가 필요합니다.
         </p>
         {error instanceof Error ? (
           <p className={styles.errorDetail}>{error.message}</p>

@@ -20,6 +20,20 @@ export class ApiError extends Error {
   }
 }
 
+function parseErrorMessage(text: string): string {
+  try {
+    const body = JSON.parse(text) as {
+      detail?: string | { detail?: string; code?: string };
+    };
+    const d = body.detail;
+    if (typeof d === "string") return d;
+    if (d && typeof d === "object" && d.detail) return d.detail;
+  } catch {
+    /* plain text */
+  }
+  return text;
+}
+
 async function request<T>(
   path: string,
   init?: RequestInit,
@@ -37,7 +51,10 @@ async function request<T>(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new ApiError(text || res.statusText, res.status);
+    throw new ApiError(
+      parseErrorMessage(text) || res.statusText,
+      res.status,
+    );
   }
 
   return res.json() as Promise<T>;
@@ -65,4 +82,8 @@ export async function setPlug(action: PlugActionRequest): Promise<void> {
 
 export function isUsingMock(): boolean {
   return useMock();
+}
+
+export function hasApiKey(): boolean {
+  return Boolean(apiKey);
 }

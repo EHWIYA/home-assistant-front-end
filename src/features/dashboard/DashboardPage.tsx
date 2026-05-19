@@ -48,6 +48,7 @@ export function DashboardPage() {
 
   const plugOn = data.plug.switch === "on";
   const nextAction = plugOn ? "off" : "on";
+  const acControlEnabled = plugOn;
 
   return (
     <div className={styles.page}>
@@ -68,11 +69,17 @@ export function DashboardPage() {
           {data.ac_estimated_running ? "가동 추정 중" : "정지 추정"}
         </p>
         <p className={styles.meta}>전력 50W 초과 시 가동으로 추정</p>
+        {!acControlEnabled ? (
+          <p className={styles.acBlockedHint}>
+            플러그가 꺼져 있어 에어컨을 제어할 수 없습니다. 먼저 플러그를
+            켜 주세요.
+          </p>
+        ) : null}
         <div className={styles.acActions}>
           <Button
             fullWidth
             variant="primary"
-            disabled={acMutation.isPending}
+            disabled={!acControlEnabled || acMutation.isPending}
             onClick={() => acMutation.mutate("on")}
           >
             {acMutation.isPending && acMutation.variables === "on"
@@ -82,7 +89,7 @@ export function DashboardPage() {
           <Button
             fullWidth
             variant="danger"
-            disabled={acMutation.isPending}
+            disabled={!acControlEnabled || acMutation.isPending}
             onClick={() => acMutation.mutate("off")}
           >
             {acMutation.isPending && acMutation.variables === "off"

@@ -55,6 +55,12 @@
   color: #9aa0a6;
 }
 
+.acBlockedHint {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: #f0ad4e;
+}
+
 .acActions {
   display: flex;
   flex-direction: column;

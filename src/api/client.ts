@@ -1,5 +1,11 @@
+import { parseApiErrorBody } from "./errors";
 import mockStatus from "./mock/status.json";
-import type { PlugActionRequest, StatusResponse } from "./types";
+import type {
+  AcActionRequest,
+  OkResponse,
+  PlugActionRequest,
+  StatusResponse,
+} from "./types";
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 const apiKey = import.meta.env.VITE_API_KEY;
@@ -12,26 +18,14 @@ function useMock(): boolean {
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly code?: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
   }
-}
-
-function parseErrorMessage(text: string): string {
-  try {
-    const body = JSON.parse(text) as {
-      detail?: string | { detail?: string; code?: string };
-    };
-    const d = body.detail;
-    if (typeof d === "string") return d;
-    if (d && typeof d === "object" && d.detail) return d.detail;
-  } catch {
-    /* plain text */
-  }
-  return text;
 }
 
 async function request<T>(
@@ -51,9 +45,11 @@ async function request<T>(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    const parsed = parseApiErrorBody(text);
     throw new ApiError(
-      parseErrorMessage(text) || res.statusText,
+      parsed.message || res.statusText,
       res.status,
+      parsed.code,
     );
   }
 
@@ -75,6 +71,17 @@ export async function setPlug(action: PlugActionRequest): Promise<void> {
     return;
   }
   await request("/api/v1/plug", {
+    method: "POST",
+    body: JSON.stringify(action),
+  });
+}
+
+export async function setAc(action: AcActionRequest): Promise<OkResponse> {
+  if (useMock()) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { ok: true };
+  }
+  return request<OkResponse>("/api/v1/ac", {
     method: "POST",
     body: JSON.stringify(action),
   });

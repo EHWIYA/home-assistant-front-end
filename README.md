@@ -64,10 +64,15 @@ NAS SSH 관련 Secret이 없으면 빌드만 하고 배포는 건너뜁니다. `
 
 배포 후: Tailscale ON → https://iot.iwhya.kr
 
+## API (iot-api)
+
+OpenAPI·에러 형식·`ac_estimated_running` 정의: [docs/api.md](docs/api.md)  
+문서: https://iot-api.iwhya.kr/docs · https://iot-api.iwhya.kr/openapi.json
+
 ## 디렉터리
 
 ```
-src/api/          # client, types, mock
+src/api/          # client, types, errors, mock
 src/features/     # dashboard, ac(sleep), settings
 src/layouts/      # AppShell + 하단 탭
 src/hooks/        # useStatus

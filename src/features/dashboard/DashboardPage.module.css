@@ -55,6 +55,13 @@
   color: #9aa0a6;
 }
 
+.acActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 .weather {
   margin: 0;
   font-size: 1.125rem;

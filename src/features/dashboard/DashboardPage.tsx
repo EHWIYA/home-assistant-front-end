@@ -1,9 +1,10 @@
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { usePlugToggle, useStatus } from "@/hooks/useStatus";
+import { useAcControl, usePlugToggle, useStatus } from "@/hooks/useStatus";
 import styles from "./DashboardPage.module.css";
 
-function formatPower(w: number): string {
+function formatPower(w: number | null): string {
+  if (w == null) return "—";
   return `${Math.round(w)} W`;
 }
 
@@ -23,6 +24,7 @@ function formatUpdatedAt(iso: string): string {
 export function DashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useStatus();
   const plugMutation = usePlugToggle();
+  const acMutation = useAcControl();
 
   if (isLoading) {
     return <p className={styles.message}>상태 불러오는 중…</p>;
@@ -66,6 +68,31 @@ export function DashboardPage() {
           {data.ac_estimated_running ? "가동 추정 중" : "정지 추정"}
         </p>
         <p className={styles.meta}>전력 50W 초과 시 가동으로 추정</p>
+        <div className={styles.acActions}>
+          <Button
+            fullWidth
+            variant="primary"
+            disabled={acMutation.isPending}
+            onClick={() => acMutation.mutate("on")}
+          >
+            {acMutation.isPending && acMutation.variables === "on"
+              ? "처리 중…"
+              : "켜기"}
+          </Button>
+          <Button
+            fullWidth
+            variant="danger"
+            disabled={acMutation.isPending}
+            onClick={() => acMutation.mutate("off")}
+          >
+            {acMutation.isPending && acMutation.variables === "off"
+              ? "처리 중…"
+              : "끄기"}
+          </Button>
+        </div>
+        {acMutation.isError ? (
+          <p className={styles.errorDetail}>제어 실패 — 다시 시도해 주세요.</p>
+        ) : null}
       </Card>
 
       {data.weather_outdoor ? (

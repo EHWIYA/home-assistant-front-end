@@ -80,4 +80,4 @@ src/hooks/        # useStatus
 
 ## 아이콘
 
-`public/icons/` — PWA용 PNG placeholder. 운영 전 192/512/maskable 아이콘으로 교체 권장.
+`public/icons/` — SVG 원본(`icon.svg`)에서 `npm run icons`로 192/512/apple-touch PNG 생성.

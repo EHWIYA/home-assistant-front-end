@@ -13,12 +13,9 @@ Secrets 등록이 끝났다면 `main` push 또는 Actions → **Deploy to NAS** 
 | `NAS_DEPLOY_PATH` | `/home/iwh/iot/web/dist` | nginx 정적 루트 |
 | `NAS_SSH_KEY` | *(보안 채널)* | ed25519 개인키 전문 (`-----BEGIN` ~ `-----END`). iot-api와 동일 키 가능 |
 | `TS_AUTH_KEY` | *(보안 채널)* | Tailscale reusable auth key. deploy 필수 |
+| `VITE_API_KEY` | 백엔드 `IOT_API_KEY` 와 **동일** | `X-API-Key` — 빌드 시 번들 포함. **없으면 401** |
 
-## Secrets (선택)
-
-| Secret | 값 | 비고 |
-|--------|-----|------|
-| `VITE_API_KEY` | *(필요 시)* | iot-api `X-API-Key` 가 켜져 있으면 빌드 시 번들에 포함 |
+> 키 값은 채팅·레포에 넣지 말고 Secret만 등록. 로컬은 `.env`(git 제외)에 `VITE_API_KEY` 설정.
 
 ## Variables (선택)
 

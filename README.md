@@ -21,13 +21,17 @@ npm install
 
 검증(lint + build): `.\.cursor\scripts\dev-test.ps1`
 
-### 환경 변수 (`.env`, git 제외)
+### 환경 변수 (`.env` / `.env.local`, git 커밋 금지)
 
-| 변수 | 예시 | 설명 |
-|------|------|------|
-| `VITE_API_BASE_URL` | `https://iot-api.iwhya.kr` | iot-api 베이스 URL (끝 `/` 없음) |
-| `VITE_API_KEY` | *(비움 가능)* | iot-api `X-API-Key` (백엔드와 합의 시) |
-| `VITE_USE_MOCK` | `true` / `false` | `true` mock JSON · `false` 실 API (Tailscale ON) |
+백엔드 `IOT_API_KEY` 와 동일 값을 `VITE_API_KEY` 로 넣습니다 (`X-API-Key` 헤더).
+
+| 변수 | 로컬 | 운영 (NAS·GHA) |
+|------|------|----------------|
+| `VITE_API_BASE_URL` | `http://127.0.0.1:8002` | `https://iot-api.iwhya.kr` |
+| `VITE_API_KEY` | 백엔드 공유 키 | GitHub Secret `VITE_API_KEY` (동일 값) |
+| `VITE_USE_MOCK` | `false` (실 API) | GHA에서 `false` 고정 |
+
+로컬 예시는 백엔드 담당자 공유 `.env` 를 참고하세요. 운영 URL·키는 [docs/github-setup.md](docs/github-setup.md).
 
 NAS 배포용 SSH·Tailscale 키는 GitHub Secrets만 사용합니다.
 

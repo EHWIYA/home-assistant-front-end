@@ -1,0 +1,19 @@
+{
+  "plug": {
+    "switch": "on",
+    "power_w": 742.0,
+    "energy_kwh": 12.34
+  },
+  "ac_estimated_running": true,
+  "person": {
+    "state": "home",
+    "latitude": 37.47,
+    "longitude": 126.89
+  },
+  "indoor": null,
+  "weather_outdoor": {
+    "temperature": 18.2,
+    "humidity": 55
+  },
+  "updated_at": "2026-05-19T11:13:00+09:00"
+}

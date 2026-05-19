@@ -35,6 +35,10 @@ jobs:
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
         run: |
           export VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://iot-api.iwhya.kr}"
+          if [ -z "${VITE_API_KEY:-}" ]; then
+            echo "::error::VITE_API_KEY Secret 미설정 — iot-api X-API-Key와 동일 값을 GitHub Secrets에 등록하세요."
+            exit 1
+          fi
           npm run build
 
       - uses: actions/upload-artifact@v4

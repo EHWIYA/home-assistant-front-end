@@ -1,10 +1,12 @@
 import { Card } from "@/components/Card";
 import { hasApiKey, isUsingMock } from "@/api/client";
+import { useHealth } from "@/hooks/useHealth";
 import styles from "./SettingsPage.module.css";
 
 export function SettingsPage() {
   const apiBase = import.meta.env.VITE_API_BASE_URL || "(미설정)";
   const mock = isUsingMock();
+  const health = useHealth(!mock);
 
   return (
     <div className={styles.page}>
@@ -36,9 +38,39 @@ export function SettingsPage() {
         </p>
       </Card>
 
-      <Card title="기록">
+      <Card title="서버 상태">
+        {mock ? (
+          <p className={styles.note}>Mock 모드에서는 health를 조회하지 않습니다.</p>
+        ) : health.isLoading ? (
+          <p className={styles.note}>확인 중…</p>
+        ) : health.isError ? (
+          <p className={styles.note}>GET /health 실패 — API 연결을 확인하세요.</p>
+        ) : (
+          <dl className={styles.list}>
+            <div>
+              <dt>DB</dt>
+              <dd>
+                {health.data?.db_reachable === true
+                  ? "연결됨"
+                  : health.data?.db_reachable === false
+                    ? "연결 안 됨"
+                    : "—"}
+              </dd>
+            </div>
+            {health.data?.status ? (
+              <div>
+                <dt>status</dt>
+                <dd>{health.data.status}</dd>
+              </div>
+            ) : null}
+          </dl>
+        )}
+      </Card>
+
+      <Card title="기능">
         <p className={styles.note}>
-          전력 차트( GET /api/v1/history/power )는 2단계에서 추가됩니다.
+          멀티탭(헤이홈 4구)·스케줄은 하단 「멀티탭」 탭에서 제어합니다. 프리셋은
+          백엔드 시드 후 지원 예정입니다.
         </p>
       </Card>
     </div>

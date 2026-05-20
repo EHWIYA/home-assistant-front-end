@@ -2,6 +2,15 @@
 
 모바일 퍼스트 PWA — [iot-api](https://iot-api.iwhya.kr)만 호출합니다. Home Assistant REST는 프론트에서 사용하지 않습니다.
 
+## 화면
+
+| 탭 | 경로 | 기능 |
+|----|------|------|
+| 홈 | `/` | 전력·플러그·에어컨 (기존 status API) |
+| 멀티탭 | `/strip` | 헤이홈 4구 ON/OFF · `/strip/schedules` 스케줄 CRUD |
+| 수면 | `/sleep` | 수면 모드 |
+| 설정 | `/settings` | API 정보 · GET /health |
+
 ## 스택
 
 - React 18+ · Vite · TypeScript

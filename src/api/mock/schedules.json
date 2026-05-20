@@ -1,0 +1,14 @@
+[
+  {
+    "id": "mock-schedule-1",
+    "name": "아침 콘센트",
+    "enabled": true,
+    "action_type": "channel",
+    "channel_number": 1,
+    "channel_on": true,
+    "time_kst": "08:00",
+    "days_of_week": [0, 1, 2, 3, 4],
+    "created_at": "2026-05-19T10:00:00+09:00",
+    "updated_at": "2026-05-19T10:00:00+09:00"
+  }
+]

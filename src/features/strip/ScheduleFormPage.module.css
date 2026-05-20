@@ -1,0 +1,120 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.back {
+  font-size: 0.875rem;
+  color: #5b9fd4;
+  font-weight: 500;
+  align-self: flex-start;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #9aa0a6;
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #2a323c;
+  border-radius: 8px;
+  background: #141a21;
+  color: #e8eaed;
+  font: inherit;
+}
+
+.input:focus,
+.select:focus {
+  border-color: #5b9fd4;
+  outline: none;
+}
+
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dayChip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #2a323c;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dayChipActive {
+  border-color: #5b9fd4;
+  background: #1a2836;
+  color: #5b9fd4;
+}
+
+.dayChip input {
+  accent-color: #5b9fd4;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.row .field {
+  flex: 1;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.errorDetail {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #e57373;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}

@@ -1,0 +1,133 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.back {
+  font-size: 0.875rem;
+  color: #5b9fd4;
+  font-weight: 500;
+  align-self: flex-start;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.message {
+  margin: 0;
+  color: #9aa0a6;
+}
+
+.errorDetail {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #e57373;
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #9aa0a6;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #2a323c;
+}
+
+.item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.itemHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.itemName {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.badgeOff {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: #2a323c;
+  color: #9aa0a6;
+}
+
+.itemMeta {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: #9aa0a6;
+}
+
+.itemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.runsToggle {
+  font-size: 0.8125rem;
+  color: #5b9fd4;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.runsList {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+}
+
+.runsList li {
+  margin: 0.2rem 0;
+}
+
+.runOk {
+  color: #81c784;
+}
+
+.runFail {
+  color: #e57373;
+}

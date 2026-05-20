@@ -67,3 +67,71 @@ export interface PlugActionRequest {
 export interface AcActionRequest {
   action: OnOffAction;
 }
+
+/** GET /api/v1/strip/state · POST /api/v1/strip/channels/{n} */
+export type StripChannelNumber = 1 | 2 | 3 | 4;
+
+export interface StripChannel {
+  channel: StripChannelNumber;
+  on: boolean | null;
+  label: string | null;
+}
+
+export interface StripStateResponse {
+  device_id: string;
+  online: boolean;
+  channels: StripChannel[];
+  updated_at: string;
+}
+
+export interface StripChannelControlBody {
+  on: boolean;
+}
+
+/** GET /health */
+export interface HealthResponse {
+  status?: string;
+  db_reachable?: boolean;
+}
+
+export type ScheduleActionType = "channel" | "preset";
+
+export interface Schedule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  action_type: ScheduleActionType;
+  channel_number?: number | null;
+  channel_on?: boolean | null;
+  preset_name?: string | null;
+  time_kst: string;
+  days_of_week: number[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ScheduleCreateBody {
+  name: string;
+  enabled?: boolean;
+  action_type: "channel";
+  channel_number: StripChannelNumber;
+  channel_on: boolean;
+  time_kst: string;
+  days_of_week: number[];
+}
+
+export type SchedulePatchBody = Partial<ScheduleCreateBody> & {
+  enabled?: boolean;
+};
+
+export interface ScheduleRun {
+  id?: string;
+  schedule_id?: string;
+  executed_at: string;
+  success: boolean;
+  detail?: string | null;
+}
+
+export interface ScheduleRunsResponse {
+  runs: ScheduleRun[];
+}

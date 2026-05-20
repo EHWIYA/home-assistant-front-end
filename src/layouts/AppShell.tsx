@@ -27,6 +27,15 @@ export function AppShell() {
           홈
         </NavLink>
         <NavLink
+          to="/strip"
+          end={false}
+          className={({ isActive }) =>
+            `${styles.tab} ${isActive ? styles.tabActive : ""}`.trim()
+          }
+        >
+          멀티탭
+        </NavLink>
+        <NavLink
           to="/sleep"
           className={({ isActive }) =>
             `${styles.tab} ${isActive ? styles.tabActive : ""}`.trim()

@@ -1,0 +1,11 @@
+{
+  "device_id": "mock-power-strip",
+  "online": true,
+  "channels": [
+    { "channel": 1, "on": true, "label": "채널 1" },
+    { "channel": 2, "on": false, "label": "채널 2" },
+    { "channel": 3, "on": false, "label": "채널 3" },
+    { "channel": 4, "on": true, "label": "채널 4" }
+  ],
+  "updated_at": "2026-05-20T09:00:00+09:00"
+}

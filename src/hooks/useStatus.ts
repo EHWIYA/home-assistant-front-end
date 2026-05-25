@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchStatus, setAc, setPlug } from "@/api/client";
-import type { PlugSwitch } from "@/api/types";
+import { fetchStatus, setAc, setPc, setPlug } from "@/api/client";
+import type { OnOffAction, PlugSwitch } from "@/api/types";
 
 export const STATUS_QUERY_KEY = ["status"] as const;
 
@@ -29,6 +29,17 @@ export function useAcControl() {
 
   return useMutation({
     mutationFn: (action: PlugSwitch) => setAc({ action }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+    },
+  });
+}
+
+export function usePcToggle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (action: OnOffAction) => setPc({ action }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
     },

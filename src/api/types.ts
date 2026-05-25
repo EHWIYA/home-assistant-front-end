@@ -1,7 +1,10 @@
 /** OpenAPI: https://iot-api.iwhya.kr/openapi.json */
 
-/** POST /api/v1/plug · /api/v1/ac body `action` */
+/** POST /api/v1/plug · /api/v1/ac · /api/v1/pc body `action` */
 export type OnOffAction = "on" | "off";
+
+/** GET /api/v1/status → pc.switch */
+export type PcSwitchState = OnOffAction | "unavailable" | "unknown";
 
 /** @deprecated Prefer {@link OnOffAction} */
 export type PlugSwitch = OnOffAction;
@@ -36,6 +39,19 @@ export interface PlugStatus {
   energy_kwh: number;
 }
 
+/** GET /api/v1/status → pc (Tapo HWIYA-PC) */
+export interface PcStatus {
+  switch: PcSwitchState;
+  power_w: number;
+  energy_today_kwh: number;
+  energy_month_kwh: number;
+  online: boolean;
+  wifi_signal_level: number;
+  overload: boolean;
+  /** power_w >= PC_POWER_THRESHOLD_W(기본 50W) */
+  estimated_running: boolean;
+}
+
 export interface PersonStatus {
   state: string;
   latitude: number;
@@ -55,6 +71,8 @@ export interface IndoorClimate {
 
 export interface StatusResponse {
   plug: PlugStatus;
+  /** Tapo HWIYA-PC — OpenAPI 1.3.0+ */
+  pc?: PcStatus;
   /**
    * 스마트플러그 전력(`plug.power_w`)이 임계값(기본 50W) 이상이면 true.
    * `power_w`가 null이면 false. 실제 AC 전원/IR 상태가 아님.
@@ -72,6 +90,15 @@ export interface PlugActionRequest {
 
 export interface AcActionRequest {
   action: OnOffAction;
+}
+
+export interface PcActionRequest {
+  action: OnOffAction;
+}
+
+export interface PcActionResponse {
+  ok: true;
+  switch: OnOffAction;
 }
 
 /** GET /api/v1/strip/state · POST /api/v1/strip/channels/{n} */

@@ -4,6 +4,16 @@
     "power_w": 742.0,
     "energy_kwh": 12.34
   },
+  "pc": {
+    "switch": "on",
+    "power_w": 128.5,
+    "energy_today_kwh": 0.42,
+    "energy_month_kwh": 3.18,
+    "online": true,
+    "wifi_signal_level": 3,
+    "overload": false,
+    "estimated_running": true
+  },
   "ac_estimated_running": true,
   "person": {
     "state": "home",

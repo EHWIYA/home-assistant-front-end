@@ -29,6 +29,21 @@
 
 PWA 대시보드는 이 값을 **「가동 추정」** 으로만 표시합니다.
 
+## GET /api/v1/status — `pc` (Tapo HWIYA-PC, OpenAPI 1.3.0+)
+
+- 홈 플러그(`plug`)와 분리. PC 콘센트·전력은 `pc` 객체
+- `switch`: `on` | `off` | `unavailable` | `unknown`
+- `estimated_running`: `pc.power_w`가 임계값(기본 50W, `PC_POWER_THRESHOLD_W`) 이상이면 `true`
+- `online`, `overload`, `wifi_signal_level` — UI 뱃지·경고
+
+제어: `POST /api/v1/plug` 가 아닌 **`POST /api/v1/pc`**
+
+## POST /api/v1/pc
+
+- Body: `{ "action": "on" | "off" }`
+- 200: `{ "ok": true, "switch": "on" | "off" }`
+- OFF 시 PWA에서 안전 종료 미보장 안내(확인 모달)
+
 ## GET /api/v1/strip/state
 
 - 200: `device_id`, `online`, `channels[]` (`channel` 1–4, `on` boolean|null, `label`), `updated_at`

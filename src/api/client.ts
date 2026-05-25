@@ -3,6 +3,8 @@ import mockStatus from "./mock/status.json";
 import type {
   AcActionRequest,
   OkResponse,
+  PcActionRequest,
+  PcActionResponse,
   PlugActionRequest,
   StatusResponse,
 } from "./types";
@@ -35,6 +37,25 @@ export async function setAc(action: AcActionRequest): Promise<OkResponse> {
     return { ok: true };
   }
   return apiRequest<OkResponse>("/api/v1/ac", {
+    method: "POST",
+    body: JSON.stringify(action),
+  });
+}
+
+export async function setPc(
+  action: PcActionRequest,
+): Promise<PcActionResponse> {
+  if (shouldUseMock()) {
+    await new Promise((r) => setTimeout(r, 300));
+    const status = mockStatus as StatusResponse;
+    if (status.pc) {
+      status.pc.switch = action.action;
+      status.pc.estimated_running =
+        action.action === "on" && status.pc.power_w >= 50;
+    }
+    return { ok: true, switch: action.action };
+  }
+  return apiRequest<PcActionResponse>("/api/v1/pc", {
     method: "POST",
     body: JSON.stringify(action),
   });

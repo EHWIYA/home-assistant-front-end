@@ -1,7 +1,27 @@
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { useAcControl, usePlugToggle, useStatus } from "@/hooks/useStatus";
+import type { PcStatus } from "@/api/types";
+import { useAcControl, usePcToggle, usePlugToggle, useStatus } from "@/hooks/useStatus";
 import styles from "./DashboardPage.module.css";
+
+const PC_OFF_CONFIRM =
+  "콘센트 전원을 끕니다. PC가 안전하게 종료되지 않을 수 있습니다.";
+
+function getPcStatusLabel(pc: PcStatus): string {
+  if (pc.switch === "unavailable") return "제어 불가";
+  if (pc.switch === "unknown") return "상태 알 수 없음";
+  if (pc.switch === "off") return "콘센트 OFF";
+  if (pc.estimated_running) return "PC 동작 추정";
+  return "대기/꺼짐 (콘센트 ON)";
+}
+
+function isPcControllable(pc: PcStatus): boolean {
+  return (
+    pc.online &&
+    pc.switch !== "unavailable" &&
+    pc.switch !== "unknown"
+  );
+}
 
 function formatPower(w: number | null): string {
   if (w == null) return "—";
@@ -25,6 +45,7 @@ export function DashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useStatus();
   const plugMutation = usePlugToggle();
   const acMutation = useAcControl();
+  const pcMutation = usePcToggle();
 
   if (isLoading) {
     return <p className={styles.message}>상태 불러오는 중…</p>;
@@ -102,6 +123,14 @@ export function DashboardPage() {
         ) : null}
       </Card>
 
+      {data.pc ? (
+        <PcCard
+          pc={data.pc}
+          isFetching={isFetching}
+          mutation={pcMutation}
+        />
+      ) : null}
+
       <Card title="실내">
         {data.indoor ? (
           <>
@@ -154,5 +183,95 @@ export function DashboardPage() {
         {data.person.state ? ` · ${data.person.state}` : ""}
       </p>
     </div>
+  );
+}
+
+interface PcCardProps {
+  pc: PcStatus;
+  isFetching: boolean;
+  mutation: ReturnType<typeof usePcToggle>;
+}
+
+function PcCard({ pc, isFetching, mutation }: PcCardProps) {
+  const pcOn = pc.switch === "on";
+  const controllable = isPcControllable(pc);
+  const statusClass =
+    pc.switch === "unavailable" || pc.switch === "unknown"
+      ? styles.pcWarn
+      : pc.estimated_running
+        ? styles.pcOn
+        : styles.pcOff;
+
+  const requestPcAction = (action: "on" | "off") => {
+    if (action === "off") {
+      if (!window.confirm(PC_OFF_CONFIRM)) return;
+    }
+    mutation.mutate(action);
+  };
+
+  return (
+    <Card title="PC (HWIYA-PC)">
+      <p className={`${styles.pcStatus} ${statusClass}`}>
+        {getPcStatusLabel(pc)}
+      </p>
+      <div className={styles.pcBadges}>
+        <span className={pc.online ? styles.badgeOk : styles.badgeWarn}>
+          {pc.online ? "온라인" : "오프라인"}
+        </span>
+        {pc.overload ? (
+          <span className={styles.badgeDanger}>과부하</span>
+        ) : null}
+        {pc.wifi_signal_level > 0 ? (
+          <span className={styles.badgeMuted}>
+            Wi‑Fi {pc.wifi_signal_level}
+          </span>
+        ) : null}
+      </div>
+      <p className={styles.meta}>
+        {formatPower(pc.power_w)}
+        {" · "}오늘 {pc.energy_today_kwh.toFixed(2)} kWh
+        {" · "}이번 달 {pc.energy_month_kwh.toFixed(2)} kWh
+        {isFetching ? " · 갱신 중…" : null}
+      </p>
+      {pc.switch === "unavailable" ? (
+        <p className={styles.pcBlockedHint}>
+          Tapo 연동이 불가합니다. HA·API 상태를 확인해 주세요.
+        </p>
+      ) : null}
+      {!pc.online ? (
+        <p className={styles.pcBlockedHint}>
+          기기가 오프라인입니다. 제어할 수 없습니다.
+        </p>
+      ) : null}
+      <div className={styles.pcActions}>
+        <Button
+          fullWidth
+          variant="primary"
+          disabled={!controllable || mutation.isPending}
+          onClick={() => requestPcAction("on")}
+        >
+          {mutation.isPending && mutation.variables === "on"
+            ? "처리 중…"
+            : "켜기"}
+        </Button>
+        <Button
+          fullWidth
+          variant="danger"
+          disabled={!controllable || mutation.isPending}
+          onClick={() => requestPcAction("off")}
+        >
+          {mutation.isPending && mutation.variables === "off"
+            ? "처리 중…"
+            : "끄기"}
+        </Button>
+      </div>
+      <p className={styles.meta}>
+        콘센트: <strong>{pcOn ? "ON" : "OFF"}</strong>
+        {pc.estimated_running ? " · 전력 50W 이상" : null}
+      </p>
+      {mutation.isError ? (
+        <p className={styles.errorDetail}>제어 실패 — 다시 시도해 주세요.</p>
+      ) : null}
+    </Card>
   );
 }

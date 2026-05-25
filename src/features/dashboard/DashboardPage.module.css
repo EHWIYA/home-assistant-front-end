@@ -73,6 +73,73 @@
   font-size: 1.125rem;
 }
 
+.pcStatus {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.pcOn {
+  color: #81c784;
+}
+
+.pcOff {
+  color: #9aa0a6;
+}
+
+.pcWarn {
+  color: #f0ad4e;
+}
+
+.pcBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.badgeOk,
+.badgeWarn,
+.badgeDanger,
+.badgeMuted {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.badgeOk {
+  background: #1b3d2a;
+  color: #81c784;
+}
+
+.badgeWarn {
+  background: #3d3520;
+  color: #f0ad4e;
+}
+
+.badgeDanger {
+  background: #3d2020;
+  color: #e57373;
+}
+
+.badgeMuted {
+  background: #2a2d33;
+  color: #9aa0a6;
+}
+
+.pcBlockedHint {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: #f0ad4e;
+}
+
+.pcActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 .plugState {
   margin: 0 0 1rem;
 }

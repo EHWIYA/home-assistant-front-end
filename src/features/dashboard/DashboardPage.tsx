@@ -102,6 +102,23 @@ export function DashboardPage() {
         ) : null}
       </Card>
 
+      <Card title="실내">
+        {data.indoor ? (
+          <>
+            <p className={styles.weather}>
+              {data.indoor.temperature}°C · 습도 {data.indoor.humidity}%
+            </p>
+            {isFetching ? (
+              <p className={styles.meta}>갱신 중…</p>
+            ) : null}
+          </>
+        ) : (
+          <p className={styles.meta}>
+            실내 온습도 센서 미연동 (Broadlink 연동 후 표시)
+          </p>
+        )}
+      </Card>
+
       {data.weather_outdoor ? (
         <Card title="외기">
           <p className={styles.weather}>

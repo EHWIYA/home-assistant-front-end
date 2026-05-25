@@ -47,6 +47,12 @@ export interface WeatherOutdoor {
   humidity: number;
 }
 
+/** GET /api/v1/status — Broadlink 실내 센서 (°C, %) */
+export interface IndoorClimate {
+  temperature: number;
+  humidity: number;
+}
+
 export interface StatusResponse {
   plug: PlugStatus;
   /**
@@ -55,7 +61,7 @@ export interface StatusResponse {
    */
   ac_estimated_running: boolean;
   person: PersonStatus;
-  indoor: { temperature: number; humidity: number } | null;
+  indoor: IndoorClimate | null;
   weather_outdoor: WeatherOutdoor | null;
   updated_at: string;
 }

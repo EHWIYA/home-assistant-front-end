@@ -10,7 +10,10 @@
     "latitude": 37.47,
     "longitude": 126.89
   },
-  "indoor": null,
+  "indoor": {
+    "temperature": 28.1,
+    "humidity": 49.2
+  },
   "weather_outdoor": {
     "temperature": 18.2,
     "humidity": 55

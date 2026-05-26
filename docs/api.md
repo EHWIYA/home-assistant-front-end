@@ -34,7 +34,21 @@
 - `plug.power_w`가 `null`이면 `false`
 - 실제 AC 전원/IR 상태가 아님. 제어는 `POST /api/v1/ac` 별도
 
-PWA 대시보드는 이 값을 **「가동 추정」** 으로만 표시합니다.
+PWA 대시보드는 이 값을 **「에어컨 가동 추정」** 으로만 표시합니다 (`ac_auto_*` 와 구분).
+
+## GET /api/v1/status — `ac_auto_enabled` · `ac_auto_state` (OpenAPI 1.4.0+)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `ac_auto_enabled` | `boolean \| null` | HA `input_boolean.hwiya_ac_auto_enabled` — 자동 ON/OFF 마스터 |
+| `ac_auto_state` | object \| null | 마지막 on/off 이력 (KST `YYYY-MM-DD HH:MM:SS`) |
+
+`ac_auto_state`:
+
+- `state`: `on` \| `off` \| `unknown` \| `unavailable`
+- `last_on`, `last_off`, `last_transition`: string \| null — `00:00:00`·null 은 UI에서 「기록 없음」
+
+제어: 수동은 기존 `POST /api/v1/ac`. 자동 마스터 토글 API는 2차(프론트 배지만 읽기 전용).
 
 ## GET /api/v1/status — `pc` (Tapo HWIYA-PC, OpenAPI 1.3.0+)
 

@@ -2,6 +2,12 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import type { PcStatus } from "@/api/types";
 import { useAcControl, usePcToggle, usePlugToggle, useStatus } from "@/hooks/useStatus";
+import {
+  buildAcAutoHistoryTitle,
+  formatAcAutoTransition,
+  getAcAutoEnabledLabel,
+} from "@/utils/acAuto";
+import { formatUpdatedAt } from "@/utils/date";
 import styles from "./DashboardPage.module.css";
 
 const PC_OFF_CONFIRM =
@@ -28,17 +34,12 @@ function formatPower(w: number | null): string {
   return `${Math.round(w)} W`;
 }
 
-function formatUpdatedAt(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString("ko-KR", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
+function getAcAutoEnabledBadgeClass(
+  enabled: boolean | null | undefined,
+): string {
+  if (enabled === true) return styles.badgeOk;
+  if (enabled === false) return styles.badgeMuted;
+  return styles.badgeWarn;
 }
 
 export function DashboardPage() {
@@ -82,14 +83,51 @@ export function DashboardPage() {
       </Card>
 
       <Card title="에어컨">
+        <div className={styles.acBadges}>
+          <span
+            className={getAcAutoEnabledBadgeClass(data.ac_auto_enabled)}
+            title="HA 자동 ON/OFF 마스터 (읽기 전용)"
+          >
+            {getAcAutoEnabledLabel(data.ac_auto_enabled)}
+          </span>
+          {data.ac_auto_state?.state === "on" ||
+          data.ac_auto_state?.state === "off" ? (
+            <span className={styles.badgeMuted}>
+              자동 {data.ac_auto_state.state === "on" ? "ON" : "OFF"}
+            </span>
+          ) : null}
+        </div>
         <p
           className={`${styles.acStatus} ${
             data.ac_estimated_running ? styles.acOn : styles.acOff
           }`}
         >
-          {data.ac_estimated_running ? "가동 추정 중" : "정지 추정"}
+          에어컨 가동 추정:{" "}
+          {data.ac_estimated_running ? "켜짐" : "꺼짐"}
         </p>
-        <p className={styles.meta}>전력 50W 초과 시 가동으로 추정</p>
+        <p className={styles.meta}>
+          전력 50W 초과 시 추정 (IR·자동제어와 무관)
+        </p>
+        <p
+          className={styles.meta}
+          title={buildAcAutoHistoryTitle(data.ac_auto_state ?? undefined)}
+        >
+          마지막 전환:{" "}
+          {formatAcAutoTransition(data.ac_auto_state?.last_transition)}
+        </p>
+        <details className={styles.acPolicy}>
+          <summary>자동제어 조건</summary>
+          <ul className={styles.acPolicyList}>
+            <li>자동제어 꺼짐 → 자동 ON/OFF 중단</li>
+            <li>외출(person ≠ home) → 자동 ON 금지</li>
+            <li>
+              켜기: 27°C 5분 또는 (24°C 이상·습도 70% 이상 10분)
+            </li>
+            <li>
+              끄기: 25°C 미만·습도 55% 미만(각 10분, 최소 가동 25분)
+            </li>
+          </ul>
+        </details>
         {!acControlEnabled ? (
           <p className={styles.acBlockedHint}>
             플러그가 꺼져 있어 에어컨을 제어할 수 없습니다. 먼저 플러그를

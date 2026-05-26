@@ -55,6 +55,33 @@
   color: #9aa0a6;
 }
 
+.acBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.acPolicy {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+}
+
+.acPolicy summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.acPolicyList {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.acPolicyList li {
+  margin: 0.2rem 0;
+}
+
 .acBlockedHint {
   margin: 0.75rem 0 0;
   font-size: 0.875rem;

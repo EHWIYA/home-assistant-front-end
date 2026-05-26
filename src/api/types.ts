@@ -69,6 +69,17 @@ export interface IndoorClimate {
   humidity: number;
 }
 
+/** GET /api/v1/status → ac_auto_state.state (HA 자동제어 마지막 전환 방향) */
+export type AcAutoSwitchState = "on" | "off" | "unknown" | "unavailable";
+
+/** GET /api/v1/status → ac_auto_state (KST `YYYY-MM-DD HH:MM:SS`) */
+export interface AcAutoState {
+  state: AcAutoSwitchState;
+  last_on: string | null;
+  last_off: string | null;
+  last_transition: string | null;
+}
+
 export interface StatusResponse {
   plug: PlugStatus;
   /** Tapo HWIYA-PC — OpenAPI 1.3.0+ */
@@ -78,6 +89,13 @@ export interface StatusResponse {
    * `power_w`가 null이면 false. 실제 AC 전원/IR 상태가 아님.
    */
   ac_estimated_running: boolean;
+  /**
+   * HA `input_boolean.hwiya_ac_auto_enabled` — 자동 ON/OFF 마스터.
+   * `null`: 엔티티 없음/비정상. 변경 API는 2차(읽기 전용 배지).
+   */
+  ac_auto_enabled?: boolean | null;
+  /** 자동·수동 전환 이력. `null`: 미연동/비정상 */
+  ac_auto_state?: AcAutoState | null;
   person: PersonStatus;
   indoor: IndoorClimate | null;
   weather_outdoor: WeatherOutdoor | null;

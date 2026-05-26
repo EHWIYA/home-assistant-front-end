@@ -1,21 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { fetchStatus, setAc, setPc, setPlug } from "@/api/client";
 import type { OnOffAction, PlugSwitch } from "@/api/types";
 import {
   POLLING_STALE_TIME_MS,
   usePollingIntervalMs,
 } from "@/hooks/usePollingInterval";
+import { useStatusStream } from "@/hooks/useStatusStream";
 
 export const STATUS_QUERY_KEY = ["status"] as const;
 
 export function useStatus() {
+  const queryClient = useQueryClient();
   const refetchInterval = usePollingIntervalMs();
+  const [sseActive, setSseActive] = useState(false);
+
+  useStatusStream({
+    queryKey: STATUS_QUERY_KEY,
+    queryClient,
+    onActiveChange: setSseActive,
+  });
 
   return useQuery({
     queryKey: STATUS_QUERY_KEY,
     queryFn: fetchStatus,
-    refetchInterval,
-    refetchIntervalInBackground: true,
+    refetchInterval: sseActive ? false : refetchInterval,
+    refetchIntervalInBackground: !sseActive,
     staleTime: POLLING_STALE_TIME_MS,
   });
 }

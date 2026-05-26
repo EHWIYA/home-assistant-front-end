@@ -13,6 +13,14 @@ export function getApiBaseUrl(): string {
   return baseUrl;
 }
 
+/** EventSource는 헤더 인증 불가 — `api_key` 쿼리로 전달. */
+export function getStatusStreamUrl(): string | null {
+  if (!baseUrl || !apiKey) return null;
+  const url = new URL(`${baseUrl}/api/v1/status/stream`);
+  url.searchParams.set("api_key", apiKey);
+  return url.toString();
+}
+
 export function hasApiKey(): boolean {
   return Boolean(apiKey);
 }

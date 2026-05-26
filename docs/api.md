@@ -13,6 +13,13 @@
 
 모든 `/api/v1/*` 요청에 `X-API-Key: <VITE_API_KEY>` (백엔드 `IOT_API_KEY` 와 동일).
 
+## GET /api/v1/status/stream (SSE, OpenAPI 1.4.0+)
+
+- `Content-Type: text/event-stream`
+- 이벤트: `snapshot` 1회 후 `status` 지속 — payload는 GET `/api/v1/status` 와 동일 JSON
+- EventSource 제약: `?api_key=<VITE_API_KEY>` 쿼리 인증 (REST 헤더와 동일 키)
+- PWA: 연결 성공 시 status 폴링 중단, 실패·끊김·탭 hidden 시 폴링 fallback (visible 12s / hidden 60s)
+
 ## POST /api/v1/ac
 
 - Body: `{ "action": "on" | "off" }`

@@ -5,6 +5,7 @@ import type { PcStatus } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { OnOffAction } from "@/api/types";
 import shared from "@/components/status/statusPage.module.css";
+import { formatEstimatedCostWon } from "@/utils/electricity";
 import { formatPowerW } from "@/utils/power";
 import {
   getPcStatusLabel,
@@ -45,7 +46,13 @@ export function PcControlPanel({ pc, mutation }: PcControlPanelProps) {
       <p className={shared.meta}>
         {formatPowerW(pc.power_w)}
         {" · "}오늘 {pc.energy_today_kwh.toFixed(2)} kWh
+        {pc.estimated_cost_today_won != null
+          ? ` (${formatEstimatedCostWon(pc.estimated_cost_today_won)})`
+          : null}
         {" · "}이번 달 {pc.energy_month_kwh.toFixed(2)} kWh
+        {pc.estimated_cost_month_won != null
+          ? ` (${formatEstimatedCostWon(pc.estimated_cost_month_won)})`
+          : null}
       </p>
       {pc.switch === "unavailable" ? (
         <p className={shared.blockedHint}>

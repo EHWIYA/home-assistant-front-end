@@ -3,6 +3,7 @@ import { Card } from "@/components/Card";
 import type { OnOffAction, PlugStatus } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import shared from "@/components/status/statusPage.module.css";
+import { formatEstimatedCostWon } from "@/utils/electricity";
 import { formatPowerW } from "@/utils/power";
 import styles from "./PlugSection.module.css";
 
@@ -44,8 +45,11 @@ export function PlugSection({
     <Card title="스마트 플러그 (에어컨 전원)">
       <p className={styles.powerValue}>{formatPowerW(plug.power_w)}</p>
       <p className={shared.meta}>
-        누적 {plug.energy_kwh.toFixed(2)} kWh · 현재{" "}
-        <strong>{plugOn ? "ON" : "OFF"}</strong>
+        누적 {plug.energy_kwh.toFixed(2)} kWh
+        {plug.estimated_cost_won != null
+          ? ` · 추정 ${formatEstimatedCostWon(plug.estimated_cost_won)}`
+          : null}
+        {" · "}현재 <strong>{plugOn ? "ON" : "OFF"}</strong>
       </p>
       <Button
         fullWidth

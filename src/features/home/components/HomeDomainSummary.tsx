@@ -8,6 +8,7 @@ import {
   getAcAutoTransitionBadge,
 } from "@/utils/acAuto";
 import { formatClimateLine } from "@/utils/climate";
+import { formatEstimatedCostWon } from "@/utils/electricity";
 import { formatPowerW } from "@/utils/power";
 import { getPcStatusLabel } from "@/utils/pcStatus";
 import styles from "./HomeDomainSummary.module.css";
@@ -48,6 +49,11 @@ export function HomeDomainSummary({
         <p className={styles.line}>
           플러그 {plugOn ? "ON" : "OFF"} · {formatPowerW(status.plug.power_w)}
         </p>
+        {status.plug.estimated_cost_won != null ? (
+          <p className={styles.sub}>
+            누적 추정 {formatEstimatedCostWon(status.plug.estimated_cost_won)}
+          </p>
+        ) : null}
         <p className={styles.sub}>{acLine || "에어컨 상태 없음"}</p>
         <p className={styles.sub}>
           {formatClimateLine(status.indoor, status.weather_outdoor)}
@@ -96,6 +102,9 @@ function PcSummaryLine({ pc }: { pc: PcStatus }) {
         {pc.online ? "온라인" : "오프라인"}
         {" · "}
         {formatPowerW(pc.power_w)}
+        {pc.estimated_cost_today_won != null
+          ? ` · 오늘 ${formatEstimatedCostWon(pc.estimated_cost_today_won)}`
+          : null}
       </p>
     </>
   );

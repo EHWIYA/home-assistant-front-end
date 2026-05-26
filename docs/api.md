@@ -51,6 +51,18 @@ PWA 대시보드는 이 값을 **「에어컨 가동 추정」** 으로만 표�
 
 제어: 수동은 기존 `POST /api/v1/ac`. 자동 마스터 토글 API는 2차(프론트 배지만 읽기 전용).
 
+## GET /api/v1/status — 추정 요금 · `electricity` (OpenAPI 1.5.0+)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `plug.estimated_cost_won` | `int \| null` | 플러그(에어컨 회로) 누적 kWh 기준 추정 요금(원) |
+| `pc.estimated_cost_today_won` | `int \| null` | PC 회로 오늘 사용량 기준 추정 요금(원) |
+| `pc.estimated_cost_month_won` | `int \| null` | PC 회로 이번 달 사용량 기준 추정 요금(원) |
+| `electricity.rate_won_per_kwh` | `float` | 적용 단가(원/kWh) — 푸터·요금 산출 기준 표시 |
+
+- `null`이면 해당 구간 요금 미표시(PWA는 `—` 또는 문구 생략)
+- PWA: 에어컨 탭 플러그 카드·PC 탭·홈 요약에 회로별 표시, `StatusFooter`에 단가
+
 ## GET /api/v1/status — `pc` (Tapo HWIYA-PC, OpenAPI 1.3.0+)
 
 - 홈 플러그(`plug`)와 분리. PC 콘센트·전력은 `pc` 객체

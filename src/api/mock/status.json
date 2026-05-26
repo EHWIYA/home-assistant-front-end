@@ -2,7 +2,8 @@
   "plug": {
     "switch": "on",
     "power_w": 742.0,
-    "energy_kwh": 12.34
+    "energy_kwh": 12.34,
+    "estimated_cost_won": 1703
   },
   "pc": {
     "switch": "on",
@@ -12,7 +13,12 @@
     "online": true,
     "wifi_signal_level": 3,
     "overload": false,
-    "estimated_running": true
+    "estimated_running": true,
+    "estimated_cost_today_won": 58,
+    "estimated_cost_month_won": 439
+  },
+  "electricity": {
+    "rate_won_per_kwh": 138.0
   },
   "ac_estimated_running": true,
   "ac_auto_enabled": true,

@@ -37,6 +37,8 @@ export interface PlugStatus {
   /** null이면 전력 미수신 — status의 ac_estimated_running은 false */
   power_w: number | null;
   energy_kwh: number;
+  /** 누적 사용량 기준 추정 요금(원). null이면 미산출 */
+  estimated_cost_won: number | null;
 }
 
 /** GET /api/v1/status → pc (Tapo HWIYA-PC) */
@@ -50,6 +52,14 @@ export interface PcStatus {
   overload: boolean;
   /** power_w >= PC_POWER_THRESHOLD_W(기본 50W) */
   estimated_running: boolean;
+  /** 오늘·이번 달 사용량 기준 추정 요금(원). null이면 미산출 */
+  estimated_cost_today_won: number | null;
+  estimated_cost_month_won: number | null;
+}
+
+/** GET /api/v1/status → electricity (요금 단가) */
+export interface ElectricityStatus {
+  rate_won_per_kwh: number;
 }
 
 export interface PersonStatus {
@@ -89,6 +99,8 @@ export interface StatusResponse {
   plug: PlugStatus;
   /** Tapo HWIYA-PC — OpenAPI 1.3.0+ */
   pc?: PcStatus;
+  /** 요금 단가(원/kWh). 없으면 추정 요금만 표시 */
+  electricity?: ElectricityStatus;
   /**
    * 스마트플러그 전력(`plug.power_w`)이 임계값(기본 50W) 이상이면 true.
    * `power_w`가 null이면 false. 실제 AC 전원/IR 상태가 아님.

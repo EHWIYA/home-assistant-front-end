@@ -1,0 +1,29 @@
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.link:focus-visible {
+  outline: 2px solid #5b9fd4;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.line {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+}

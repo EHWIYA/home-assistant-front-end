@@ -6,10 +6,13 @@
 
 | 탭 | 경로 | 기능 |
 |----|------|------|
-| 홈 | `/` | 전력·플러그·에어컨 (기존 status API) |
+| 홈 | `/` | 요약·빠른 제어 (status + strip 요약) |
+| 에어컨 | `/ac` | 플러그·환경·에어컨·수면 모드 |
+| PC | `/pc` | Tapo PC 콘센트 제어 |
 | 멀티탭 | `/strip` | 헤이홈 4구 ON/OFF · `/strip/schedules` 스케줄 CRUD |
-| 수면 | `/sleep` | 수면 모드 |
 | 설정 | `/settings` | API 정보 · GET /health |
+
+`/sleep` 은 `/ac` 로 리다이렉트됩니다.
 
 ## 스택
 

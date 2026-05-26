@@ -27,6 +27,22 @@ export function AppShell() {
           홈
         </NavLink>
         <NavLink
+          to="/ac"
+          className={({ isActive }) =>
+            `${styles.tab} ${isActive ? styles.tabActive : ""}`.trim()
+          }
+        >
+          에어컨
+        </NavLink>
+        <NavLink
+          to="/pc"
+          className={({ isActive }) =>
+            `${styles.tab} ${isActive ? styles.tabActive : ""}`.trim()
+          }
+        >
+          PC
+        </NavLink>
+        <NavLink
           to="/strip"
           end={false}
           className={({ isActive }) =>
@@ -34,14 +50,6 @@ export function AppShell() {
           }
         >
           멀티탭
-        </NavLink>
-        <NavLink
-          to="/sleep"
-          className={({ isActive }) =>
-            `${styles.tab} ${isActive ? styles.tabActive : ""}`.trim()
-          }
-        >
-          수면
         </NavLink>
         <NavLink
           to="/settings"

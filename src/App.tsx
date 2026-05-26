@@ -1,7 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/layouts/AppShell";
-import { DashboardPage } from "@/features/dashboard/DashboardPage";
-import { SleepPage } from "@/features/ac/SleepPage";
+import { AcPage } from "@/features/ac/AcPage";
+import { HomePage } from "@/features/home/HomePage";
+import { PcPage } from "@/features/pc/PcPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { ScheduleFormPage } from "@/features/strip/ScheduleFormPage";
 import { SchedulesPage } from "@/features/strip/SchedulesPage";
@@ -12,7 +13,9 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<DashboardPage />} />
+          <Route index element={<HomePage />} />
+          <Route path="ac" element={<AcPage />} />
+          <Route path="pc" element={<PcPage />} />
           <Route path="strip" element={<StripPage />} />
           <Route path="strip/schedules" element={<SchedulesPage />} />
           <Route path="strip/schedules/new" element={<ScheduleFormPage />} />
@@ -20,7 +23,7 @@ export default function App() {
             path="strip/schedules/:id/edit"
             element={<ScheduleFormPage />}
           />
-          <Route path="sleep" element={<SleepPage />} />
+          <Route path="sleep" element={<Navigate to="/ac" replace />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

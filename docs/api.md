@@ -45,8 +45,9 @@ PWA 대시보드는 이 값을 **「에어컨 가동 추정」** 으로만 표�
 
 `ac_auto_state`:
 
-- `state`: `on` \| `off` \| `unknown` \| `unavailable`
-- `last_on`, `last_off`, `last_transition`: string \| null — `00:00:00`·null 은 UI에서 「기록 없음」
+- `state`: `on` \| `off` (초기·placeholder는 `unknown` — API 1.4.0 배포 후 실전환만 `on`/`off`)
+- `last_on`, `last_off`, `last_transition`: KST `YYYY-MM-DD HH:MM:SS` \| null — null·`00:00:00`(보조)이면 PWA 「자동 기록 없음」
+- PWA: `ac_estimated_running` → 「가동 중(추정)」 배지, `ac_auto_state` → 「자동 on/off · 시각」 배지 (합치지 않음)
 
 제어: 수동은 기존 `POST /api/v1/ac`. 자동 마스터 토글 API는 2차(프론트 배지만 읽기 전용).
 

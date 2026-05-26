@@ -37,6 +37,36 @@ export function formatAcAutoTransition(
   return formatAcAutoKst(lastTransition!);
 }
 
+/** 자동 on/off 배지용 — `last_transition` null·미기록이면 기록 없음 */
+export function hasAcAutoTransitionRecord(
+  autoState: AcAutoState | null | undefined,
+): boolean {
+  if (!autoState) return false;
+  if (autoState.state !== "on" && autoState.state !== "off") return false;
+  return !isAcAutoTimestampAbsent(autoState.last_transition);
+}
+
+export type AcAutoTransitionBadge =
+  | { kind: "transition"; label: string; title?: string }
+  | { kind: "no_record" };
+
+/** GET /status `ac_auto_state` → 자동 on/off 배지 (가동 추정과 분리) */
+export function getAcAutoTransitionBadge(
+  autoState: AcAutoState | null | undefined,
+): AcAutoTransitionBadge {
+  if (!hasAcAutoTransitionRecord(autoState)) {
+    return { kind: "no_record" };
+  }
+  const state = autoState!.state;
+  const verb = state === "on" ? "on" : "off";
+  const at = formatAcAutoKst(autoState!.last_transition!);
+  return {
+    kind: "transition",
+    label: `자동 ${verb} · ${at}`,
+    title: buildAcAutoHistoryTitle(autoState),
+  };
+}
+
 export function getAcAutoEnabledLabel(
   enabled: boolean | null | undefined,
 ): string {

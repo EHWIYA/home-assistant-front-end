@@ -41,20 +41,6 @@
   color: #9aa0a6;
 }
 
-.acStatus {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.acOn {
-  color: #81c784;
-}
-
-.acOff {
-  color: #9aa0a6;
-}
-
 .acBadges {
   display: flex;
   flex-wrap: wrap;

@@ -3,9 +3,8 @@ import { Card } from "@/components/Card";
 import type { PcStatus } from "@/api/types";
 import { useAcControl, usePcToggle, usePlugToggle, useStatus } from "@/hooks/useStatus";
 import {
-  buildAcAutoHistoryTitle,
-  formatAcAutoTransition,
   getAcAutoEnabledLabel,
+  getAcAutoTransitionBadge,
 } from "@/utils/acAuto";
 import { formatUpdatedAt } from "@/utils/date";
 import styles from "./DashboardPage.module.css";
@@ -71,6 +70,7 @@ export function DashboardPage() {
   const plugOn = data.plug.switch === "on";
   const nextAction = plugOn ? "off" : "on";
   const acControlEnabled = plugOn;
+  const acAutoTransition = getAcAutoTransitionBadge(data.ac_auto_state);
 
   return (
     <div className={styles.page}>
@@ -86,45 +86,42 @@ export function DashboardPage() {
         <div className={styles.acBadges}>
           <span
             className={getAcAutoEnabledBadgeClass(data.ac_auto_enabled)}
-            title="HA 자동 ON/OFF 마스터 (읽기 전용)"
+            title="HA 자동 ON/OFF 마스터 (읽기 전용, 토글 API 2차)"
           >
             {getAcAutoEnabledLabel(data.ac_auto_enabled)}
           </span>
-          {data.ac_auto_state?.state === "on" ||
-          data.ac_auto_state?.state === "off" ? (
-            <span className={styles.badgeMuted}>
-              자동 {data.ac_auto_state.state === "on" ? "ON" : "OFF"}
+          {acAutoTransition.kind === "transition" ? (
+            <span
+              className={styles.badgeMuted}
+              title={acAutoTransition.title}
+            >
+              {acAutoTransition.label}
+            </span>
+          ) : (
+            <span className={styles.badgeMuted}>자동 기록 없음</span>
+          )}
+          {data.ac_estimated_running ? (
+            <span
+              className={styles.badgeOk}
+              title="스마트플러그 전력 50W 초과 추정 — 자동 on/off 이력과 별도"
+            >
+              가동 중(추정)
             </span>
           ) : null}
         </div>
-        <p
-          className={`${styles.acStatus} ${
-            data.ac_estimated_running ? styles.acOn : styles.acOff
-          }`}
-        >
-          에어컨 가동 추정:{" "}
-          {data.ac_estimated_running ? "켜짐" : "꺼짐"}
-        </p>
         <p className={styles.meta}>
-          전력 50W 초과 시 추정 (IR·자동제어와 무관)
-        </p>
-        <p
-          className={styles.meta}
-          title={buildAcAutoHistoryTitle(data.ac_auto_state ?? undefined)}
-        >
-          마지막 전환:{" "}
-          {formatAcAutoTransition(data.ac_auto_state?.last_transition)}
+          가동 추정은 플러그 전력 기준 (IR·자동 전환 이력과 무관)
         </p>
         <details className={styles.acPolicy}>
           <summary>자동제어 조건</summary>
           <ul className={styles.acPolicyList}>
             <li>자동제어 꺼짐 → 자동 ON/OFF 중단</li>
-            <li>외출(person ≠ home) → 자동 ON 금지</li>
+            <li>집 비움 → 자동 ON 불가, OFF는 조건 충족 시 가능</li>
             <li>
-              켜기: 27°C 5분 또는 (24°C 이상·습도 70% 이상 10분)
+              켜기: 27°C 이상 5분 또는 (24°C 이상·습도 70% 이상 10분)
             </li>
             <li>
-              끄기: 25°C 미만·습도 55% 미만(각 10분, 최소 가동 25분)
+              끄기: 25°C 미만·습도 55% 미만(각 10분 유지, 최소 가동 25분)
             </li>
           </ul>
         </details>

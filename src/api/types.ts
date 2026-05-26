@@ -70,7 +70,12 @@ export interface IndoorClimate {
 }
 
 /** GET /api/v1/status → ac_auto_state.state (HA 자동제어 마지막 전환 방향) */
-export type AcAutoSwitchState = "on" | "off" | "unknown" | "unavailable";
+export type AcAutoSwitchState =
+  | "on"
+  | "off"
+  /** 초기·placeholder — 실서비스는 전환 후 on/off만 */
+  | "unknown"
+  | "unavailable";
 
 /** GET /api/v1/status → ac_auto_state (KST `YYYY-MM-DD HH:MM:SS`) */
 export interface AcAutoState {

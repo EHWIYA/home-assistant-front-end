@@ -1,0 +1,69 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.message {
+  margin: 0;
+  color: #9aa0a6;
+}
+
+.offline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #9aa0a6;
+}
+
+.errorDetail {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #e57373;
+}
+
+.meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: #9aa0a6;
+}
+
+.blockedHint {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: #f0ad4e;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.updated {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.fetching {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+  margin: 0;
+}

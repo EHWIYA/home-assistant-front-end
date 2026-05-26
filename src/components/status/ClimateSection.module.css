@@ -1,0 +1,24 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.label {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.value {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.unavailable {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #9aa0a6;
+}

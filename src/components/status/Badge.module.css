@@ -1,0 +1,28 @@
+.ok,
+.warn,
+.danger,
+.muted {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.ok {
+  background: #1b3d2a;
+  color: #81c784;
+}
+
+.warn {
+  background: #3d3520;
+  color: #f0ad4e;
+}
+
+.danger {
+  background: #3d2020;
+  color: #e57373;
+}
+
+.muted {
+  background: #2a2d33;
+  color: #9aa0a6;
+}

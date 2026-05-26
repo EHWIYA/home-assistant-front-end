@@ -1,0 +1,19 @@
+.policy {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+}
+
+.policy summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.list li {
+  margin: 0.2rem 0;
+}

@@ -1,0 +1,17 @@
+.status {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.on {
+  color: #81c784;
+}
+
+.off {
+  color: #9aa0a6;
+}
+
+.warn {
+  color: #f0ad4e;
+}

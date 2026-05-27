@@ -124,7 +124,16 @@ export interface PlugActionRequest {
 }
 
 export interface AcActionRequest {
-  action: OnOffAction;
+  mode: AcMode;
+}
+
+export type AcMode = "off" | "cool" | "dry";
+
+export interface AcStateResponse {
+  temperature: number;
+  humidity: number;
+  mode: AcMode;
+  auto_mode: boolean;
 }
 
 export interface PcActionRequest {

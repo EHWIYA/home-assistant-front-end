@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { fetchStatus, setAc, setPc, setPlug } from "@/api/client";
-import type { OnOffAction, PlugSwitch } from "@/api/types";
+import { fetchAcState, fetchStatus, setAc, setPc, setPlug } from "@/api/client";
+import type { AcMode, OnOffAction, PlugSwitch } from "@/api/types";
 import {
   POLLING_STALE_TIME_MS,
   usePollingIntervalMs,
@@ -9,6 +9,7 @@ import {
 import { useStatusStream } from "@/hooks/useStatusStream";
 
 export const STATUS_QUERY_KEY = ["status"] as const;
+export const AC_STATE_QUERY_KEY = ["ac-state"] as const;
 
 export function useStatus() {
   const queryClient = useQueryClient();
@@ -45,10 +46,23 @@ export function useAcControl() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (action: PlugSwitch) => setAc({ action }),
-    onSuccess: () => {
+    mutationFn: (mode: AcMode) => setAc({ mode }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: AC_STATE_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      await queryClient.refetchQueries({
+        queryKey: AC_STATE_QUERY_KEY,
+        type: "active",
+      });
     },
+  });
+}
+
+export function useAcState() {
+  return useQuery({
+    queryKey: AC_STATE_QUERY_KEY,
+    queryFn: fetchAcState,
+    staleTime: 0,
   });
 }
 

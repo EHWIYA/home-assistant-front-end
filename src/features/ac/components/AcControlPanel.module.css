@@ -1,0 +1,47 @@
+.statusBox {
+  margin-top: 0.75rem;
+}
+
+.statusText,
+.modeText {
+  margin: 0;
+  color: #e8eaed;
+}
+
+.modeText {
+  margin-top: 0.35rem;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.rightOn {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.rightOn:hover:not(:disabled) {
+  background: #388e3c;
+}
+
+.rightDry {
+  background: #a07900;
+  color: #fff;
+}
+
+.rightDry:hover:not(:disabled) {
+  background: #b38a00;
+}
+
+.rightCool {
+  background: #1565c0;
+  color: #fff;
+}
+
+.rightCool:hover:not(:disabled) {
+  background: #1976d2;
+}

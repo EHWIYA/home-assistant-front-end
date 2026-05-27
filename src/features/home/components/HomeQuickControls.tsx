@@ -19,7 +19,6 @@ export function HomeQuickControls({ data }: HomeQuickControlsProps) {
   const plugMutation = usePlugToggle();
   const acMutation = useAcControl();
   const pcMutation = usePcToggle();
-  const plugOn = data.plug.switch === "on";
 
   return (
     <Card title="빠른 제어">
@@ -28,7 +27,6 @@ export function HomeQuickControls({ data }: HomeQuickControlsProps) {
         <p className={shared.meta}>에어컨</p>
         <AcControlPanel
           data={data}
-          acControlEnabled={plugOn}
           mutation={acMutation}
           showDetails={false}
         />

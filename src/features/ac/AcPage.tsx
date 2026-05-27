@@ -14,8 +14,6 @@ export function AcPage() {
   return (
     <StatusQueryGate loadingMessage="에어컨 상태 불러오는 중…">
       {({ data }) => {
-        const plugOn = data.plug.switch === "on";
-
         return (
           <div className={shared.page}>
             <PlugSection
@@ -30,7 +28,6 @@ export function AcPage() {
             />
             <AcControlCard
               data={data}
-              acControlEnabled={plugOn}
               mutation={acMutation}
             />
             <SleepSection />

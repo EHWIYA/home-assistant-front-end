@@ -2,6 +2,7 @@ import { apiRequest, shouldUseMock } from "./http";
 import mockStatus from "./mock/status.json";
 import type {
   AcActionRequest,
+  AcStateResponse,
   OkResponse,
   PcActionRequest,
   PcActionResponse,
@@ -10,6 +11,8 @@ import type {
 } from "./types";
 
 export { ApiError, hasApiKey, shouldUseMock as isUsingMock } from "./http";
+
+let mockAcMode: "off" | "cool" | "dry" = "cool";
 
 export async function fetchStatus(): Promise<StatusResponse> {
   if (shouldUseMock()) {
@@ -34,12 +37,39 @@ export async function setPlug(action: PlugActionRequest): Promise<void> {
 export async function setAc(action: AcActionRequest): Promise<OkResponse> {
   if (shouldUseMock()) {
     await new Promise((r) => setTimeout(r, 300));
+    mockAcMode = action.mode;
+    (mockStatus as StatusResponse).ac_auto_state = {
+      state: action.mode === "off" ? "off" : "on",
+      last_on:
+        action.mode === "off"
+          ? (mockStatus as StatusResponse).ac_auto_state?.last_on ?? null
+          : new Date().toISOString().slice(0, 19).replace("T", " "),
+      last_off:
+        action.mode === "off"
+          ? new Date().toISOString().slice(0, 19).replace("T", " ")
+          : (mockStatus as StatusResponse).ac_auto_state?.last_off ?? null,
+      last_transition: new Date().toISOString().slice(0, 19).replace("T", " "),
+    };
     return { ok: true };
   }
   return apiRequest<OkResponse>("/api/v1/ac", {
     method: "POST",
     body: JSON.stringify(action),
   });
+}
+
+export async function fetchAcState(): Promise<AcStateResponse> {
+  if (shouldUseMock()) {
+    await new Promise((r) => setTimeout(r, 150));
+    const status = mockStatus as StatusResponse;
+    return {
+      temperature: status.indoor?.temperature ?? 27.5,
+      humidity: status.indoor?.humidity ?? 50,
+      mode: mockAcMode,
+      auto_mode: status.ac_auto_enabled ?? false,
+    };
+  }
+  return apiRequest<AcStateResponse>("/api/v1/ac/state");
 }
 
 export async function setPc(

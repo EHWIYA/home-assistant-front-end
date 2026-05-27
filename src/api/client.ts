@@ -2,8 +2,8 @@ import { apiRequest, shouldUseMock } from "./http";
 import mockStatus from "./mock/status.json";
 import type {
   AcActionRequest,
+  AcActionResponse,
   AcStateResponse,
-  OkResponse,
   PcActionRequest,
   PcActionResponse,
   PlugActionRequest,
@@ -34,7 +34,7 @@ export async function setPlug(action: PlugActionRequest): Promise<void> {
   });
 }
 
-export async function setAc(action: AcActionRequest): Promise<OkResponse> {
+export async function setAc(action: AcActionRequest): Promise<AcActionResponse> {
   if (shouldUseMock()) {
     await new Promise((r) => setTimeout(r, 300));
     mockAcMode = action.mode;
@@ -50,9 +50,9 @@ export async function setAc(action: AcActionRequest): Promise<OkResponse> {
           : (mockStatus as StatusResponse).ac_auto_state?.last_off ?? null,
       last_transition: new Date().toISOString().slice(0, 19).replace("T", " "),
     };
-    return { ok: true };
+    return { ok: true, applied_mode: action.mode, partial_failure: false };
   }
-  return apiRequest<OkResponse>("/api/v1/ac", {
+  return apiRequest<AcActionResponse>("/api/v1/ac", {
     method: "POST",
     body: JSON.stringify(action),
   });

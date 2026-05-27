@@ -13,6 +13,14 @@ export interface OkResponse {
   ok: true;
 }
 
+/** POST /api/v1/ac 응답 (백엔드 부분실패/적용모드 포함 가능) */
+export interface AcActionResponse {
+  ok: boolean;
+  applied_mode?: AcMode | null;
+  partial_failure?: boolean;
+  error?: string | null;
+}
+
 /** 401/502/503/504 — nested detail */
 export interface ApiErrorDetail {
   detail: string;

@@ -1,5 +1,5 @@
 import { Badge } from "@/components/status/Badge";
-import type { StatusResponse } from "@/api/types";
+import type { AcMode, StatusResponse } from "@/api/types";
 import {
   getAcAutoEnabledLabel,
   getAcAutoTransitionBadge,
@@ -12,10 +12,14 @@ interface AcStatusBadgesProps {
     StatusResponse,
     "ac_auto_enabled" | "ac_auto_state" | "ac_estimated_running"
   >;
+  mode: AcMode;
 }
 
-export function AcStatusBadges({ data }: AcStatusBadgesProps) {
+export function AcStatusBadges({ data, mode }: AcStatusBadgesProps) {
   const transition = getAcAutoTransitionBadge(data.ac_auto_state);
+  const hasStateMismatch =
+    (!data.ac_estimated_running && mode !== "off") ||
+    (data.ac_estimated_running && mode === "off");
 
   return (
     <div className={shared.badgeRow}>
@@ -38,6 +42,11 @@ export function AcStatusBadges({ data }: AcStatusBadgesProps) {
           title="스마트플러그 전력 50W 초과 추정 — 자동 on/off 이력과 별도"
         >
           가동 중(추정)
+        </Badge>
+      ) : null}
+      {hasStateMismatch ? (
+        <Badge variant="warn" title="전력 추정 상태와 AC 모드가 일시적으로 다릅니다.">
+          동기화 지연/재시도
         </Badge>
       ) : null}
     </div>

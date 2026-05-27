@@ -3,8 +3,10 @@ import { Card } from "@/components/Card";
 import type { OnOffAction, PlugStatus } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import shared from "@/components/status/statusPage.module.css";
+import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
 import { formatEstimatedCostWon } from "@/utils/electricity";
 import { formatPowerW } from "@/utils/power";
+import { TOAST_DEVICE, TOAST_GUIDE } from "@/utils/toastMessages";
 import styles from "./PlugSection.module.css";
 
 interface PlugSectionProps {
@@ -21,6 +23,12 @@ export function PlugSection({
 }: PlugSectionProps) {
   const plugOn = plug.switch === "on";
   const nextAction: OnOffAction = plugOn ? "off" : "on";
+  useMutationErrorToast(
+    mutation,
+    TOAST_DEVICE.plug,
+    TOAST_GUIDE.retry,
+    "control",
+  );
 
   if (variant === "compact") {
     return (
@@ -63,9 +71,6 @@ export function PlugSection({
             ? "플러그 끄기"
             : "플러그 켜기"}
       </Button>
-      {mutation.isError ? (
-        <p className={shared.errorDetail}>토글 실패 — 다시 시도해 주세요.</p>
-      ) : null}
     </Card>
   );
 }

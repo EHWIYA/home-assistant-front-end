@@ -3,8 +3,14 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import type { StripChannel, StripChannelNumber } from "@/api/types";
 import { useStripChannelToggle, useStripState } from "@/hooks/useStrip";
-import { formatApiError } from "@/utils/apiMessages";
+import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
+import { useQueryErrorToast } from "@/hooks/useQueryErrorToast";
 import { formatUpdatedAt } from "@/utils/date";
+import {
+  TOAST_DEVICE,
+  TOAST_GUIDE,
+  TOAST_RESOURCE,
+} from "@/utils/toastMessages";
 import styles from "./StripPage.module.css";
 
 function channelLabel(ch: StripChannel): string {
@@ -27,6 +33,18 @@ export function StripPage() {
   const { data, isLoading, isError, error, refetch, isFetching } =
     useStripState();
   const channelMutation = useStripChannelToggle();
+  useQueryErrorToast({
+    isError,
+    error,
+    resourceLabel: TOAST_RESOURCE.stripStatus,
+    actionGuide: TOAST_GUIDE.checkNetworkAndApi,
+  });
+  useMutationErrorToast(
+    channelMutation,
+    TOAST_DEVICE.strip,
+    TOAST_GUIDE.retry,
+    "control",
+  );
 
   if (isLoading) {
     return <p className={styles.message}>멀티탭 상태 불러오는 중…</p>;
@@ -37,9 +55,7 @@ export function StripPage() {
       <div className={styles.offline}>
         <p className={styles.message}>멀티탭에 연결할 수 없습니다</p>
         <p className={styles.hint}>Tailscale·API 주소·API 키를 확인하세요.</p>
-        <p className={styles.errorDetail}>
-          {formatApiError(error, "알 수 없는 오류")}
-        </p>
+        <p className={styles.errorDetail}>멀티탭 상태 조회 실패</p>
         <Button onClick={() => void refetch()}>다시 시도</Button>
       </div>
     );
@@ -81,7 +97,7 @@ export function StripPage() {
               mutationError={
                 channelMutation.isError &&
                 channelMutation.variables?.channel === ch.channel
-                  ? channelMutation.error
+                  ? true
                   : null
               }
               onToggle={(on) =>
@@ -106,7 +122,7 @@ interface ChannelRowProps {
   channel: StripChannel;
   deviceOnline: boolean;
   pending: boolean;
-  mutationError: unknown;
+  mutationError: boolean | null;
   onToggle: (on: boolean) => void;
 }
 
@@ -128,11 +144,7 @@ function ChannelRow({
         <p className={`${styles.channelMeta} ${channelStateClass(channel.on)}`}>
           {channelStateText(channel.on)}
         </p>
-        {mutationError ? (
-          <p className={styles.errorDetail}>
-            {formatApiError(mutationError, "제어 실패")}
-          </p>
-        ) : null}
+        {mutationError ? <p className={styles.errorDetail}>제어 실패</p> : null}
       </div>
       <Button
         variant={isOn ? "danger" : "primary"}

@@ -8,7 +8,13 @@ import {
   usePatchSchedule,
   useSchedules,
 } from "@/hooks/useSchedules";
-import { formatApiError } from "@/utils/apiMessages";
+import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
+import { useQueryErrorToast } from "@/hooks/useQueryErrorToast";
+import {
+  TOAST_DEVICE,
+  TOAST_GUIDE,
+  TOAST_RESOURCE,
+} from "@/utils/toastMessages";
 import {
   DEFAULT_SCHEDULE_FORM,
   isValidTimeKst,
@@ -52,6 +58,24 @@ export function ScheduleFormPage() {
 
   const pending = createMutation.isPending || patchMutation.isPending;
   const mutationError = createMutation.error ?? patchMutation.error;
+  useQueryErrorToast({
+    isError: isEdit && schedulesQuery.isError,
+    error: schedulesQuery.error,
+    resourceLabel: TOAST_RESOURCE.schedules,
+    actionGuide: TOAST_GUIDE.backToListAndRetry,
+  });
+  useMutationErrorToast(
+    createMutation,
+    TOAST_DEVICE.schedule,
+    TOAST_GUIDE.saveRetry,
+    "control",
+  );
+  useMutationErrorToast(
+    patchMutation,
+    TOAST_DEVICE.schedule,
+    TOAST_GUIDE.saveRetry,
+    "control",
+  );
 
   function toggleDay(day: number) {
     setDaysOfWeek((prev) =>
@@ -104,6 +128,17 @@ export function ScheduleFormPage() {
 
   if (isEdit && schedulesQuery.isLoading) {
     return <p className={styles.hint}>스케줄 불러오는 중…</p>;
+  }
+
+  if (isEdit && schedulesQuery.isError) {
+    return (
+      <div className={styles.page}>
+        <p className={styles.errorDetail}>스케줄 조회 실패</p>
+        <Link to="/strip/schedules" className={styles.back}>
+          목록으로
+        </Link>
+      </div>
+    );
   }
 
   if (isEdit && id && schedulesQuery.data && !schedulesQuery.data.some((s) => s.id === id)) {
@@ -226,11 +261,7 @@ export function ScheduleFormPage() {
           {validationError ? (
             <p className={styles.errorDetail}>{validationError}</p>
           ) : null}
-          {mutationError ? (
-            <p className={styles.errorDetail}>
-              {formatApiError(mutationError, "저장 실패")}
-            </p>
-          ) : null}
+          {mutationError ? <p className={styles.errorDetail}>저장 실패</p> : null}
 
           <div className={styles.actions}>
             <Button type="submit" fullWidth disabled={pending}>

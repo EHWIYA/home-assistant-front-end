@@ -58,7 +58,6 @@ function PcQuickActions({
         pendingAction={mutation.variables}
         onOn={() => requestPcToggle("on", mutation.mutate)}
         onOff={() => requestPcToggle("off", mutation.mutate)}
-        error={mutation.isError}
       />
     </>
   );

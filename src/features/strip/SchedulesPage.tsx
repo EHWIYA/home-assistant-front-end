@@ -8,8 +8,14 @@ import {
   useScheduleRuns,
   useSchedules,
 } from "@/hooks/useSchedules";
-import { formatApiError } from "@/utils/apiMessages";
+import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
+import { useQueryErrorToast } from "@/hooks/useQueryErrorToast";
 import { formatExecutedAt } from "@/utils/date";
+import {
+  TOAST_DEVICE,
+  TOAST_GUIDE,
+  TOAST_RESOURCE,
+} from "@/utils/toastMessages";
 import {
   formatDaysOfWeek,
   formatScheduleAction,
@@ -20,6 +26,18 @@ export function SchedulesPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, error, refetch } = useSchedules();
   const deleteMutation = useDeleteSchedule();
+  useQueryErrorToast({
+    isError,
+    error,
+    resourceLabel: TOAST_RESOURCE.schedulesList,
+    actionGuide: TOAST_GUIDE.retry,
+  });
+  useMutationErrorToast(
+    deleteMutation,
+    TOAST_DEVICE.schedule,
+    TOAST_GUIDE.deleteRetry,
+    "control",
+  );
 
   return (
     <div className={styles.page}>
@@ -42,9 +60,7 @@ export function SchedulesPage() {
 
       {isError ? (
         <div>
-          <p className={styles.errorDetail}>
-            {formatApiError(error, "목록을 불러올 수 없습니다")}
-          </p>
+          <p className={styles.errorDetail}>스케줄 목록 조회 실패</p>
           <Button onClick={() => void refetch()}>다시 시도</Button>
         </div>
       ) : null}
@@ -81,11 +97,6 @@ export function SchedulesPage() {
               />
             ))}
           </ul>
-          {deleteMutation.isError ? (
-            <p className={styles.errorDetail}>
-              {formatApiError(deleteMutation.error, "삭제 실패")}
-            </p>
-          ) : null}
         </Card>
       ) : null}
     </div>
@@ -153,15 +164,18 @@ interface RunsPanelProps {
 }
 
 function RunsPanel({ loading, error, runs }: RunsPanelProps) {
+  useQueryErrorToast({
+    isError: Boolean(error),
+    error,
+    resourceLabel: TOAST_RESOURCE.scheduleRuns,
+    actionGuide: TOAST_GUIDE.retry,
+  });
+
   if (loading) {
     return <p className={styles.itemMeta}>이력 불러오는 중…</p>;
   }
   if (error) {
-    return (
-      <p className={styles.errorDetail}>
-        {formatApiError(error, "이력을 불러올 수 없습니다")}
-      </p>
-    );
+    return <p className={styles.errorDetail}>실행 이력 조회 실패</p>;
   }
   if (!runs?.length) {
     return <p className={styles.itemMeta}>실행 이력이 없습니다.</p>;

@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/Button";
 import type { StatusResponse } from "@/api/types";
+import { useQueryErrorToast } from "@/hooks/useQueryErrorToast";
 import { useStatus } from "@/hooks/useStatus";
+import { TOAST_GUIDE, TOAST_RESOURCE } from "@/utils/toastMessages";
 import styles from "./statusPage.module.css";
 
 export interface StatusQueryContext {
@@ -20,6 +22,12 @@ export function StatusQueryGate({
   children,
 }: StatusQueryGateProps) {
   const { data, isLoading, isError, error, refetch, isFetching } = useStatus();
+  useQueryErrorToast({
+    isError,
+    error,
+    resourceLabel: TOAST_RESOURCE.status,
+    actionGuide: TOAST_GUIDE.checkNetworkAndApiConfig,
+  });
 
   if (isLoading) {
     return <p className={styles.message}>{loadingMessage}</p>;
@@ -33,9 +41,7 @@ export function StatusQueryGate({
           Tailscale·API 주소를 확인하세요. 401이면 GitHub Secret{" "}
           <code>VITE_API_KEY</code> 후 재배포가 필요합니다.
         </p>
-        {error instanceof Error ? (
-          <p className={styles.errorDetail}>{error.message}</p>
-        ) : null}
+        <p className={styles.errorDetail}>상태 조회 실패</p>
         <Button onClick={() => void refetch()}>다시 시도</Button>
       </div>
     );

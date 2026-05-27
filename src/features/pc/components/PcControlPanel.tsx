@@ -5,8 +5,10 @@ import type { PcStatus } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { OnOffAction } from "@/api/types";
 import shared from "@/components/status/statusPage.module.css";
+import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
 import { formatEstimatedCostWon } from "@/utils/electricity";
 import { formatPowerW } from "@/utils/power";
+import { TOAST_DEVICE, TOAST_GUIDE } from "@/utils/toastMessages";
 import {
   getPcStatusLabel,
   isPcControllable,
@@ -22,6 +24,7 @@ interface PcControlPanelProps {
 export function PcControlPanel({ pc, mutation }: PcControlPanelProps) {
   const pcOn = pc.switch === "on";
   const controllable = isPcControllable(pc);
+  useMutationErrorToast(mutation, TOAST_DEVICE.pc, TOAST_GUIDE.retry, "control");
   const statusClass =
     pc.switch === "unavailable" || pc.switch === "unknown"
       ? styles.warn
@@ -70,7 +73,6 @@ export function PcControlPanel({ pc, mutation }: PcControlPanelProps) {
         pendingAction={mutation.variables}
         onOn={() => requestPcToggle("on", mutation.mutate)}
         onOff={() => requestPcToggle("off", mutation.mutate)}
-        error={mutation.isError}
       />
       <p className={shared.meta}>
         콘센트: <strong>{pcOn ? "ON" : "OFF"}</strong>

@@ -1,5 +1,5 @@
 import { Badge } from "@/components/status/Badge";
-import type { AcMode, StatusResponse } from "@/api/types";
+import type { StatusResponse } from "@/api/types";
 import {
   getAcAutoEnabledLabel,
   getAcAutoTransitionBadge,
@@ -12,14 +12,16 @@ interface AcStatusBadgesProps {
     StatusResponse,
     "ac_auto_enabled" | "ac_auto_state" | "ac_estimated_running"
   >;
-  mode: AcMode;
+  showSyncWarning: boolean;
+  syncWarningTitle?: string;
 }
 
-export function AcStatusBadges({ data, mode }: AcStatusBadgesProps) {
+export function AcStatusBadges({
+  data,
+  showSyncWarning,
+  syncWarningTitle = "전력 추정 상태와 AC 모드가 일시적으로 다릅니다.",
+}: AcStatusBadgesProps) {
   const transition = getAcAutoTransitionBadge(data.ac_auto_state);
-  const hasStateMismatch =
-    (!data.ac_estimated_running && mode !== "off") ||
-    (data.ac_estimated_running && mode === "off");
 
   return (
     <div className={shared.badgeRow}>
@@ -44,8 +46,8 @@ export function AcStatusBadges({ data, mode }: AcStatusBadgesProps) {
           가동 중(추정)
         </Badge>
       ) : null}
-      {hasStateMismatch ? (
-        <Badge variant="warn" title="전력 추정 상태와 AC 모드가 일시적으로 다릅니다.">
+      {showSyncWarning ? (
+        <Badge variant="warn" title={syncWarningTitle}>
           동기화 지연/재시도
         </Badge>
       ) : null}

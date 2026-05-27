@@ -1,8 +1,9 @@
 import { Button } from "@/components/Button";
+import { Badge } from "@/components/status/Badge";
 import type { StatusResponse } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { AcMode } from "@/api/types";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAcState } from "@/hooks/useStatus";
 import shared from "@/components/status/statusPage.module.css";
 import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
@@ -18,6 +19,20 @@ interface AcControlPanelProps {
   showDetails?: boolean;
 }
 
+const RECENT_SUCCESS_SUPPRESS_MS = 30_000;
+
+function parseControlTimestamp(raw: string | null | undefined): number | null {
+  if (!raw) {
+    return null;
+  }
+  const parsed = Date.parse(raw);
+  if (Number.isFinite(parsed)) {
+    return parsed;
+  }
+  const normalized = Date.parse(raw.replace(" ", "T"));
+  return Number.isFinite(normalized) ? normalized : null;
+}
+
 export function AcControlPanel({
   data,
   mutation,
@@ -27,9 +42,31 @@ export function AcControlPanel({
   const lastNonOffModeRef = useRef<Extract<AcMode, "cool" | "dry">>("cool");
   const mode = acStateQuery.data?.mode ?? "off";
   const isAutoMode = acStateQuery.data?.auto_mode ?? false;
+  const stateConsistent = acStateQuery.data?.state_consistent;
+  const stateSource = acStateQuery.data?.state_source;
+  const lastControlResult = acStateQuery.data?.last_control_result;
+  const lastControlAtMs = parseControlTimestamp(acStateQuery.data?.last_control_at);
   const hasStateMismatch =
     (!data.ac_estimated_running && mode !== "off") ||
     (data.ac_estimated_running && mode === "off");
+  const isInconsistent =
+    typeof stateConsistent === "boolean" ? !stateConsistent : hasStateMismatch;
+  const hasHardFailureSignal = mutation.isError || lastControlResult === "failed";
+  const hasFetchFailureSignal = acStateQuery.isError || acStateQuery.errorUpdateCount >= 2;
+  const isRecentSuccessfulControl =
+    lastControlResult === "success" &&
+    typeof lastControlAtMs === "number" &&
+    Date.now() - lastControlAtMs <= RECENT_SUCCESS_SUPPRESS_MS;
+  const showSyncWarning =
+    isInconsistent &&
+    (hasHardFailureSignal || hasFetchFailureSignal) &&
+    !isRecentSuccessfulControl;
+  const syncWarningTitle = stateSource
+    ? `상태 소스(${stateSource}) 기준으로 정합성 확인 중입니다.`
+    : "상태 소스 간 정합성 확인 중입니다.";
+  const [displayTemperature, setDisplayTemperature] = useState<number | "-">("-");
+  const [displayHumidity, setDisplayHumidity] = useState<number | "-">("-");
+  const [isClimateStale, setIsClimateStale] = useState(false);
 
   useMutationErrorToast(
     mutation,
@@ -49,6 +86,29 @@ export function AcControlPanel({
       lastNonOffModeRef.current = mode;
     }
   }, [mode]);
+
+  useEffect(() => {
+    const nextTemperature = acStateQuery.data?.temperature;
+    const nextHumidity = acStateQuery.data?.humidity;
+    const hasValidTemperature =
+      typeof nextTemperature === "number" && Number.isFinite(nextTemperature);
+    const hasValidHumidity =
+      typeof nextHumidity === "number" && Number.isFinite(nextHumidity);
+
+    if (hasValidTemperature) {
+      setDisplayTemperature(nextTemperature);
+    }
+    if (hasValidHumidity) {
+      setDisplayHumidity(nextHumidity);
+    }
+    if (hasValidTemperature || hasValidHumidity) {
+      setIsClimateStale(false);
+      return;
+    }
+    if (acStateQuery.isError) {
+      setIsClimateStale(true);
+    }
+  }, [acStateQuery.data?.humidity, acStateQuery.data?.temperature, acStateQuery.isError]);
 
   const rightButton = useMemo(() => {
     if (mode === "off") {
@@ -72,7 +132,13 @@ export function AcControlPanel({
 
   return (
     <>
-      {showDetails ? <AcStatusBadges data={data} mode={mode} /> : null}
+      {showDetails ? (
+        <AcStatusBadges
+          data={data}
+          showSyncWarning={showSyncWarning}
+          syncWarningTitle={syncWarningTitle}
+        />
+      ) : null}
       {showDetails ? (
         <p className={shared.meta}>
           가동 추정은 플러그 전력 기준 (IR·자동 전환 이력과 무관)
@@ -80,9 +146,15 @@ export function AcControlPanel({
       ) : null}
       {showDetails ? <AcPolicyDetails /> : null}
       <div className={styles.statusBox}>
+        {isClimateStale ? (
+          <div className={shared.badgeRow}>
+            <Badge variant="muted" title="재조회 지연으로 마지막 유효 센서값을 표시 중입니다.">
+              센서값 지연(stale)
+            </Badge>
+          </div>
+        ) : null}
         <p className={styles.statusText}>
-          현재 온도 {acStateQuery.data?.temperature ?? "-"}°C / 습도{" "}
-          {acStateQuery.data?.humidity ?? "-"}%
+          현재 온도 {displayTemperature}°C / 습도 {displayHumidity}%
         </p>
         <p className={styles.modeText}>모드: {modeText}</p>
       </div>
@@ -110,7 +182,7 @@ export function AcControlPanel({
       {acStateQuery.isError ? (
         <p className={shared.errorDetail}>상태 조회 실패 — 다시 시도해 주세요.</p>
       ) : null}
-      {hasStateMismatch ? (
+      {showSyncWarning ? (
         <p className={shared.blockedHint}>
           장치 상태 동기화 중입니다. 잠시 후 다시 시도해 주세요.
         </p>

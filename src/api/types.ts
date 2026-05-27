@@ -142,6 +142,14 @@ export interface AcStateResponse {
   humidity: number;
   mode: AcMode;
   auto_mode: boolean;
+  /** 백엔드 정합성 판정 결과 (power/mode/ac_auto_state 종합) */
+  state_consistent?: boolean;
+  /** 정합성 판정에 사용된 주 소스 설명 */
+  state_source?: string;
+  /** 마지막 제어 시각 (KST 문자열 또는 ISO), 없으면 null */
+  last_control_at?: string | null;
+  /** 마지막 제어 결과 */
+  last_control_result?: "success" | "failed" | null;
 }
 
 export interface PcActionRequest {

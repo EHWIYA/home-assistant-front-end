@@ -16,6 +16,17 @@ export { ApiError, hasApiKey, shouldUseMock as isUsingMock } from "./http";
 
 let mockAcMode: "off" | "cool" | "dry" = "cool";
 
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 export async function fetchStatus(): Promise<StatusResponse> {
   if (shouldUseMock()) {
     await new Promise((r) => setTimeout(r, 200));
@@ -92,7 +103,37 @@ export async function fetchAcState(): Promise<AcStateResponse> {
       auto_mode: status.ac_auto_enabled ?? false,
     };
   }
-  return apiRequest<AcStateResponse>("/api/v1/ac/state");
+  const raw = await apiRequest<Record<string, unknown>>("/api/v1/ac/state");
+  const normalizedTemperature =
+    toFiniteNumber(raw.temperature) ?? toFiniteNumber(raw.temperature_c);
+  const normalizedHumidity = toFiniteNumber(raw.humidity);
+  const normalizedMode = raw.mode;
+  const normalizedAutoMode = raw.auto_mode;
+
+  if (normalizedTemperature == null || normalizedHumidity == null) {
+    console.warn("[ac] invalid /api/v1/ac/state climate fields", raw);
+  }
+
+  return {
+    temperature: normalizedTemperature ?? NaN,
+    humidity: normalizedHumidity ?? NaN,
+    mode:
+      normalizedMode === "off" || normalizedMode === "cool" || normalizedMode === "dry"
+        ? normalizedMode
+        : "off",
+    auto_mode: typeof normalizedAutoMode === "boolean" ? normalizedAutoMode : false,
+    state_consistent:
+      typeof raw.state_consistent === "boolean" ? raw.state_consistent : undefined,
+    state_source: typeof raw.state_source === "string" ? raw.state_source : undefined,
+    last_control_at:
+      typeof raw.last_control_at === "string" || raw.last_control_at == null
+        ? (raw.last_control_at as string | null | undefined)
+        : undefined,
+    last_control_result:
+      raw.last_control_result === "success" || raw.last_control_result === "failed"
+        ? raw.last_control_result
+        : null,
+  };
 }
 
 export async function setPc(

@@ -1,5 +1,6 @@
 import { Card } from "@/components/Card";
 import type { IndoorClimate, WeatherOutdoor } from "@/api/types";
+import { formatTemperatureHumidity } from "@/utils/climate";
 import styles from "./ClimateSection.module.css";
 
 interface ClimateSectionProps {
@@ -22,7 +23,7 @@ export function ClimateSection({
             <p className={styles.label}>실내</p>
             {indoor ? (
               <p className={styles.value}>
-                {indoor.temperature}°C · 습도 {indoor.humidity}%
+                {formatTemperatureHumidity(indoor.temperature, indoor.humidity)}
               </p>
             ) : (
               <p className={styles.unavailable}>
@@ -34,8 +35,10 @@ export function ClimateSection({
             <p className={styles.label}>외기</p>
             {weatherOutdoor ? (
               <p className={styles.value}>
-                {weatherOutdoor.temperature}°C · 습도{" "}
-                {weatherOutdoor.humidity}%
+                {formatTemperatureHumidity(
+                  weatherOutdoor.temperature,
+                  weatherOutdoor.humidity,
+                )}
               </p>
             ) : (
               <p className={styles.unavailable}>데이터 없음</p>
@@ -51,7 +54,7 @@ export function ClimateSection({
       <Card title="실내">
         {indoor ? (
           <p className={styles.value}>
-            {indoor.temperature}°C · 습도 {indoor.humidity}%
+            {formatTemperatureHumidity(indoor.temperature, indoor.humidity)}
           </p>
         ) : (
           <p className={styles.unavailable}>
@@ -62,7 +65,10 @@ export function ClimateSection({
       {weatherOutdoor ? (
         <Card title="외기">
           <p className={styles.value}>
-            {weatherOutdoor.temperature}°C · 습도 {weatherOutdoor.humidity}%
+            {formatTemperatureHumidity(
+              weatherOutdoor.temperature,
+              weatherOutdoor.humidity,
+            )}
           </p>
         </Card>
       ) : null}

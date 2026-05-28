@@ -7,7 +7,7 @@ export function getPcStatusLabel(pc: PcStatus): string {
   if (pc.switch === "unavailable") return "제어 불가";
   if (pc.switch === "unknown") return "상태 알 수 없음";
   if (pc.switch === "off") return "콘센트 OFF";
-  if (pc.estimated_running) return "PC 동작 추정";
+  if (pc.estimated_running) return "PC 동작";
   return "대기/꺼짐 (콘센트 ON)";
 }
 

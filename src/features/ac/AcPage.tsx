@@ -1,7 +1,7 @@
 import { StatusQueryGate } from "@/components/status/StatusQueryGate";
 import { StatusFooter } from "@/components/status/StatusFooter";
 import { ClimateSection } from "@/components/status/ClimateSection";
-import { useAcAutoToggle, useAcControl, usePlugToggle } from "@/hooks/useStatus";
+import { useAcControl, usePlugToggle } from "@/hooks/useStatus";
 import shared from "@/components/status/statusPage.module.css";
 import { AcControlCard } from "./components/AcControlCard";
 import { PlugSection } from "./components/PlugSection";
@@ -10,7 +10,6 @@ import { SleepSection } from "./components/SleepSection";
 export function AcPage() {
   const plugMutation = usePlugToggle();
   const acMutation = useAcControl();
-  const acAutoToggleMutation = useAcAutoToggle();
 
   return (
     <StatusQueryGate loadingMessage="에어컨 상태 불러오는 중…">
@@ -30,7 +29,6 @@ export function AcPage() {
             <AcControlCard
               data={data}
               mutation={acMutation}
-              autoToggleMutation={acAutoToggleMutation}
             />
             <SleepSection />
             <StatusFooter data={data} />

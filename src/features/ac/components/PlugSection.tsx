@@ -55,7 +55,7 @@ export function PlugSection({
       <p className={shared.meta}>
         누적 {plug.energy_kwh.toFixed(2)} kWh
         {plug.estimated_cost_won != null
-          ? ` · 추정 ${formatEstimatedCostWon(plug.estimated_cost_won)}`
+          ? ` · ${formatEstimatedCostWon(plug.estimated_cost_won)}`
           : null}
         {" · "}현재 <strong>{plugOn ? "ON" : "OFF"}</strong>
       </p>
@@ -68,8 +68,8 @@ export function PlugSection({
         {mutation.isPending
           ? "처리 중…"
           : plugOn
-            ? "플러그 끄기"
-            : "플러그 켜기"}
+            ? "자동제어 끄기 (플러그 OFF)"
+            : "자동제어 켜기 (플러그 ON)"}
       </Button>
     </Card>
   );

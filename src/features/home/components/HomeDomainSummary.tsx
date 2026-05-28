@@ -38,7 +38,7 @@ export function HomeDomainSummary({
     acTransition.kind === "transition"
       ? acTransition.label
       : null,
-    status.ac_estimated_running ? "가동 추정" : null,
+    status.ac_estimated_running ? "가동" : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -51,7 +51,7 @@ export function HomeDomainSummary({
         </p>
         {status.plug.estimated_cost_won != null ? (
           <p className={styles.sub}>
-            누적 추정 {formatEstimatedCostWon(status.plug.estimated_cost_won)}
+            누적 {formatEstimatedCostWon(status.plug.estimated_cost_won)}
           </p>
         ) : null}
         <p className={styles.sub}>{acLine || "에어컨 상태 없음"}</p>

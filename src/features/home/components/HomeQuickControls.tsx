@@ -1,7 +1,6 @@
 import { Card } from "@/components/Card";
 import type { PcStatus, StatusResponse } from "@/api/types";
 import {
-  useAcAutoToggle,
   useAcControl,
   usePcToggle,
   usePlugToggle,
@@ -23,7 +22,6 @@ interface HomeQuickControlsProps {
 export function HomeQuickControls({ data }: HomeQuickControlsProps) {
   const plugMutation = usePlugToggle();
   const acMutation = useAcControl();
-  const acAutoToggleMutation = useAcAutoToggle();
   const pcMutation = usePcToggle();
 
   return (
@@ -34,7 +32,6 @@ export function HomeQuickControls({ data }: HomeQuickControlsProps) {
         <AcControlPanel
           data={data}
           mutation={acMutation}
-          autoToggleMutation={acAutoToggleMutation}
           showDetails={false}
         />
       </section>

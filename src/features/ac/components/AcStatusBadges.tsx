@@ -19,7 +19,7 @@ interface AcStatusBadgesProps {
 export function AcStatusBadges({
   data,
   showSyncWarning,
-  syncWarningTitle = "전력 추정 상태와 AC 모드가 일시적으로 다릅니다.",
+  syncWarningTitle = "전력 상태와 AC 모드가 일시적으로 다릅니다.",
 }: AcStatusBadgesProps) {
   const transition = getAcAutoTransitionBadge(data.ac_auto_state);
 
@@ -41,9 +41,9 @@ export function AcStatusBadges({
       {data.ac_estimated_running ? (
         <Badge
           variant="ok"
-          title="스마트플러그 전력 50W 초과 추정 — 자동 on/off 이력과 별도"
+          title="스마트플러그 전력 50W 초과 — 자동 on/off 이력과 별도"
         >
-          가동 중(추정)
+          가동 중
         </Badge>
       ) : null}
       {showSyncWarning ? (

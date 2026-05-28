@@ -1,4 +1,4 @@
-/** 추정 요금(원). null·undefined면 미표시용 "—". */
+/** 요금(원). null·undefined면 미표시용 "—". */
 export function formatEstimatedCostWon(won: number | null | undefined): string {
   if (won == null) return "—";
   return `${won.toLocaleString("ko-KR")}원`;

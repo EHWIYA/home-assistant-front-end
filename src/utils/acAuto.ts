@@ -50,7 +50,7 @@ export type AcAutoTransitionBadge =
   | { kind: "transition"; label: string; title?: string }
   | { kind: "no_record" };
 
-/** GET /status `ac_auto_state` → 자동 on/off 배지 (가동 추정과 분리) */
+/** GET /status `ac_auto_state` → 자동 on/off 배지 (가동 상태와 분리) */
 export function getAcAutoTransitionBadge(
   autoState: AcAutoState | null | undefined,
 ): AcAutoTransitionBadge {

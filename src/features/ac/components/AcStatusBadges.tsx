@@ -27,7 +27,7 @@ export function AcStatusBadges({
     <div className={shared.badgeRow}>
       <Badge
         variant={getAcAutoEnabledVariant(data.ac_auto_enabled)}
-        title="HA 자동 ON/OFF 마스터 (읽기 전용, 토글 API 2차)"
+        title="HA 자동 ON/OFF 마스터 상태"
       >
         {getAcAutoEnabledLabel(data.ac_auto_enabled)}
       </Badge>

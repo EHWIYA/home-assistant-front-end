@@ -1,6 +1,11 @@
 import { Card } from "@/components/Card";
 import type { PcStatus, StatusResponse } from "@/api/types";
-import { useAcControl, usePcToggle, usePlugToggle } from "@/hooks/useStatus";
+import {
+  useAcAutoToggle,
+  useAcControl,
+  usePcToggle,
+  usePlugToggle,
+} from "@/hooks/useStatus";
 import { AcControlPanel } from "@/features/ac/components/AcControlPanel";
 import { PlugSection } from "@/features/ac/components/PlugSection";
 import { OnOffActionButtons } from "@/components/status/OnOffActionButtons";
@@ -18,6 +23,7 @@ interface HomeQuickControlsProps {
 export function HomeQuickControls({ data }: HomeQuickControlsProps) {
   const plugMutation = usePlugToggle();
   const acMutation = useAcControl();
+  const acAutoToggleMutation = useAcAutoToggle();
   const pcMutation = usePcToggle();
 
   return (
@@ -28,6 +34,7 @@ export function HomeQuickControls({ data }: HomeQuickControlsProps) {
         <AcControlPanel
           data={data}
           mutation={acMutation}
+          autoToggleMutation={acAutoToggleMutation}
           showDetails={false}
         />
       </section>

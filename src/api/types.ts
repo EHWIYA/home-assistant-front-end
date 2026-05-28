@@ -1,6 +1,6 @@
 /** OpenAPI: https://iot-api.iwhya.kr/openapi.json */
 
-/** POST /api/v1/plug · /api/v1/ac · /api/v1/pc body `action` */
+/** POST /api/v1/plug · /api/v1/pc body `action` */
 export type OnOffAction = "on" | "off";
 
 /** GET /api/v1/status → pc.switch */
@@ -13,7 +13,7 @@ export interface OkResponse {
   ok: true;
 }
 
-/** POST /api/v1/ac 응답 (백엔드 부분실패/적용모드 포함 가능) */
+/** POST /api/v1/ac 응답 (수동 모드 제어) */
 export interface AcActionResponse {
   ok: boolean;
   applied_mode?: AcMode | null;
@@ -70,12 +70,6 @@ export interface ElectricityStatus {
   rate_won_per_kwh: number;
 }
 
-export interface PersonStatus {
-  state: string;
-  latitude: number;
-  longitude: number;
-}
-
 export interface WeatherOutdoor {
   temperature: number;
   humidity: number;
@@ -121,7 +115,6 @@ export interface StatusResponse {
   ac_auto_enabled?: boolean | null;
   /** 자동·수동 전환 이력. `null`: 미연동/비정상 */
   ac_auto_state?: AcAutoState | null;
-  person: PersonStatus;
   indoor: IndoorClimate | null;
   weather_outdoor: WeatherOutdoor | null;
   updated_at: string;
@@ -133,6 +126,18 @@ export interface PlugActionRequest {
 
 export interface AcActionRequest {
   mode: AcMode;
+}
+
+export interface AcAutoToggleRequest {
+  enabled: boolean;
+}
+
+export interface AcAutoToggleResponse {
+  ok: boolean;
+  request_id?: string;
+  auto_enabled?: boolean | null;
+  plug_switch?: OnOffAction | null;
+  error?: string | null;
 }
 
 export type AcMode = "off" | "cool" | "dry";

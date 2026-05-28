@@ -13,7 +13,6 @@ export function StatusFooter({ data }: StatusFooterProps) {
   return (
     <p className={styles.updated}>
       갱신: {formatUpdatedAt(data.updated_at)}
-      {data.person.state ? ` · ${data.person.state}` : ""}
       {rate != null ? ` · 단가 ${formatRateWonPerKwh(rate)}` : ""}
     </p>
   );

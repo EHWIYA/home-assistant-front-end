@@ -7,14 +7,20 @@ import { AcControlPanel } from "./AcControlPanel";
 interface AcControlCardProps {
   data: StatusResponse;
   mutation: UseMutationResult<unknown, Error, AcMode, unknown>;
+  autoToggleMutation: UseMutationResult<unknown, Error, boolean, unknown>;
 }
 
-export function AcControlCard({ data, mutation }: AcControlCardProps) {
+export function AcControlCard({
+  data,
+  mutation,
+  autoToggleMutation,
+}: AcControlCardProps) {
   return (
     <Card title="에어컨 제어">
       <AcControlPanel
         data={data}
         mutation={mutation}
+        autoToggleMutation={autoToggleMutation}
         showDetails
       />
     </Card>

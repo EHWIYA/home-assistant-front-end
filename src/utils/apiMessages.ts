@@ -8,6 +8,15 @@ export function formatApiError(error: unknown, fallback: string): string {
     if (error.code === "strip_not_configured") {
       return "멀티탭 서비스가 아직 설정되지 않았습니다. 백엔드 설정을 확인하세요.";
     }
+    if (error.code === "ac_auto_toggle_failed") {
+      return "자동제어 상태 변경에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+    }
+    if (error.code === "ac_auto_plug_sync_failed") {
+      return "자동제어는 변경되었지만 플러그 동기화에 실패했습니다. 상태를 확인해 주세요.";
+    }
+    if (error.code === "ac_auto_plug_state_mismatch") {
+      return "자동제어와 플러그 상태가 일치하지 않습니다. 새로고침 후 다시 시도해 주세요.";
+    }
     if (error.code?.startsWith("hejhome_")) {
       return `헤이홈 연동 오류: ${error.message}`;
     }

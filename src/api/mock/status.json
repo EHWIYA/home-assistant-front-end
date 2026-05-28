@@ -28,11 +28,6 @@
     "last_off": "2026-05-26 08:15:00",
     "last_transition": "2026-05-26 14:32:00"
   },
-  "person": {
-    "state": "home",
-    "latitude": 37.47,
-    "longitude": 126.89
-  },
   "indoor": {
     "temperature": 28.1,
     "humidity": 49.2

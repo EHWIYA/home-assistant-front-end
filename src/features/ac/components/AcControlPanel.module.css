@@ -19,6 +19,45 @@
   margin-top: 1rem;
 }
 
+.autoActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.autoEnable {
+  background: #2e7d32;
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+.autoEnable:hover:not(:disabled) {
+  background: #388e3c;
+}
+
+.autoDisable {
+  background: #8b1d1d;
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+.autoDisable:hover:not(:disabled) {
+  background: #a32525;
+}
+
+.autoStateOn {
+  box-shadow: inset 0 0 0 1px rgba(80, 220, 140, 0.45);
+}
+
+.autoStateOff {
+  box-shadow: inset 0 0 0 1px rgba(255, 180, 120, 0.45);
+}
+
+.autoStateUnknown {
+  box-shadow: none;
+  opacity: 0.8;
+}
+
 .rightOn {
   background: #2e7d32;
   color: #fff;

@@ -16,6 +16,7 @@ import styles from "./AcControlPanel.module.css";
 interface AcControlPanelProps {
   data: StatusResponse;
   mutation: UseMutationResult<unknown, Error, AcMode, unknown>;
+  autoToggleMutation: UseMutationResult<unknown, Error, boolean, unknown>;
   showDetails?: boolean;
 }
 
@@ -36,6 +37,7 @@ function parseControlTimestamp(raw: string | null | undefined): number | null {
 export function AcControlPanel({
   data,
   mutation,
+  autoToggleMutation,
   showDetails = true,
 }: AcControlPanelProps) {
   const acStateQuery = useAcState();
@@ -67,9 +69,24 @@ export function AcControlPanel({
   const [displayTemperature, setDisplayTemperature] = useState<number | "-">("-");
   const [displayHumidity, setDisplayHumidity] = useState<number | "-">("-");
   const [isClimateStale, setIsClimateStale] = useState(false);
+  const canToggleAuto = typeof data.ac_auto_enabled === "boolean";
+  const nextAutoEnabled = data.ac_auto_enabled !== true;
+  const nextPlugSwitchLabel = nextAutoEnabled ? "ON" : "OFF";
+  const autoStateClassName =
+    data.ac_auto_enabled === true
+      ? styles.autoStateOn
+      : data.ac_auto_enabled === false
+        ? styles.autoStateOff
+        : styles.autoStateUnknown;
 
   useMutationErrorToast(
     mutation,
+    TOAST_DEVICE.ac,
+    TOAST_GUIDE.syncRetry,
+    "sync",
+  );
+  useMutationErrorToast(
+    autoToggleMutation,
     TOAST_DEVICE.ac,
     TOAST_GUIDE.syncRetry,
     "sync",
@@ -139,6 +156,29 @@ export function AcControlPanel({
           syncWarningTitle={syncWarningTitle}
         />
       ) : null}
+      <div className={styles.autoActions}>
+        <Button
+          fullWidth
+          variant={nextAutoEnabled ? "secondary" : "danger"}
+          className={`${nextAutoEnabled ? styles.autoEnable : styles.autoDisable} ${autoStateClassName}`}
+          disabled={
+            autoToggleMutation.isPending ||
+            !canToggleAuto
+          }
+          onClick={() => autoToggleMutation.mutate(nextAutoEnabled)}
+        >
+          {autoToggleMutation.isPending
+            ? "처리 중…"
+            : nextAutoEnabled
+              ? "자동제어 켜기 (플러그 ON)"
+              : "자동제어 끄기 (플러그 OFF)"}
+        </Button>
+      </div>
+      {canToggleAuto ? (
+        <p className={shared.meta}>
+          토글 시 자동제어와 플러그가 함께 {nextPlugSwitchLabel}으로 전환됩니다.
+        </p>
+      ) : null}
       {showDetails ? (
         <p className={shared.meta}>
           가동 추정은 플러그 전력 기준 (IR·자동 전환 이력과 무관)
@@ -185,6 +225,11 @@ export function AcControlPanel({
       {showSyncWarning ? (
         <p className={shared.blockedHint}>
           장치 상태 동기화 중입니다. 잠시 후 다시 시도해 주세요.
+        </p>
+      ) : null}
+      {data.ac_auto_enabled == null ? (
+        <p className={shared.blockedHint}>
+          자동제어 상태를 확인할 수 없어 토글이 비활성화되었습니다.
         </p>
       ) : null}
     </>

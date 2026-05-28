@@ -1,11 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { fetchAcState, fetchStatus, setAc, setPc, setPlug } from "@/api/client";
+import {
+  fetchAcState,
+  fetchStatus,
+  setAc,
+  setAcAuto,
+  setPc,
+  setPlug,
+} from "@/api/client";
 import type {
   AcActionResponse,
+  AcAutoToggleResponse,
   AcMode,
   AcStateResponse,
   OnOffAction,
+  StatusResponse,
   PlugSwitch,
 } from "@/api/types";
 import {
@@ -32,6 +41,31 @@ function getAcControlErrorMessage(response: AcActionResponse, requestedMode: AcM
   }
   if (response.applied_mode && response.applied_mode !== requestedMode) {
     return `요청 모드(${requestedMode})와 적용 모드(${response.applied_mode})가 다릅니다.`;
+  }
+  return null;
+}
+
+function getAcAutoToggleErrorMessage(
+  response: AcAutoToggleResponse,
+  requestedEnabled: boolean,
+): string | null {
+  if (!response.ok) {
+    return response.error?.trim() || "자동제어 토글에 실패했습니다.";
+  }
+  if (response.error?.trim()) {
+    return response.error.trim();
+  }
+  if (
+    typeof response.auto_enabled === "boolean" &&
+    response.auto_enabled !== requestedEnabled
+  ) {
+    return "요청한 자동제어 상태와 적용 상태가 다릅니다.";
+  }
+  if (response.plug_switch) {
+    const expectedPlug = requestedEnabled ? "on" : "off";
+    if (response.plug_switch !== expectedPlug) {
+      return "자동제어와 플러그 상태가 일치하지 않습니다.";
+    }
   }
   return null;
 }
@@ -119,6 +153,57 @@ export function useAcState() {
     queryKey: AC_STATE_QUERY_KEY,
     queryFn: fetchAcState,
     staleTime: 0,
+  });
+}
+
+export function useAcAutoToggle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const response = await setAcAuto({ enabled });
+      const responseError = getAcAutoToggleErrorMessage(response, enabled);
+      if (responseError) {
+        throw new Error(responseError);
+      }
+      return response;
+    },
+    onMutate: async (enabled: boolean) => {
+      await queryClient.cancelQueries({ queryKey: STATUS_QUERY_KEY });
+      const previousStatus = queryClient.getQueryData<StatusResponse>(STATUS_QUERY_KEY);
+
+      if (previousStatus) {
+        queryClient.setQueryData<StatusResponse>(STATUS_QUERY_KEY, {
+          ...previousStatus,
+          ac_auto_enabled: enabled,
+          plug: {
+            ...previousStatus.plug,
+            switch: enabled ? "on" : "off",
+          },
+        });
+      }
+
+      return { previousStatus };
+    },
+    onError: (_error, _enabled, context) => {
+      if (context?.previousStatus) {
+        queryClient.setQueryData(STATUS_QUERY_KEY, context.previousStatus);
+      }
+    },
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.fetchQuery({
+          queryKey: AC_STATE_QUERY_KEY,
+          queryFn: fetchAcState,
+          staleTime: 0,
+        }),
+        queryClient.fetchQuery({
+          queryKey: STATUS_QUERY_KEY,
+          queryFn: fetchStatus,
+          staleTime: 0,
+        }),
+      ]);
+    },
   });
 }
 

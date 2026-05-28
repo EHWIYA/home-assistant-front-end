@@ -3,6 +3,8 @@ import mockStatus from "./mock/status.json";
 import type {
   AcActionRequest,
   AcActionResponse,
+  AcAutoToggleRequest,
+  AcAutoToggleResponse,
   AcStateResponse,
   PcActionRequest,
   PcActionResponse,
@@ -53,6 +55,27 @@ export async function setAc(action: AcActionRequest): Promise<AcActionResponse> 
     return { ok: true, applied_mode: action.mode, partial_failure: false };
   }
   return apiRequest<AcActionResponse>("/api/v1/ac", {
+    method: "POST",
+    body: JSON.stringify(action),
+  });
+}
+
+export async function setAcAuto(
+  action: AcAutoToggleRequest,
+): Promise<AcAutoToggleResponse> {
+  if (shouldUseMock()) {
+    await new Promise((r) => setTimeout(r, 300));
+    const status = mockStatus as StatusResponse;
+    status.ac_auto_enabled = action.enabled;
+    status.plug.switch = action.enabled ? "on" : "off";
+    return {
+      ok: true,
+      request_id: "mock-ac-auto-toggle",
+      auto_enabled: status.ac_auto_enabled,
+      plug_switch: status.plug.switch,
+    };
+  }
+  return apiRequest<AcAutoToggleResponse>("/api/v1/ac/auto", {
     method: "POST",
     body: JSON.stringify(action),
   });

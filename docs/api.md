@@ -20,10 +20,22 @@
 - EventSource 제약: `?api_key=<VITE_API_KEY>` 쿼리 인증 (REST 헤더와 동일 키)
 - PWA: 연결 성공 시 status 폴링 중단, 실패·끊김·탭 hidden 시 폴링 fallback (visible 12s / hidden 60s)
 
+## GET /api/v1/ac/state (OpenAPI 1.4.0+)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `mode` | `off` \| `cool` \| `dry` | HA `input_select.hwiya_ac_mode` |
+| `power` | `on` \| `off` | API 합성 가동 여부 |
+| `running_source` | `plug` \| `logical` 등 | 가동 판단 근거 |
+| `state_consistent` | `boolean` | mode·power·ac_auto_state 정합성 |
+| `state_source` | `string` | 디버그용 합성 설명 |
+
+PWA: 대시보드·배지의 「가동」은 `power` + `running_source` 우선. `power=off` 이고 `running_source=logical` 이면 「가동 중(저전력)」. `state_consistent=false` 이면 「동기화 중」 배지.
+
 ## POST /api/v1/ac
 
-- Body: `{ "action": "on" | "off" }`
-- 200: `{ "ok": true }` (plug 응답과 달리 `switch` 없음)
+- Body: `{ "mode": "off" | "cool" | "dry" }`
+- 200: `{ "ok": true, "applied_mode"?, "partial_failure"?, "error"? }`
 - 4xx `detail`:
   - 401/502/503/504: `{ "detail": { "detail": "<메시지>", "code": "<코드>" } }`
   - 422: `{ "detail": [ { "type", "loc", "msg", ... } ] }` (FastAPI 표준)
@@ -34,7 +46,7 @@
 - `plug.power_w`가 `null`이면 `false`
 - 실제 AC 전원/IR 상태가 아님. 제어는 `POST /api/v1/ac` 별도
 
-PWA 대시보드는 이 값을 **「에어컨 가동 추정」** 으로만 표시합니다 (`ac_auto_*` 와 구분).
+PWA: 플러그 50W 추정은 `/ac/state` 미수신 시 보조 fallback만. 일반 가동 표시는 `/ac/state`의 `power`·`running_source` (`ac_auto_*` 와 구분).
 
 ## GET /api/v1/status — `ac_auto_enabled` · `ac_auto_state` (OpenAPI 1.4.0+)
 

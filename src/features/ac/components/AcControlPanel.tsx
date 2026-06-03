@@ -41,15 +41,15 @@ export function AcControlPanel({
   const lastNonOffModeRef = useRef<Extract<AcMode, "cool" | "dry">>("cool");
   const mode = acStateQuery.data?.mode ?? "off";
   const isAutoMode = acStateQuery.data?.auto_mode ?? false;
-  const stateConsistent = acStateQuery.data?.state_consistent;
-  const stateSource = acStateQuery.data?.state_source;
-  const lastControlResult = acStateQuery.data?.last_control_result;
-  const lastControlAtMs = parseControlTimestamp(acStateQuery.data?.last_control_at);
-  const hasStateMismatch =
+  const acState = acStateQuery.data;
+  const stateConsistent = acState?.state_consistent;
+  const stateSource = acState?.state_source;
+  const runningSource = acState?.running_source;
+  const lastControlResult = acState?.last_control_result;
+  const lastControlAtMs = parseControlTimestamp(acState?.last_control_at);
+  const hasLegacyMismatch =
     (!data.ac_estimated_running && mode !== "off") ||
     (data.ac_estimated_running && mode === "off");
-  const isInconsistent =
-    typeof stateConsistent === "boolean" ? !stateConsistent : hasStateMismatch;
   const hasHardFailureSignal = mutation.isError || lastControlResult === "failed";
   const hasFetchFailureSignal = acStateQuery.isError || acStateQuery.errorUpdateCount >= 2;
   const isRecentSuccessfulControl =
@@ -57,12 +57,16 @@ export function AcControlPanel({
     typeof lastControlAtMs === "number" &&
     Date.now() - lastControlAtMs <= RECENT_SUCCESS_SUPPRESS_MS;
   const showSyncWarning =
-    isInconsistent &&
-    (hasHardFailureSignal || hasFetchFailureSignal) &&
-    !isRecentSuccessfulControl;
+    typeof stateConsistent === "boolean"
+      ? !stateConsistent
+      : hasLegacyMismatch &&
+        (hasHardFailureSignal || hasFetchFailureSignal) &&
+        !isRecentSuccessfulControl;
   const syncWarningTitle = stateSource
-    ? `상태 소스(${stateSource}) 기준으로 정합성 확인 중입니다.`
-    : "상태 소스 간 정합성 확인 중입니다.";
+    ? `state_consistent=false · ${stateSource}${runningSource ? ` · running_source=${runningSource}` : ""}`
+    : runningSource
+      ? `정합성 확인 중 · running_source=${runningSource}`
+      : "mode·power·ac_auto_state 정합성 확인 중입니다.";
 
   useMutationErrorToast(
     mutation,
@@ -108,18 +112,31 @@ export function AcControlPanel({
       {showDetails ? (
         <AcStatusBadges
           data={data}
+          acState={acState}
           showSyncWarning={showSyncWarning}
           syncWarningTitle={syncWarningTitle}
         />
       ) : null}
       {showDetails ? (
         <p className={shared.meta}>
-          가동 판단은 플러그 전력 기준 (IR·자동 전환 이력과 무관)
+          가동 표시는 /ac/state(power·running_source) 우선. status의 50W 추정은
+          미수신 시에만 보조합니다.
         </p>
       ) : null}
       {showDetails ? <AcPolicyDetails /> : null}
       <div className={styles.statusBox}>
         <p className={styles.modeText}>모드: {modeText}</p>
+        {mode === "cool" ? (
+          <p className={shared.meta}>
+            냉방(cool) — 일반 냉방. 29°C 근처에서는 cool 선택이 필요합니다.
+          </p>
+        ) : null}
+        {mode === "dry" ? (
+          <p className={shared.meta}>
+            제습(dry) — 저전력 IR 가동. 콘센트 전력이 낮아도 가동 중(저전력)으로
+            표시될 수 있습니다.
+          </p>
+        ) : null}
       </div>
       <div className={styles.actions}>
         <Button
@@ -147,7 +164,8 @@ export function AcControlPanel({
       ) : null}
       {showSyncWarning ? (
         <p className={shared.blockedHint}>
-          장치 상태 동기화 중입니다. 잠시 후 다시 시도해 주세요.
+          장치 상태 동기화 중입니다. running_source·모드가 맞는지 확인한 뒤
+          잠시 후 다시 시도해 주세요.
         </p>
       ) : null}
     </>

@@ -147,6 +147,10 @@ export interface AcStateResponse {
   humidity: number;
   mode: AcMode;
   auto_mode: boolean;
+  /** API 합성 가동 여부 (플러그·IR·ac_auto_state 종합) */
+  power?: "on" | "off";
+  /** 가동 판단 근거 — plug(≥50W), logical(저전력 IR 등) */
+  running_source?: string;
   /** 백엔드 정합성 판정 결과 (power/mode/ac_auto_state 종합) */
   state_consistent?: boolean;
   /** 정합성 판정에 사용된 주 소스 설명 */

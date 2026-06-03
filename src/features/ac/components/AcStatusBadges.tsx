@@ -1,10 +1,11 @@
 import { Badge } from "@/components/status/Badge";
-import type { StatusResponse } from "@/api/types";
+import type { AcStateResponse, StatusResponse } from "@/api/types";
 import {
   getAcAutoEnabledLabel,
   getAcAutoTransitionBadge,
 } from "@/utils/acAuto";
 import { getAcAutoEnabledVariant } from "@/utils/acAutoBadge";
+import { getAcRunningBadge } from "@/utils/acRunning";
 import shared from "@/components/status/statusPage.module.css";
 
 interface AcStatusBadgesProps {
@@ -12,16 +13,19 @@ interface AcStatusBadgesProps {
     StatusResponse,
     "ac_auto_enabled" | "ac_auto_state" | "ac_estimated_running"
   >;
+  acState?: Pick<AcStateResponse, "power" | "running_source" | "mode">;
   showSyncWarning: boolean;
   syncWarningTitle?: string;
 }
 
 export function AcStatusBadges({
   data,
+  acState,
   showSyncWarning,
-  syncWarningTitle = "전력 상태와 AC 모드가 일시적으로 다릅니다.",
+  syncWarningTitle = "mode·power·ac_auto_state 정합성 확인 중입니다.",
 }: AcStatusBadgesProps) {
   const transition = getAcAutoTransitionBadge(data.ac_auto_state);
+  const runningBadge = getAcRunningBadge(acState, data.ac_estimated_running);
 
   return (
     <div className={shared.badgeRow}>
@@ -38,17 +42,14 @@ export function AcStatusBadges({
       ) : (
         <Badge variant="muted">자동 기록 없음</Badge>
       )}
-      {data.ac_estimated_running ? (
-        <Badge
-          variant="ok"
-          title="스마트플러그 전력 50W 초과 — 자동 on/off 이력과 별도"
-        >
-          가동 중
+      {runningBadge ? (
+        <Badge variant={runningBadge.variant} title={runningBadge.title}>
+          {runningBadge.label}
         </Badge>
       ) : null}
       {showSyncWarning ? (
         <Badge variant="warn" title={syncWarningTitle}>
-          동기화 지연/재시도
+          동기화 중
         </Badge>
       ) : null}
     </div>

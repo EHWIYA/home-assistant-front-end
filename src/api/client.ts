@@ -96,11 +96,19 @@ export async function fetchAcState(): Promise<AcStateResponse> {
   if (shouldUseMock()) {
     await new Promise((r) => setTimeout(r, 150));
     const status = mockStatus as StatusResponse;
+    const plugW = status.plug.power_w ?? 0;
+    const plugHigh = plugW >= 50;
+    const mode = mockAcMode;
     return {
       temperature: status.indoor?.temperature ?? 27.5,
       humidity: status.indoor?.humidity ?? 50,
-      mode: mockAcMode,
+      mode,
       auto_mode: status.ac_auto_enabled ?? false,
+      power: mode === "off" ? "off" : plugHigh ? "on" : "off",
+      running_source:
+        mode === "off" ? undefined : plugHigh ? "plug" : "logical",
+      state_consistent: true,
+      state_source: "mock",
     };
   }
   const raw = await apiRequest<Record<string, unknown>>("/api/v1/ac/state");
@@ -122,6 +130,12 @@ export async function fetchAcState(): Promise<AcStateResponse> {
         ? normalizedMode
         : "off",
     auto_mode: typeof normalizedAutoMode === "boolean" ? normalizedAutoMode : false,
+    power:
+      raw.power === "on" || raw.power === "off"
+        ? raw.power
+        : undefined,
+    running_source:
+      typeof raw.running_source === "string" ? raw.running_source : undefined,
     state_consistent:
       typeof raw.state_consistent === "boolean" ? raw.state_consistent : undefined,
     state_source: typeof raw.state_source === "string" ? raw.state_source : undefined,

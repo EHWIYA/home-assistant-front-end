@@ -149,10 +149,14 @@ export function useAcControl() {
 }
 
 export function useAcState() {
+  const refetchInterval = usePollingIntervalMs();
+
   return useQuery({
     queryKey: AC_STATE_QUERY_KEY,
     queryFn: fetchAcState,
     staleTime: 0,
+    refetchInterval,
+    refetchIntervalInBackground: false,
   });
 }
 

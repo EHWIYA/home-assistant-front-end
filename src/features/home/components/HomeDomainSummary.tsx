@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/Card";
 import type { PcStatus, StatusResponse } from "@/api/types";
 import type { StripStateResponse } from "@/api/types";
+import { useAcState } from "@/hooks/useStatus";
 import {
   getAcAutoEnabledLabel,
   getAcAutoTransitionBadge,
 } from "@/utils/acAuto";
+import { getAcRunningSummaryLabel } from "@/utils/acRunning";
 import { formatClimateLine } from "@/utils/climate";
 import { formatEstimatedCostWon } from "@/utils/electricity";
 import { formatPowerW } from "@/utils/power";
@@ -31,14 +33,19 @@ export function HomeDomainSummary({
   strip,
   stripLoading,
 }: HomeDomainSummaryProps) {
+  const acStateQuery = useAcState();
   const plugOn = status.plug.switch === "on";
   const acTransition = getAcAutoTransitionBadge(status.ac_auto_state);
+  const runningSummary = getAcRunningSummaryLabel(
+    acStateQuery.data,
+    status.ac_estimated_running,
+  );
   const acLine = [
     getAcAutoEnabledLabel(status.ac_auto_enabled),
     acTransition.kind === "transition"
       ? acTransition.label
       : null,
-    status.ac_estimated_running ? "가동" : null,
+    runningSummary,
   ]
     .filter(Boolean)
     .join(" · ");

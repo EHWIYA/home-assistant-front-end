@@ -17,7 +17,11 @@ import {
   buildAcOperatingModeSwitchRequest,
   deriveAcOperatingMode,
 } from "@/utils/acOperatingMode";
-import { getAcModeDisplayText, resolveAcUiActionMode } from "@/utils/acMode";
+import {
+  getAcModeDisplayText,
+  isAcPowerOff,
+  resolveAcUiActionMode,
+} from "@/utils/acMode";
 import { TOAST_DEVICE, TOAST_GUIDE, TOAST_RESOURCE } from "@/utils/toastMessages";
 import styles from "./AcModeControls.module.css";
 
@@ -80,6 +84,7 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
   const actionOptions = getAcActionOptions(operatingMode, mode);
   const actionColumns = actionOptions.length >= 4 ? 2 : 3;
   const uiActionMode = resolveAcUiActionMode(mode, operatingMode);
+  const acPowerOff = isAcPowerOff(acState?.power, data.ac_auto_state);
   const modeDisplay = getAcModeDisplayText({
     mode,
     power: acState?.power,
@@ -116,7 +121,7 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
 
   return (
     <section
-      className={styles.card}
+      className={`${styles.card} ${acPowerOff ? styles.cardPowerOff : ""}`.trim()}
       style={{ "--ac-accent": theme.accent } as CSSProperties}
       aria-label="에어컨 제어"
     >
@@ -137,7 +142,8 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
 
         <div className={styles.opGrid} role="group" aria-label={getOperatingSectionTitle()}>
           {OPERATING_OPTIONS.map((option) => {
-            const active = operatingMode === option.operatingMode;
+            const active =
+              !acPowerOff && operatingMode === option.operatingMode;
             const pending = isPendingFor(mutation, (p) =>
               matchesOperatingMode(p, option.operatingMode),
             );
@@ -179,7 +185,7 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
           aria-label={getActionSectionTitle(operatingMode)}
         >
           {actionOptions.map((option) => {
-            const active = uiActionMode === option.mode;
+            const active = !acPowerOff && uiActionMode === option.mode;
             const pending = isPendingFor(mutation, (p) => matchesModeChange(p, option.mode, operatingMode));
             return (
               <button

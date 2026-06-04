@@ -144,7 +144,8 @@
     border-color 0.15s ease,
     box-shadow 0.15s ease,
     color 0.15s ease,
-    transform 0.12s ease;
+    transform 0.12s ease,
+    filter 0.15s ease;
 }
 
 .actionTile {
@@ -325,6 +326,27 @@
 .actionTileBlocked {
   border-style: dashed;
   opacity: 0.38;
+}
+
+/* 전원 꺼짐 — 톤별 색 유지, 채도만 1~2단계 낮춤 */
+
+.cardPowerOff .iconPill,
+.cardPowerOff .stepBadge,
+.cardPowerOff .title,
+.cardPowerOff .sectionTitle,
+.cardPowerOff .currentAction {
+  filter: saturate(0.72);
+}
+
+.cardPowerOff .opTile:not(:disabled),
+.cardPowerOff .actionTile:not(:disabled):not(.actionTileBlocked) {
+  filter: saturate(0.68) brightness(0.96);
+}
+
+.cardPowerOff .opTile:not(:disabled):not(.opTileActive):hover,
+.cardPowerOff
+  .actionTile:not(:disabled):not(.actionTileActive):not(.actionTileBlocked):hover {
+  filter: saturate(0.9) brightness(1);
 }
 
 .errorDetail {

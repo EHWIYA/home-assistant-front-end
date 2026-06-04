@@ -3,6 +3,8 @@ import { StatusFooter } from "@/components/status/StatusFooter";
 import { usePcToggle } from "@/hooks/useStatus";
 import shared from "@/components/status/statusPage.module.css";
 import { PcControlPanel } from "./components/PcControlPanel";
+import { PcEnergyPanel } from "./components/PcEnergyPanel";
+import { PcStatusHero } from "./components/PcStatusHero";
 
 export function PcPage() {
   const pcMutation = usePcToggle();
@@ -12,7 +14,11 @@ export function PcPage() {
       {({ data }) => (
         <div className={shared.page}>
           {data.pc ? (
-            <PcControlPanel pc={data.pc} mutation={pcMutation} />
+            <>
+              <PcStatusHero pc={data.pc} />
+              <PcEnergyPanel pc={data.pc} />
+              <PcControlPanel pc={data.pc} mutation={pcMutation} />
+            </>
           ) : (
             <p className={shared.message}>
               PC(Tapo) 정보가 API 응답에 없습니다. 백엔드·OpenAPI 버전을

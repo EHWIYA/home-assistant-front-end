@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { paths } from "@/routes/paths";
 import chevronSvg from "cupertino-icons-svg/svg/chevron_right.svg?raw";
 import desktopSvg from "cupertino-icons-svg/svg/desktopcomputer.svg?raw";
 import snowSvg from "cupertino-icons-svg/svg/snow.svg?raw";
@@ -60,7 +61,7 @@ export function HomeDomainSummary({
   return (
     <div className={styles.grid}>
       <DomainCard
-        to="/ac"
+        to={paths.ac}
         title="에어컨"
         icon={snowSvg}
         theme={acTheme}
@@ -84,7 +85,7 @@ export function HomeDomainSummary({
 
       {status.pc ? (
         <DomainCard
-          to="/pc"
+          to={paths.pc}
           title="PC"
           icon={desktopSvg}
           theme={pcTheme}
@@ -106,7 +107,7 @@ export function HomeDomainSummary({
         />
       ) : (
         <DomainCard
-          to="/pc"
+          to={paths.pc}
           title="PC"
           icon={desktopSvg}
           theme={pcTheme}
@@ -116,7 +117,7 @@ export function HomeDomainSummary({
       )}
 
       <DomainCard
-        to="/strip"
+        to={paths.strip}
         title="멀티탭"
         icon={powerSvg}
         theme={stripTheme}

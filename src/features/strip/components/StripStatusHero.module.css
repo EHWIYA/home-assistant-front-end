@@ -1,0 +1,135 @@
+.card {
+  position: relative;
+  background: #1a222c;
+  border-radius: 16px;
+  padding: 1rem 1.125rem;
+  border: 1px solid #2a323c;
+  border-left: 3px solid var(--strip-accent, #e8b84a);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.iconPill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  background: rgba(232, 184, 74, 0.14);
+  color: var(--strip-accent, #e8b84a);
+  flex-shrink: 0;
+}
+
+.iconPill svg {
+  width: 1rem;
+  height: 1rem;
+  display: block;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.scheduleLink {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #5b9fd4;
+  text-decoration: none;
+}
+
+.scheduleLink:hover {
+  text-decoration: underline;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusLabel {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.modeSub {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.625rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pillMuted {
+  background: rgba(255, 255, 255, 0.05);
+  color: #6b7280;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pillWarn {
+  background: rgba(240, 173, 78, 0.12);
+  color: #f0ad4e;
+  border: 1px solid rgba(240, 173, 78, 0.3);
+}
+
+.pillOk {
+  background: rgba(126, 200, 138, 0.12);
+  color: #7ec88a;
+  border: 1px solid rgba(126, 200, 138, 0.3);
+}
+
+.bannerOffline {
+  margin: 0.625rem 0 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #ef9a9a;
+  background: rgba(61, 42, 42, 0.6);
+  border: 1px solid rgba(229, 115, 115, 0.25);
+}

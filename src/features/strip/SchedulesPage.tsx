@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { paths } from "@/routes/paths";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import type { Schedule, ScheduleRun } from "@/api/types";
@@ -42,14 +43,14 @@ export function SchedulesPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link to="/strip" className={styles.back}>
+        <Link to={paths.strip} className={styles.back}>
           ← 멀티탭
         </Link>
         <h2 className={styles.title}>스케줄</h2>
       </header>
 
       <div className={styles.toolbar}>
-        <Button onClick={() => navigate("/strip/schedules/new")}>
+        <Button onClick={() => navigate(paths.stripSchedulesNew)}>
           새 스케줄
         </Button>
       </div>
@@ -83,7 +84,7 @@ export function SchedulesPage() {
                   deleteMutation.variables === schedule.id
                 }
                 onEdit={() =>
-                  navigate(`/strip/schedules/${schedule.id}/edit`)
+                  navigate(paths.stripScheduleEdit(schedule.id))
                 }
                 onDelete={() => {
                   if (

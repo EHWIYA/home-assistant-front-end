@@ -1,0 +1,29 @@
+.card {
+  padding: 1rem 1.125rem;
+  border-radius: 16px;
+  border: 1px solid #2a323c;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+
+.name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e8eaed;
+}
+
+.desc {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+  line-height: 1.5;
+}
+
+.version {
+  margin: 0.625rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.03em;
+}

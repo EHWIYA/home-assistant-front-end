@@ -1,5 +1,10 @@
 /** 홈 도메인 accent 색상 */
 export const HOME_DOMAIN_THEME = {
+  home: {
+    accent: "#5b9fd4",
+    accentSoft: "rgba(91, 159, 212, 0.14)",
+    accentGlow: "rgba(91, 159, 212, 0.35)",
+  },
   ac: {
     accent: "#5b9fd4",
     accentSoft: "rgba(91, 159, 212, 0.14)",
@@ -14,6 +19,11 @@ export const HOME_DOMAIN_THEME = {
     accent: "#e8b84a",
     accentSoft: "rgba(232, 184, 74, 0.14)",
     accentGlow: "rgba(232, 184, 74, 0.35)",
+  },
+  settings: {
+    accent: "#8b9eb0",
+    accentSoft: "rgba(139, 158, 176, 0.14)",
+    accentGlow: "rgba(139, 158, 176, 0.35)",
   },
 } as const;
 

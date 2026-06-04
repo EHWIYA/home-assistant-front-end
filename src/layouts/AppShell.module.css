@@ -15,6 +15,10 @@
   padding: 1rem;
 }
 
+.mainNoTabBar {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
 .tabBar {
   display: flex;
   flex-shrink: 0;

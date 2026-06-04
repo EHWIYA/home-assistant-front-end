@@ -1,0 +1,136 @@
+.card {
+  background: #1a222c;
+  border-radius: 16px;
+  padding: 1rem 1.125rem;
+  border: 1px solid #2a323c;
+  border-left: 3px solid var(--strip-accent, #e8b84a);
+}
+
+.title {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid #2a323c;
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 0;
+}
+
+.tileOn {
+  border-color: rgba(232, 184, 74, 0.35);
+  background: rgba(232, 184, 74, 0.06);
+}
+
+.tileOff {
+  border-color: #2a323c;
+}
+
+.channelNum {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.channelTitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channelState {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.stateOn {
+  color: #e8b84a;
+}
+
+.stateOff {
+  color: #9aa0a6;
+}
+
+.stateUnknown {
+  color: #f0ad4e;
+}
+
+.errorDetail {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #e57373;
+}
+
+.toggleBtn {
+  margin-top: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.toggleBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.toggleBtn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.toggleBtnOff {
+  background: rgba(232, 184, 74, 0.18);
+  border-color: rgba(232, 184, 74, 0.35);
+  color: #ffe082;
+}
+
+.toggleBtnOff:not(:disabled):hover {
+  background: rgba(232, 184, 74, 0.28);
+  border-color: #e8b84a;
+}
+
+.toggleBtnOn {
+  background: rgba(183, 77, 77, 0.25);
+  border-color: rgba(229, 115, 115, 0.35);
+  color: #ffcdd2;
+}
+
+.toggleBtnOn:not(:disabled):hover {
+  background: rgba(183, 77, 77, 0.38);
+  border-color: #e57373;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { paths } from "@/routes/paths";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import type { ScheduleCreateBody, StripChannelNumber } from "@/api/types";
@@ -117,11 +118,11 @@ export function ScheduleFormPage() {
     if (isEdit && id) {
       patchMutation.mutate(
         { id, body },
-        { onSuccess: () => navigate("/strip/schedules") },
+        { onSuccess: () => navigate(paths.stripSchedules) },
       );
     } else {
       createMutation.mutate(body, {
-        onSuccess: () => navigate("/strip/schedules"),
+        onSuccess: () => navigate(paths.stripSchedules),
       });
     }
   }
@@ -134,7 +135,7 @@ export function ScheduleFormPage() {
     return (
       <div className={styles.page}>
         <p className={styles.errorDetail}>스케줄 조회 실패</p>
-        <Link to="/strip/schedules" className={styles.back}>
+        <Link to={paths.stripSchedules} className={styles.back}>
           목록으로
         </Link>
       </div>
@@ -145,7 +146,7 @@ export function ScheduleFormPage() {
     return (
       <div className={styles.page}>
         <p className={styles.errorDetail}>스케줄을 찾을 수 없습니다.</p>
-        <Link to="/strip/schedules" className={styles.back}>
+        <Link to={paths.stripSchedules} className={styles.back}>
           목록으로
         </Link>
       </div>
@@ -154,7 +155,7 @@ export function ScheduleFormPage() {
 
   return (
     <div className={styles.page}>
-      <Link to="/strip/schedules" className={styles.back}>
+      <Link to={paths.stripSchedules} className={styles.back}>
         ← 스케줄 목록
       </Link>
       <h2 className={styles.title}>
@@ -272,7 +273,7 @@ export function ScheduleFormPage() {
               variant="secondary"
               fullWidth
               disabled={pending}
-              onClick={() => navigate("/strip/schedules")}
+              onClick={() => navigate(paths.stripSchedules)}
             >
               취소
             </Button>

@@ -1,32 +1,12 @@
-import { useLocation } from "react-router-dom";
 import houseFillSvg from "cupertino-icons-svg/svg/house_fill.svg?raw";
 import { isUsingMock } from "@/api/client";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { BRAND } from "@/config/brand";
+import { useAppRouteHandle } from "@/routes/handle";
 import styles from "./AppHeader.module.css";
 
-function getPageSubtitle(pathname: string): string {
-  if (pathname === "/" || pathname === "") {
-    return "홈";
-  }
-  if (pathname.startsWith("/ac")) {
-    return "에어컨";
-  }
-  if (pathname.startsWith("/pc")) {
-    return "PC";
-  }
-  if (pathname.startsWith("/strip")) {
-    return "멀티탭";
-  }
-  if (pathname.startsWith("/settings")) {
-    return "설정";
-  }
-  return BRAND.tagline;
-}
-
 export function AppHeader() {
-  const { pathname } = useLocation();
-  const subtitle = getPageSubtitle(pathname);
+  const { pageTitle } = useAppRouteHandle();
   const mock = isUsingMock();
 
   return (
@@ -42,7 +22,7 @@ export function AppHeader() {
               <span className={styles.brandPrimary}>{BRAND.wordPrimary}</span>
               <span className={styles.brandAccent}>{BRAND.wordAccent}</span>
             </p>
-            <p className={styles.subtitle}>{subtitle}</p>
+            <p className={styles.subtitle}>{pageTitle}</p>
           </div>
         </div>
 

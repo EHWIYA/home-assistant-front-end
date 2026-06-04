@@ -13,10 +13,14 @@ export interface OkResponse {
   ok: true;
 }
 
-/** POST /api/v1/ac 응답 (수동 모드 제어) */
+/** POST /api/v1/ac 응답 */
 export interface AcActionResponse {
   ok: boolean;
+  request_id?: string | null;
   applied_mode?: AcMode | null;
+  power?: "on" | "off" | null;
+  auto_enabled?: boolean | null;
+  away_enabled?: boolean | null;
   partial_failure?: boolean;
   error?: string | null;
 }
@@ -113,6 +117,12 @@ export interface StatusResponse {
    * `null`: 엔티티 없음/비정상. 변경 API는 2차(읽기 전용 배지).
    */
   ac_auto_enabled?: boolean | null;
+  /** HA 외출 스마트 모드 — OpenAPI 1.5.0+ */
+  ac_away_enabled?: boolean | null;
+  /** HA `input_select.hwiya_ac_mode` — OpenAPI 1.5.0+ */
+  ac_mode?: AcMode | null;
+  /** mode=auto 가동 중 실제 IR 모드(cool/dry) — OpenAPI 1.5.0+ */
+  ac_last_run_mode?: AcLastRunMode | null;
   /** 자동·수동 전환 이력. `null`: 미연동/비정상 */
   ac_auto_state?: AcAutoState | null;
   indoor: IndoorClimate | null;
@@ -124,8 +134,14 @@ export interface PlugActionRequest {
   action: OnOffAction;
 }
 
+export type AcLastRunMode = "cool" | "dry";
+
 export interface AcActionRequest {
   mode: AcMode;
+  /** HA 자동 ON/OFF 마스터 — 미전송 시 유지 */
+  auto_enabled?: boolean | null;
+  /** 외출 스마트 모드 — 미전송 시 유지 */
+  away_enabled?: boolean | null;
 }
 
 export interface AcAutoToggleRequest {
@@ -140,13 +156,18 @@ export interface AcAutoToggleResponse {
   error?: string | null;
 }
 
-export type AcMode = "off" | "cool" | "dry";
+export type AcMode = "off" | "auto" | "cool" | "dry";
 
 export interface AcStateResponse {
   temperature: number;
   humidity: number;
   mode: AcMode;
-  auto_mode: boolean;
+  /** HA 자동 ON/OFF 마스터 */
+  auto_enabled: boolean;
+  /** HA 외출 스마트 모드 */
+  away_enabled: boolean;
+  /** mode=auto·가동 중 마지막 cool/dry */
+  last_run_mode?: AcLastRunMode | null;
   /** API 합성 가동 여부 (플러그·IR·ac_auto_state 종합) */
   power?: "on" | "off";
   /** 가동 판단 근거 — plug(≥50W), logical(저전력 IR 등) */

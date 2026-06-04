@@ -4,14 +4,12 @@ import {
   fetchAcState,
   fetchStatus,
   setAc,
-  setAcAuto,
   setPc,
   setPlug,
 } from "@/api/client";
 import type {
+  AcActionRequest,
   AcActionResponse,
-  AcAutoToggleResponse,
-  AcMode,
   AcStateResponse,
   OnOffAction,
   StatusResponse,
@@ -26,7 +24,12 @@ import { useStatusStream } from "@/hooks/useStatusStream";
 export const STATUS_QUERY_KEY = ["status"] as const;
 export const AC_STATE_QUERY_KEY = ["ac-state"] as const;
 
-function getAcControlErrorMessage(response: AcActionResponse, requestedMode: AcMode): string | null {
+export type AcControlParams = AcActionRequest;
+
+function getAcControlErrorMessage(
+  response: AcActionResponse,
+  requested: AcControlParams,
+): string | null {
   if (!response.ok) {
     return response.error?.trim() || "에어컨 제어에 실패했습니다.";
   }
@@ -39,35 +42,73 @@ function getAcControlErrorMessage(response: AcActionResponse, requestedMode: AcM
   if (response.error?.trim()) {
     return response.error.trim();
   }
-  if (response.applied_mode && response.applied_mode !== requestedMode) {
-    return `요청 모드(${requestedMode})와 적용 모드(${response.applied_mode})가 다릅니다.`;
+  if (response.applied_mode && response.applied_mode !== requested.mode) {
+    return `요청 모드(${requested.mode})와 적용 모드(${response.applied_mode})가 다릅니다.`;
+  }
+  if (
+    typeof requested.auto_enabled === "boolean" &&
+    typeof response.auto_enabled === "boolean" &&
+    response.auto_enabled !== requested.auto_enabled
+  ) {
+    return "요청한 자동제어 상태와 적용 상태가 다릅니다.";
+  }
+  if (
+    typeof requested.away_enabled === "boolean" &&
+    typeof response.away_enabled === "boolean" &&
+    response.away_enabled !== requested.away_enabled
+  ) {
+    return "요청한 외출모드 상태와 적용 상태가 다릅니다.";
   }
   return null;
 }
 
-function getAcAutoToggleErrorMessage(
-  response: AcAutoToggleResponse,
-  requestedEnabled: boolean,
-): string | null {
-  if (!response.ok) {
-    return response.error?.trim() || "자동제어 토글에 실패했습니다.";
+function patchAcState(
+  previous: AcStateResponse | undefined,
+  params: AcControlParams,
+): AcStateResponse | undefined {
+  if (!previous) {
+    return undefined;
   }
-  if (response.error?.trim()) {
-    return response.error.trim();
+  const next: AcStateResponse = { ...previous, mode: params.mode };
+  if (typeof params.auto_enabled === "boolean") {
+    next.auto_enabled = params.auto_enabled;
   }
-  if (
-    typeof response.auto_enabled === "boolean" &&
-    response.auto_enabled !== requestedEnabled
-  ) {
-    return "요청한 자동제어 상태와 적용 상태가 다릅니다.";
+  if (typeof params.away_enabled === "boolean") {
+    next.away_enabled = params.away_enabled;
   }
-  if (response.plug_switch) {
-    const expectedPlug = requestedEnabled ? "on" : "off";
-    if (response.plug_switch !== expectedPlug) {
-      return "자동제어와 플러그 상태가 일치하지 않습니다.";
-    }
+  if (params.mode === "off") {
+    next.power = "off";
+  } else if (params.mode === "cool" || params.mode === "dry") {
+    next.last_run_mode = params.mode;
   }
-  return null;
+  return next;
+}
+
+function patchStatusAc(
+  previous: StatusResponse | undefined,
+  params: AcControlParams,
+): StatusResponse | undefined {
+  if (!previous) {
+    return undefined;
+  }
+  const next: StatusResponse = {
+    ...previous,
+    ac_mode: params.mode,
+  };
+  if (typeof params.auto_enabled === "boolean") {
+    next.ac_auto_enabled = params.auto_enabled;
+    next.plug = {
+      ...previous.plug,
+      switch: params.auto_enabled ? "on" : "off",
+    };
+  }
+  if (typeof params.away_enabled === "boolean") {
+    next.ac_away_enabled = params.away_enabled;
+  }
+  if (params.mode === "cool" || params.mode === "dry") {
+    next.ac_last_run_mode = params.mode;
+  }
+  return next;
 }
 
 export function useStatus() {
@@ -105,30 +146,39 @@ export function useAcControl() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (mode: AcMode) => {
-      const response = await setAc({ mode });
-      const responseError = getAcControlErrorMessage(response, mode);
+    mutationFn: async (params: AcControlParams) => {
+      const response = await setAc(params);
+      const responseError = getAcControlErrorMessage(response, params);
       if (responseError) {
         throw new Error(responseError);
       }
       return response;
     },
-    onMutate: async (mode: AcMode) => {
-      await queryClient.cancelQueries({ queryKey: AC_STATE_QUERY_KEY });
+    onMutate: async (params: AcControlParams) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: AC_STATE_QUERY_KEY }),
+        queryClient.cancelQueries({ queryKey: STATUS_QUERY_KEY }),
+      ]);
       const previousAcState = queryClient.getQueryData<AcStateResponse>(AC_STATE_QUERY_KEY);
+      const previousStatus = queryClient.getQueryData<StatusResponse>(STATUS_QUERY_KEY);
 
-      if (previousAcState) {
-        queryClient.setQueryData<AcStateResponse>(AC_STATE_QUERY_KEY, {
-          ...previousAcState,
-          mode,
-        });
+      const nextAcState = patchAcState(previousAcState, params);
+      if (nextAcState) {
+        queryClient.setQueryData(AC_STATE_QUERY_KEY, nextAcState);
+      }
+      const nextStatus = patchStatusAc(previousStatus, params);
+      if (nextStatus) {
+        queryClient.setQueryData(STATUS_QUERY_KEY, nextStatus);
       }
 
-      return { previousAcState };
+      return { previousAcState, previousStatus };
     },
-    onError: (_error, _mode, context) => {
+    onError: (_error, _params, context) => {
       if (context?.previousAcState) {
         queryClient.setQueryData(AC_STATE_QUERY_KEY, context.previousAcState);
+      }
+      if (context?.previousStatus) {
+        queryClient.setQueryData(STATUS_QUERY_KEY, context.previousStatus);
       }
     },
     onSettled: async () => {
@@ -160,36 +210,48 @@ export function useAcState() {
   });
 }
 
+/** 현재 mode를 함께 보내 POST /api/v1/ac 로 자동제어 마스터 토글 */
 export function useAcAutoToggle() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (enabled: boolean) => {
-      const response = await setAcAuto({ enabled });
-      const responseError = getAcAutoToggleErrorMessage(response, enabled);
+      const acState = queryClient.getQueryData<AcStateResponse>(AC_STATE_QUERY_KEY);
+      const status = queryClient.getQueryData<StatusResponse>(STATUS_QUERY_KEY);
+      const mode = acState?.mode ?? status?.ac_mode ?? "off";
+      const params: AcControlParams = { mode, auto_enabled: enabled };
+      const response = await setAc(params);
+      const responseError = getAcControlErrorMessage(response, params);
       if (responseError) {
         throw new Error(responseError);
       }
       return response;
     },
     onMutate: async (enabled: boolean) => {
-      await queryClient.cancelQueries({ queryKey: STATUS_QUERY_KEY });
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: AC_STATE_QUERY_KEY }),
+        queryClient.cancelQueries({ queryKey: STATUS_QUERY_KEY }),
+      ]);
+      const acState = queryClient.getQueryData<AcStateResponse>(AC_STATE_QUERY_KEY);
+      const status = queryClient.getQueryData<StatusResponse>(STATUS_QUERY_KEY);
+      const mode = acState?.mode ?? status?.ac_mode ?? "off";
+      const params: AcControlParams = { mode, auto_enabled: enabled };
+      const previousAcState = queryClient.getQueryData<AcStateResponse>(AC_STATE_QUERY_KEY);
       const previousStatus = queryClient.getQueryData<StatusResponse>(STATUS_QUERY_KEY);
-
-      if (previousStatus) {
-        queryClient.setQueryData<StatusResponse>(STATUS_QUERY_KEY, {
-          ...previousStatus,
-          ac_auto_enabled: enabled,
-          plug: {
-            ...previousStatus.plug,
-            switch: enabled ? "on" : "off",
-          },
-        });
+      const nextAcState = patchAcState(previousAcState, params);
+      if (nextAcState) {
+        queryClient.setQueryData(AC_STATE_QUERY_KEY, nextAcState);
       }
-
-      return { previousStatus };
+      const nextStatus = patchStatusAc(previousStatus, params);
+      if (nextStatus) {
+        queryClient.setQueryData(STATUS_QUERY_KEY, nextStatus);
+      }
+      return { previousAcState, previousStatus };
     },
     onError: (_error, _enabled, context) => {
+      if (context?.previousAcState) {
+        queryClient.setQueryData(AC_STATE_QUERY_KEY, context.previousAcState);
+      }
       if (context?.previousStatus) {
         queryClient.setQueryData(STATUS_QUERY_KEY, context.previousStatus);
       }

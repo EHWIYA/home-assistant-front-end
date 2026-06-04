@@ -8,6 +8,7 @@ import {
   getAcAutoEnabledLabel,
   getAcAutoTransitionBadge,
 } from "@/utils/acAuto";
+import { getAcAwayEnabledLabel, getAcModeDisplayText } from "@/utils/acMode";
 import { getAcRunningSummaryLabel } from "@/utils/acRunning";
 import { formatClimateLine } from "@/utils/climate";
 import { formatEstimatedCostWon } from "@/utils/electricity";
@@ -40,8 +41,20 @@ export function HomeDomainSummary({
     acStateQuery.data,
     status.ac_estimated_running,
   );
+  const acModeLabel = getAcModeDisplayText({
+    mode: acStateQuery.data?.mode ?? status.ac_mode ?? "off",
+    power: acStateQuery.data?.power,
+    lastRunMode:
+      acStateQuery.data?.last_run_mode ?? status.ac_last_run_mode ?? null,
+  });
+  const awayLabel =
+    (acStateQuery.data?.away_enabled ?? status.ac_away_enabled) === true
+      ? getAcAwayEnabledLabel(true)
+      : null;
   const acLine = [
+    `모드 ${acModeLabel}`,
     getAcAutoEnabledLabel(status.ac_auto_enabled),
+    awayLabel,
     acTransition.kind === "transition"
       ? acTransition.label
       : null,

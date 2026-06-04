@@ -22,6 +22,9 @@
   },
   "ac_estimated_running": true,
   "ac_auto_enabled": true,
+  "ac_away_enabled": false,
+  "ac_mode": "cool",
+  "ac_last_run_mode": "cool",
   "ac_auto_state": {
     "state": "on",
     "last_on": "2026-05-26 14:32:00",

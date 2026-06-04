@@ -20,22 +20,26 @@
 - EventSource 제약: `?api_key=<VITE_API_KEY>` 쿼리 인증 (REST 헤더와 동일 키)
 - PWA: 연결 성공 시 status 폴링 중단, 실패·끊김·탭 hidden 시 폴링 fallback (visible 12s / hidden 60s)
 
-## GET /api/v1/ac/state (OpenAPI 1.4.0+)
+## GET /api/v1/ac/state (OpenAPI 1.5.0+)
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| `mode` | `off` \| `cool` \| `dry` | HA `input_select.hwiya_ac_mode` |
+| `mode` | `off` \| `auto` \| `cool` \| `dry` | HA `input_select.hwiya_ac_mode` |
+| `auto_enabled` | `boolean` | HA 자동 ON/OFF 마스터 (`ac_auto_enabled`) |
+| `away_enabled` | `boolean` | HA 외출 스마트 모드 |
+| `last_run_mode` | `cool` \| `dry` \| null | `mode=auto` 가동 중 마지막 IR 모드 |
 | `power` | `on` \| `off` | API 합성 가동 여부 |
 | `running_source` | `plug` \| `logical` 등 | 가동 판단 근거 |
-| `state_consistent` | `boolean` | mode·power·ac_auto_state 정합성 |
+| `state_consistent` | `boolean` | mode·power 정합성 |
 | `state_source` | `string` | 디버그용 합성 설명 |
 
-PWA: 대시보드·배지의 「가동」은 `power` + `running_source` 우선. `power=off` 이고 `running_source=logical` 이면 「가동 중(저전력)」. `state_consistent=false` 이면 「동기화 중」 배지.
+PWA: `mode=auto` 이고 `power=on` 이면 UI 모드 문구에 `last_run_mode` 반영(예: 자동 (냉방)). 외출·자동제어 마스터는 각각 토글·배지. 외출 ON 시 HA에서 외출 정책이 자동제어보다 우선.
 
 ## POST /api/v1/ac
 
-- Body: `{ "mode": "off" | "cool" | "dry" }`
-- 200: `{ "ok": true, "applied_mode"?, "partial_failure"?, "error"? }`
+- Body: `{ "mode": "off" | "auto" | "cool" | "dry", "auto_enabled"?, "away_enabled"? }` — **`mode` 필수**
+- 200: `{ "ok", "applied_mode"?, "auto_enabled"?, "away_enabled"?, "partial_failure"?, "error"? }`
+- 외출·자동제어 토글 시에도 **현재 `mode`를 함께** 전송
 - 4xx `detail`:
   - 401/502/503/504: `{ "detail": { "detail": "<메시지>", "code": "<코드>" } }`
   - 422: `{ "detail": [ { "type", "loc", "msg", ... } ] }` (FastAPI 표준)
@@ -61,7 +65,11 @@ PWA: 플러그 50W 추정은 `/ac/state` 미수신 시 보조 fallback만. 일�
 - `last_on`, `last_off`, `last_transition`: KST `YYYY-MM-DD HH:MM:SS` \| null — null·`00:00:00`(보조)이면 PWA 「자동 기록 없음」
 - PWA: `ac_estimated_running` → 「가동 중(추정)」 배지, `ac_auto_state` → 「자동 on/off · 시각」 배지 (합치지 않음)
 
-제어: 수동은 기존 `POST /api/v1/ac`. 자동 마스터 토글 API는 2차(프론트 배지만 읽기 전용).
+| `ac_away_enabled` | `boolean \| null` | HA 외출 스마트 모드 |
+| `ac_mode` | `off` \| `auto` \| `cool` \| `dry` | HA AC 모드 select |
+| `ac_last_run_mode` | `cool` \| `dry` \| null | auto 가동 중 마지막 cool/dry |
+
+제어: `POST /api/v1/ac` (`mode` 필수, `auto_enabled`·`away_enabled` 선택). 레거시 `POST /api/v1/ac/auto` 는 mock·하위 호환만.
 
 ## GET /api/v1/status — 추정 요금 · `electricity` (OpenAPI 1.5.0+)
 

@@ -1,12 +1,12 @@
 import { Card } from "@/components/Card";
 import type { StatusResponse } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
-import type { AcMode } from "@/api/types";
+import type { AcControlParams } from "@/hooks/useStatus";
 import { AcControlPanel } from "./AcControlPanel";
 
 interface AcControlCardProps {
   data: StatusResponse;
-  mutation: UseMutationResult<unknown, Error, AcMode, unknown>;
+  mutation: UseMutationResult<unknown, Error, AcControlParams, unknown>;
 }
 
 export function AcControlCard({

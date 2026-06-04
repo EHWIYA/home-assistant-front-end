@@ -5,6 +5,8 @@ import type {
   AcActionResponse,
   AcAutoToggleRequest,
   AcAutoToggleResponse,
+  AcLastRunMode,
+  AcMode,
   AcStateResponse,
   PcActionRequest,
   PcActionResponse,
@@ -14,7 +16,8 @@ import type {
 
 export { ApiError, hasApiKey, shouldUseMock as isUsingMock } from "./http";
 
-let mockAcMode: "off" | "cool" | "dry" = "cool";
+let mockAcMode: AcMode = "cool";
+let mockAcAwayEnabled = false;
 
 function toFiniteNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -27,10 +30,32 @@ function toFiniteNumber(value: unknown): number | null {
   return null;
 }
 
+function isAcMode(value: unknown): value is AcMode {
+  return value === "off" || value === "auto" || value === "cool" || value === "dry";
+}
+
+function isAcLastRunMode(value: unknown): value is AcLastRunMode {
+  return value === "cool" || value === "dry";
+}
+
+function syncMockStatusAcFields(status: StatusResponse): void {
+  status.ac_mode = mockAcMode;
+  status.ac_away_enabled = mockAcAwayEnabled;
+  if (mockAcMode === "auto") {
+    status.ac_last_run_mode = "cool";
+  } else if (mockAcMode === "cool" || mockAcMode === "dry") {
+    status.ac_last_run_mode = mockAcMode;
+  } else {
+    status.ac_last_run_mode = null;
+  }
+}
+
 export async function fetchStatus(): Promise<StatusResponse> {
   if (shouldUseMock()) {
     await new Promise((r) => setTimeout(r, 200));
-    return { ...(mockStatus as StatusResponse) };
+    const status = { ...(mockStatus as StatusResponse) };
+    syncMockStatusAcFields(status);
+    return status;
   }
   return apiRequest<StatusResponse>("/api/v1/status");
 }
@@ -50,20 +75,35 @@ export async function setPlug(action: PlugActionRequest): Promise<void> {
 export async function setAc(action: AcActionRequest): Promise<AcActionResponse> {
   if (shouldUseMock()) {
     await new Promise((r) => setTimeout(r, 300));
+    const status = mockStatus as StatusResponse;
     mockAcMode = action.mode;
-    (mockStatus as StatusResponse).ac_auto_state = {
+    if (typeof action.auto_enabled === "boolean") {
+      status.ac_auto_enabled = action.auto_enabled;
+    }
+    if (typeof action.away_enabled === "boolean") {
+      mockAcAwayEnabled = action.away_enabled;
+      status.ac_away_enabled = action.away_enabled;
+    }
+    syncMockStatusAcFields(status);
+    status.ac_auto_state = {
       state: action.mode === "off" ? "off" : "on",
       last_on:
         action.mode === "off"
-          ? (mockStatus as StatusResponse).ac_auto_state?.last_on ?? null
+          ? status.ac_auto_state?.last_on ?? null
           : new Date().toISOString().slice(0, 19).replace("T", " "),
       last_off:
         action.mode === "off"
           ? new Date().toISOString().slice(0, 19).replace("T", " ")
-          : (mockStatus as StatusResponse).ac_auto_state?.last_off ?? null,
+          : status.ac_auto_state?.last_off ?? null,
       last_transition: new Date().toISOString().slice(0, 19).replace("T", " "),
     };
-    return { ok: true, applied_mode: action.mode, partial_failure: false };
+    return {
+      ok: true,
+      applied_mode: action.mode,
+      auto_enabled: status.ac_auto_enabled ?? null,
+      away_enabled: status.ac_away_enabled ?? null,
+      partial_failure: false,
+    };
   }
   return apiRequest<AcActionResponse>("/api/v1/ac", {
     method: "POST",
@@ -71,6 +111,7 @@ export async function setAc(action: AcActionRequest): Promise<AcActionResponse> 
   });
 }
 
+/** @deprecated POST /api/v1/ac `{ mode, auto_enabled }` 사용 권장 */
 export async function setAcAuto(
   action: AcAutoToggleRequest,
 ): Promise<AcAutoToggleResponse> {
@@ -82,7 +123,7 @@ export async function setAcAuto(
     return {
       ok: true,
       request_id: "mock-ac-auto-toggle",
-      auto_enabled: status.ac_auto_enabled,
+      auto_enabled: status.ac_auto_enabled ?? action.enabled,
       plug_switch: status.plug.switch,
     };
   }
@@ -99,14 +140,22 @@ export async function fetchAcState(): Promise<AcStateResponse> {
     const plugW = status.plug.power_w ?? 0;
     const plugHigh = plugW >= 50;
     const mode = mockAcMode;
+    const power: "on" | "off" = mode === "off" ? "off" : plugHigh ? "on" : "off";
     return {
       temperature: status.indoor?.temperature ?? 27.5,
       humidity: status.indoor?.humidity ?? 50,
       mode,
-      auto_mode: status.ac_auto_enabled ?? false,
-      power: mode === "off" ? "off" : plugHigh ? "on" : "off",
+      auto_enabled: status.ac_auto_enabled ?? false,
+      away_enabled: mockAcAwayEnabled,
+      last_run_mode:
+        mode === "auto" && power === "on"
+          ? (status.ac_last_run_mode ?? "cool")
+          : mode === "cool" || mode === "dry"
+            ? mode
+            : null,
+      power,
       running_source:
-        mode === "off" ? undefined : plugHigh ? "plug" : "logical",
+        mode === "off" ? "plug" : plugHigh ? "plug" : "logical",
       state_consistent: true,
       state_source: "mock",
     };
@@ -116,7 +165,9 @@ export async function fetchAcState(): Promise<AcStateResponse> {
     toFiniteNumber(raw.temperature) ?? toFiniteNumber(raw.temperature_c);
   const normalizedHumidity = toFiniteNumber(raw.humidity);
   const normalizedMode = raw.mode;
-  const normalizedAutoMode = raw.auto_mode;
+  const normalizedAutoEnabled = raw.auto_enabled ?? raw.auto_mode;
+  const normalizedAwayEnabled = raw.away_enabled;
+  const normalizedLastRunMode = raw.last_run_mode;
 
   if (normalizedTemperature == null || normalizedHumidity == null) {
     console.warn("[ac] invalid /api/v1/ac/state climate fields", raw);
@@ -125,11 +176,14 @@ export async function fetchAcState(): Promise<AcStateResponse> {
   return {
     temperature: normalizedTemperature ?? NaN,
     humidity: normalizedHumidity ?? NaN,
-    mode:
-      normalizedMode === "off" || normalizedMode === "cool" || normalizedMode === "dry"
-        ? normalizedMode
-        : "off",
-    auto_mode: typeof normalizedAutoMode === "boolean" ? normalizedAutoMode : false,
+    mode: isAcMode(normalizedMode) ? normalizedMode : "off",
+    auto_enabled:
+      typeof normalizedAutoEnabled === "boolean" ? normalizedAutoEnabled : false,
+    away_enabled:
+      typeof normalizedAwayEnabled === "boolean" ? normalizedAwayEnabled : false,
+    last_run_mode: isAcLastRunMode(normalizedLastRunMode)
+      ? normalizedLastRunMode
+      : null,
     power:
       raw.power === "on" || raw.power === "off"
         ? raw.power

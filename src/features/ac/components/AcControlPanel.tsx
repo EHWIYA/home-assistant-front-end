@@ -2,21 +2,29 @@ import { Button } from "@/components/Button";
 import type { StatusResponse } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { AcMode } from "@/api/types";
-import { useEffect, useMemo, useRef } from "react";
-import { useAcState } from "@/hooks/useStatus";
+import { useMemo } from "react";
+import { useAcState, type AcControlParams } from "@/hooks/useStatus";
 import shared from "@/components/status/statusPage.module.css";
 import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
 import { useQueryErrorToast } from "@/hooks/useQueryErrorToast";
 import { TOAST_DEVICE, TOAST_GUIDE, TOAST_RESOURCE } from "@/utils/toastMessages";
+import { getAcModeDisplayText } from "@/utils/acMode";
 import { AcPolicyDetails } from "./AcPolicyDetails";
 import { AcStatusBadges } from "./AcStatusBadges";
 import styles from "./AcControlPanel.module.css";
 
 interface AcControlPanelProps {
   data: StatusResponse;
-  mutation: UseMutationResult<unknown, Error, AcMode, unknown>;
+  mutation: UseMutationResult<unknown, Error, AcControlParams, unknown>;
   showDetails?: boolean;
 }
+
+const MODE_OPTIONS: { mode: AcMode; label: string; className?: string }[] = [
+  { mode: "off", label: "끄기" },
+  { mode: "auto", label: "자동", className: styles.modeAuto },
+  { mode: "cool", label: "냉방", className: styles.modeCool },
+  { mode: "dry", label: "제습", className: styles.modeDry },
+];
 
 const RECENT_SUCCESS_SUPPRESS_MS = 30_000;
 
@@ -32,16 +40,25 @@ function parseControlTimestamp(raw: string | null | undefined): number | null {
   return Number.isFinite(normalized) ? normalized : null;
 }
 
+function isPendingFor(
+  mutation: AcControlPanelProps["mutation"],
+  match: (params: AcControlParams) => boolean,
+): boolean {
+  return mutation.isPending && mutation.variables != null && match(mutation.variables);
+}
+
 export function AcControlPanel({
   data,
   mutation,
   showDetails = true,
 }: AcControlPanelProps) {
   const acStateQuery = useAcState();
-  const lastNonOffModeRef = useRef<Extract<AcMode, "cool" | "dry">>("cool");
-  const mode = acStateQuery.data?.mode ?? "off";
-  const isAutoMode = acStateQuery.data?.auto_mode ?? false;
   const acState = acStateQuery.data;
+  const mode = acState?.mode ?? data.ac_mode ?? "off";
+  const autoEnabled = acState?.auto_enabled ?? data.ac_auto_enabled ?? false;
+  const awayEnabled = acState?.away_enabled ?? data.ac_away_enabled ?? false;
+  const lastRunMode = acState?.last_run_mode ?? data.ac_last_run_mode ?? null;
+  const power = acState?.power;
   const stateConsistent = acState?.state_consistent;
   const stateSource = acState?.state_source;
   const runningSource = acState?.running_source;
@@ -66,7 +83,16 @@ export function AcControlPanel({
     ? `state_consistent=false · ${stateSource}${runningSource ? ` · running_source=${runningSource}` : ""}`
     : runningSource
       ? `정합성 확인 중 · running_source=${runningSource}`
-      : "mode·power·ac_auto_state 정합성 확인 중입니다.";
+      : "mode·power·정합성 확인 중입니다.";
+
+  const modeText = useMemo(
+    () => getAcModeDisplayText({ mode, power, lastRunMode }),
+    [mode, power, lastRunMode],
+  );
+
+  const post = (params: AcControlParams) => mutation.mutate(params);
+  const autoKnown = data.ac_auto_enabled !== null && data.ac_auto_enabled !== undefined;
+  const controlsDisabled = mutation.isPending || acStateQuery.isLoading;
 
   useMutationErrorToast(
     mutation,
@@ -81,32 +107,6 @@ export function AcControlPanel({
     actionGuide: TOAST_GUIDE.retry,
   });
 
-  useEffect(() => {
-    if (mode === "cool" || mode === "dry") {
-      lastNonOffModeRef.current = mode;
-    }
-  }, [mode]);
-
-  const rightButton = useMemo(() => {
-    if (mode === "off") {
-      return { label: "켜기", className: styles.rightOn, nextMode: lastNonOffModeRef.current };
-    }
-    if (mode === "cool") {
-      return { label: "제습", className: styles.rightDry, nextMode: "dry" as const };
-    }
-    return { label: "냉방", className: styles.rightCool, nextMode: "cool" as const };
-  }, [mode]);
-
-  const modeText = useMemo(() => {
-    if (isAutoMode) {
-      return "자동";
-    }
-    if (mode === "off") {
-      return "끄기";
-    }
-    return mode === "cool" ? "냉방" : "제습";
-  }, [isAutoMode, mode]);
-
   return (
     <>
       {showDetails ? (
@@ -119,13 +119,19 @@ export function AcControlPanel({
       ) : null}
       {showDetails ? (
         <p className={shared.meta}>
-          가동 표시는 /ac/state(power·running_source) 우선. status의 50W 추정은
-          미수신 시에만 보조합니다.
+          가동 표시는 /ac/state(power·running_source) 우선. 외출모드가 켜지면 HA에서
+          외출 정책이 자동제어보다 우선합니다.
         </p>
       ) : null}
       {showDetails ? <AcPolicyDetails /> : null}
       <div className={styles.statusBox}>
         <p className={styles.modeText}>모드: {modeText}</p>
+        {awayEnabled ? (
+          <p className={shared.meta}>
+            외출모드 동작 중 — 실내 28°C 이상 또는 (25°C 이상·습도 68% 이상) 20분
+            유지 시 ON, 27°C 미만·습도 58% 미만 시 OFF
+          </p>
+        ) : null}
         {mode === "cool" ? (
           <p className={shared.meta}>
             냉방(cool) — 일반 냉방. 29°C 근처에서는 cool 선택이 필요합니다.
@@ -137,28 +143,75 @@ export function AcControlPanel({
             표시될 수 있습니다.
           </p>
         ) : null}
+        {mode === "auto" ? (
+          <p className={shared.meta}>
+            자동(auto) — HA가 cool/dry를 선택합니다. 가동 중에는 마지막 실행
+            모드(last_run_mode)를 표시합니다.
+          </p>
+        ) : null}
       </div>
-      <div className={styles.actions}>
+
+      <div className={styles.modeGrid} role="group" aria-label="에어컨 모드">
+        {MODE_OPTIONS.map((option) => {
+          const active = mode === option.mode;
+          return (
+            <Button
+              key={option.mode}
+              fullWidth
+              variant={active ? "primary" : "secondary"}
+              className={active ? styles.modeActive : option.className}
+              disabled={controlsDisabled}
+              onClick={() => post({ mode: option.mode })}
+            >
+              {isPendingFor(mutation, (p) => p.mode === option.mode && p.auto_enabled === undefined && p.away_enabled === undefined)
+                ? "처리 중…"
+                : option.label}
+            </Button>
+          );
+        })}
+      </div>
+
+      <div className={styles.autoActions} role="group" aria-label="자동제어 마스터">
         <Button
           fullWidth
-          variant="danger"
-          disabled={mutation.isPending || acStateQuery.isLoading || mode === "off"}
-          onClick={() => mutation.mutate("off")}
+          variant="secondary"
+          className={`${styles.autoEnable} ${autoEnabled ? styles.autoStateOn : ""}`}
+          disabled={controlsDisabled || !autoKnown || autoEnabled === true}
+          onClick={() => post({ mode, auto_enabled: true })}
         >
-          {mutation.isPending && mutation.variables === "off" ? "처리 중…" : "끄기"}
+          {isPendingFor(mutation, (p) => p.auto_enabled === true)
+            ? "처리 중…"
+            : "자동제어 켜기"}
         </Button>
         <Button
           fullWidth
           variant="secondary"
-          className={rightButton.className}
-          disabled={mutation.isPending || acStateQuery.isLoading}
-          onClick={() => mutation.mutate(rightButton.nextMode)}
+          className={`${styles.autoDisable} ${!autoEnabled ? styles.autoStateOff : ""}`}
+          disabled={controlsDisabled || !autoKnown || autoEnabled === false}
+          onClick={() => post({ mode, auto_enabled: false })}
         >
-          {mutation.isPending && mutation.variables === rightButton.nextMode
+          {isPendingFor(mutation, (p) => p.auto_enabled === false)
             ? "처리 중…"
-            : rightButton.label}
+            : "자동제어 끄기"}
         </Button>
       </div>
+
+      <div className={styles.awayRow}>
+        <Button
+          fullWidth
+          variant={awayEnabled ? "primary" : "secondary"}
+          className={awayEnabled ? styles.awayOn : styles.awayOff}
+          disabled={controlsDisabled}
+          onClick={() => post({ mode, away_enabled: !awayEnabled })}
+        >
+          {isPendingFor(mutation, (p) => typeof p.away_enabled === "boolean")
+            ? "처리 중…"
+            : awayEnabled
+              ? "외출모드 끄기"
+              : "외출모드 켜기"}
+        </Button>
+      </div>
+
       {acStateQuery.isError ? (
         <p className={shared.errorDetail}>상태 조회 실패 — 다시 시도해 주세요.</p>
       ) : null}

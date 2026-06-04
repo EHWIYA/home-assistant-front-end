@@ -20,6 +20,15 @@
 - EventSource 제약: `?api_key=<VITE_API_KEY>` 쿼리 인증 (REST 헤더와 동일 키)
 - PWA: 연결 성공 시 status 폴링 중단, 실패·끊김·탭 hidden 시 폴링 fallback (visible 12s / hidden 60s)
 
+## GET /api/v1/weather/local (OpenAPI 1.6.0+)
+
+- 공공데이터 **기상청** 초단기실황·예보 — **홈 PWA 실외 날씨** 전용
+- `weather_outdoor`(HA `weather.forecast_jib`)와 **별개** — 에어컨 탭용
+- 서버 캐시 15분 · 위치: 서울 금천구 가산동 (nx=58, ny=125)
+- 503 `code`: `weather_unavailable`
+
+PWA: Open-Meteo 제거 → `GET /api/v1/weather/local`. mock: `src/api/mock/weather-local.json`
+
 ## GET /api/v1/ac/state (OpenAPI 1.5.0+)
 
 | 필드 | 타입 | 설명 |

@@ -1,0 +1,15 @@
+.notice {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.notice strong {
+  color: #9aa0a6;
+  font-weight: 600;
+}

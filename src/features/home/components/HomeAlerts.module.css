@@ -1,0 +1,33 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.badgeWarn {
+  background: rgba(240, 173, 78, 0.15);
+  color: #f0ad4e;
+  border: 1px solid rgba(240, 173, 78, 0.35);
+}
+
+.badgeDanger {
+  background: rgba(229, 115, 115, 0.12);
+  color: #e57373;
+  border: 1px solid rgba(229, 115, 115, 0.3);
+}
+
+.badgeInfo {
+  background: rgba(91, 159, 212, 0.12);
+  color: #5b9fd4;
+  border: 1px solid rgba(91, 159, 212, 0.3);
+}

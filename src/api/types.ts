@@ -77,6 +77,21 @@ export interface ElectricityStatus {
 export interface WeatherOutdoor {
   temperature: number;
   humidity: number;
+  /** HA weather.forecast_jib 등 — 영문/HA 표기. 기상청 실외 날씨 아님 */
+  condition?: string | null;
+}
+
+/** GET /api/v1/weather/local — 공공데이터 기상청 (홈 PWA) OpenAPI 1.6.0+ */
+export interface WeatherLocalResponse {
+  location_label: string;
+  location_short_label: string;
+  temperature: number;
+  humidity: number;
+  condition: string;
+  condition_code?: string | null;
+  observed_at: string;
+  source?: string | null;
+  source_detail?: string | null;
 }
 
 /** GET /api/v1/status — Broadlink 실내 센서 (°C, %) */

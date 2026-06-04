@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icons/*.png", "icons/*.svg"],
       manifest: {
-        name: "Hwiya IoT",
-        short_name: "Hwiya IoT",
-        description: "집 IoT 대시보드",
+        name: "hwiyaIoT",
+        short_name: "hwiyaIoT",
+        description: "휘야 집 IoT 대시보드",
         theme_color: "#0f1419",
         background_color: "#0f1419",
         display: "standalone",

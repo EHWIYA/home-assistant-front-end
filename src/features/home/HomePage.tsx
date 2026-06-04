@@ -2,8 +2,10 @@ import { StatusQueryGate } from "@/components/status/StatusQueryGate";
 import { StatusFooter } from "@/components/status/StatusFooter";
 import { useStripState } from "@/hooks/useStrip";
 import shared from "@/components/status/statusPage.module.css";
+import { HomeAlerts } from "./components/HomeAlerts";
+import { HomeClimateHero } from "./components/HomeClimateHero";
 import { HomeDomainSummary } from "./components/HomeDomainSummary";
-import { HomeQuickControls } from "./components/HomeQuickControls";
+import { HomeOverviewStrip } from "./components/HomeOverviewStrip";
 
 export function HomePage() {
   const stripQuery = useStripState();
@@ -12,12 +14,22 @@ export function HomePage() {
     <StatusQueryGate>
       {({ data }) => (
         <div className={shared.page}>
+          <HomeClimateHero indoor={data.indoor} />
+          <HomeOverviewStrip
+            status={data}
+            strip={stripQuery.data ?? null}
+            stripLoading={stripQuery.isLoading}
+          />
+          <HomeAlerts
+            status={data}
+            strip={stripQuery.data ?? null}
+            stripLoading={stripQuery.isLoading}
+          />
           <HomeDomainSummary
             status={data}
             strip={stripQuery.data ?? null}
             stripLoading={stripQuery.isLoading}
           />
-          <HomeQuickControls data={data} />
           <StatusFooter data={data} />
         </div>
       )}

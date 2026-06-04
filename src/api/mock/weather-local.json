@@ -1,0 +1,11 @@
+{
+  "location_label": "서울 금천구 가산동",
+  "location_short_label": "가산동",
+  "temperature": 28.0,
+  "humidity": 54,
+  "condition": "구름많음",
+  "condition_code": "3",
+  "observed_at": "2026-06-04T11:00:00+09:00",
+  "source": "kma",
+  "source_detail": "초단기실황"
+}

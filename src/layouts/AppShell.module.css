@@ -2,40 +2,17 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 100dvh;
-  min-height: 100vh;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  padding-top: max(0.75rem, env(safe-area-inset-top));
-  border-bottom: 1px solid #2a323c;
-  flex-shrink: 0;
-}
-
-.brand {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.mockBadge {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  background: #3d4a2a;
-  color: #c5e1a5;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .main {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 1rem;
-  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
 .tabBar {
@@ -44,18 +21,40 @@
   border-top: 1px solid #2a323c;
   background: #141a21;
   padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
 }
 
 .tab {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 52px;
-  font-size: 0.75rem;
+  gap: 0.2rem;
+  min-height: 56px;
+  padding: 0.35rem 0.25rem 0.25rem;
+  font-size: 0.625rem;
   font-weight: 500;
   color: #9aa0a6;
   transition: color 0.15s ease;
+}
+
+.tabIcon {
+  display: flex;
+  width: 1.375rem;
+  height: 1.375rem;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.tabIcon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tabLabel {
+  line-height: 1.1;
 }
 
 .tabActive {

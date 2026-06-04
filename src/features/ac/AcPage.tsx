@@ -1,11 +1,20 @@
 import { StatusQueryGate } from "@/components/status/StatusQueryGate";
 import { StatusFooter } from "@/components/status/StatusFooter";
-import { ClimateSection } from "@/components/status/ClimateSection";
-import { useAcControl, usePlugToggle } from "@/hooks/useStatus";
+import type { StatusResponse } from "@/api/types";
+import type { UseMutationResult } from "@tanstack/react-query";
+import {
+  useAcControl,
+  useAcState,
+  usePlugToggle,
+  type AcControlParams,
+} from "@/hooks/useStatus";
 import shared from "@/components/status/statusPage.module.css";
-import { AcControlCard } from "./components/AcControlCard";
-import { PlugSection } from "./components/PlugSection";
-import { SleepSection } from "./components/SleepSection";
+import { AcAdvancedPanel } from "./components/AcAdvancedPanel";
+import { AcModeControls } from "./components/AcModeControls";
+import { AcPlugCard } from "./components/AcPlugCard";
+import { AcSleepNotice } from "./components/AcSleepNotice";
+import { AcStatusHero } from "./components/AcStatusHero";
+import { useAcSyncWarning } from "./hooks/useAcSyncWarning";
 
 export function AcPage() {
   const plugMutation = usePlugToggle();
@@ -13,28 +22,53 @@ export function AcPage() {
 
   return (
     <StatusQueryGate loadingMessage="에어컨 상태 불러오는 중…">
-      {({ data }) => {
-        return (
-          <div className={shared.page}>
-            <PlugSection
-              plug={data.plug}
-              mutation={plugMutation}
-              variant="full"
-            />
-            <ClimateSection
-              indoor={data.indoor}
-              weatherOutdoor={data.weather_outdoor}
-              combined
-            />
-            <AcControlCard
-              data={data}
-              mutation={acMutation}
-            />
-            <SleepSection />
-            <StatusFooter data={data} />
-          </div>
-        );
-      }}
+      {({ data }) => (
+        <AcPageContent
+          data={data}
+          acMutation={acMutation}
+          plugMutation={plugMutation}
+        />
+      )}
     </StatusQueryGate>
+  );
+}
+
+function AcPageContent({
+  data,
+  acMutation,
+  plugMutation,
+}: {
+  data: StatusResponse;
+  acMutation: UseMutationResult<unknown, Error, AcControlParams, unknown>;
+  plugMutation: ReturnType<typeof usePlugToggle>;
+}) {
+  const acStateQuery = useAcState();
+  const acState = acStateQuery.data;
+  const { showSyncWarning, syncWarningTitle } = useAcSyncWarning(
+    data,
+    acState,
+    acMutation,
+    acStateQuery,
+  );
+
+  return (
+    <div className={shared.page}>
+      <AcStatusHero
+        data={data}
+        acState={acState}
+        showSyncWarning={showSyncWarning}
+        syncWarningTitle={syncWarningTitle}
+      />
+      <AcModeControls data={data} mutation={acMutation} />
+      <AcPlugCard plug={data.plug} mutation={plugMutation} />
+      <AcAdvancedPanel
+        data={data}
+        acState={acState}
+        showSyncWarning={showSyncWarning}
+        syncWarningTitle={syncWarningTitle}
+      />
+      <AcSleepNotice />
+      <StatusFooter data={data} />
+    </div>
   );
 }

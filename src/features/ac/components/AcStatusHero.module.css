@@ -1,0 +1,167 @@
+.card {
+  position: relative;
+  background: #1a222c;
+  border-radius: 16px;
+  padding: 1rem 1.125rem;
+  border: 1px solid #2a323c;
+  border-left: 3px solid var(--ac-accent, #5b9fd4);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.iconPill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  background: rgba(91, 159, 212, 0.14);
+  color: #5b9fd4;
+  flex-shrink: 0;
+}
+
+.iconPill svg {
+  width: 1rem;
+  height: 1rem;
+  display: block;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusLabel {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.modeSub {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.625rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pillActive {
+  background: rgba(91, 159, 212, 0.14);
+  color: #5b9fd4;
+  border: 1px solid rgba(91, 159, 212, 0.3);
+}
+
+.pillMuted {
+  background: rgba(255, 255, 255, 0.05);
+  color: #6b7280;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pillWarn {
+  background: rgba(240, 173, 78, 0.12);
+  color: #f0ad4e;
+  border: 1px solid rgba(240, 173, 78, 0.3);
+}
+
+.pillOk {
+  background: rgba(126, 200, 138, 0.12);
+  color: #7ec88a;
+  border: 1px solid rgba(126, 200, 138, 0.3);
+}
+
+.powerSection {
+  margin-top: 0.75rem;
+}
+
+.climateGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.climateCell {
+  min-width: 0;
+}
+
+.climateLabel {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.climateValue {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.climateHint {
+  margin: 0.2rem 0 0;
+  font-size: 0.625rem;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.climateUnavailable {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.syncBanner {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #f0ad4e;
+  background: rgba(240, 173, 78, 0.1);
+  border: 1px solid rgba(240, 173, 78, 0.25);
+}

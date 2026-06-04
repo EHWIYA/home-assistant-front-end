@@ -14,11 +14,13 @@ export function PcPage() {
       {({ data }) => (
         <div className={shared.page}>
           {data.pc ? (
-            <>
-              <PcStatusHero pc={data.pc} />
-              <PcEnergyPanel pc={data.pc} />
+            <div className={shared.pageSplit}>
+              <div className={shared.pageStack}>
+                <PcStatusHero pc={data.pc} />
+                <PcEnergyPanel pc={data.pc} />
+              </div>
               <PcControlPanel pc={data.pc} mutation={pcMutation} />
-            </>
+            </div>
           ) : (
             <p className={shared.message}>
               PC(Tapo) 정보가 API 응답에 없습니다. 백엔드·OpenAPI 버전을

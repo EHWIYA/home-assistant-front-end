@@ -21,6 +21,7 @@ import {
   isValidTimeKst,
   WEEKDAY_LABELS,
 } from "@/utils/schedule";
+import shared from "@/components/status/statusPage.module.css";
 import styles from "./ScheduleFormPage.module.css";
 
 export function ScheduleFormPage() {
@@ -133,7 +134,7 @@ export function ScheduleFormPage() {
 
   if (isEdit && schedulesQuery.isError) {
     return (
-      <div className={styles.page}>
+      <div className={`${styles.page} ${shared.pageForm}`.trim()}>
         <p className={styles.errorDetail}>스케줄 조회 실패</p>
         <Link to={paths.stripSchedules} className={styles.back}>
           목록으로
@@ -144,7 +145,7 @@ export function ScheduleFormPage() {
 
   if (isEdit && id && schedulesQuery.data && !schedulesQuery.data.some((s) => s.id === id)) {
     return (
-      <div className={styles.page}>
+      <div className={`${styles.page} ${shared.pageForm}`.trim()}>
         <p className={styles.errorDetail}>스케줄을 찾을 수 없습니다.</p>
         <Link to={paths.stripSchedules} className={styles.back}>
           목록으로
@@ -154,7 +155,7 @@ export function ScheduleFormPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${shared.pageForm}`.trim()}>
       <Link to={paths.stripSchedules} className={styles.back}>
         ← 스케줄 목록
       </Link>

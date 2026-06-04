@@ -8,8 +8,10 @@ export function SettingsPage() {
   return (
     <div className={shared.page}>
       <SettingsStatusHero />
-      <SettingsQuickLinksPanel />
-      <SettingsAccessPanel />
+      <div className={shared.settingsGrid}>
+        <SettingsQuickLinksPanel />
+        <SettingsAccessPanel />
+      </div>
       <SettingsAboutPanel />
     </div>
   );

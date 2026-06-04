@@ -11,8 +11,10 @@
   align-self: flex-start;
 }
 
-.back:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .back:hover {
+    text-decoration: underline;
+  }
 }
 
 .title {

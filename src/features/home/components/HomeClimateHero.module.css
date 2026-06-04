@@ -4,6 +4,8 @@
   background: linear-gradient(155deg, #1e2f42 0%, #1a222c 55%, #171d24 100%);
   border: 1px solid #2a323c;
   overflow: hidden;
+  height: 100%;
+  min-height: 0;
 }
 
 .topRow {

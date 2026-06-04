@@ -213,7 +213,7 @@
   font-weight: 700;
 }
 
-@media (max-width: 360px) {
+@media (max-width: 359px) {
   .platformGrid {
     grid-template-columns: 1fr;
   }

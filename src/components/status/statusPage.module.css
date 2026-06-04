@@ -4,6 +4,71 @@
   gap: 1rem;
 }
 
+.pageStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.pageSplit {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .pageSplit {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pageSplit {
+    gap: 1.25rem;
+  }
+}
+
+/* 멀티탭: 태블릿은 1열·채널 4열 전폭, 데스크톱만 좌우 분할 */
+.pageSplitDesktopOnly {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .pageSplitDesktopOnly {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+}
+
+.pageForm {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+.settingsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .settingsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+}
+
 .message {
   margin: 0;
   color: #9aa0a6;

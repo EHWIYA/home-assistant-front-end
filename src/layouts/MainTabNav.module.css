@@ -1,0 +1,187 @@
+/* ——— 하단 탭 (모바일·태블릿) ——— */
+.bottom {
+  display: flex;
+  flex-shrink: 0;
+  border-top: 1px solid #2a323c;
+  background: #141a21;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+
+.bottomLink {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: var(--tab-bar-height);
+  padding: 0.35rem 0.25rem 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: #9aa0a6;
+  transition: color 0.15s ease;
+}
+
+.bottomLinkActive {
+  color: #5b9fd4;
+  font-weight: 600;
+}
+
+/* 가로·낮은 화면: 탭 라벨 숨김 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .bottomLabel {
+    display: none;
+  }
+
+  .bottomLink {
+    min-height: 48px;
+    gap: 0;
+  }
+}
+
+/* ——— 좌측 네비 (데스크톱) ——— */
+.side {
+  display: none;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--shell-nav-width);
+  border-right: 1px solid #2a323c;
+  background: #141a21;
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow-y: auto;
+}
+
+.sideBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1rem 1rem;
+  border-bottom: 1px solid rgba(42, 50, 60, 0.8);
+  margin-bottom: 0.5rem;
+}
+
+.sideLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #5b9fd4 0%, #3d7ab5 55%, #2a5a8a 100%);
+  box-shadow: 0 4px 12px rgba(91, 159, 212, 0.3);
+}
+
+.sideLogoIcon {
+  display: flex;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: #fff;
+}
+
+.sideLogoIcon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sideBrandText {
+  min-width: 0;
+}
+
+.sideBrandName {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.sideBrandPrimary {
+  color: #e8eaed;
+}
+
+.sideBrandAccent {
+  color: #5b9fd4;
+  font-weight: 800;
+}
+
+.sideLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0 0.5rem;
+  flex: 1;
+}
+
+.sideLink {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: var(--touch-min);
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #9aa0a6;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sideLink:hover {
+    color: #c5cad0;
+    background: rgba(255, 255, 255, 0.04);
+  }
+}
+
+.sideLinkActive {
+  color: #5b9fd4;
+  font-weight: 600;
+  background: rgba(91, 159, 212, 0.1);
+}
+
+.sideIcon {
+  display: flex;
+  width: 1.375rem;
+  height: 1.375rem;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.sideIcon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .side {
+    display: flex;
+  }
+
+  .bottom {
+    display: none;
+  }
+}
+
+.icon {
+  display: flex;
+  width: 1.375rem;
+  height: 1.375rem;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.label {
+  line-height: 1.1;
+}

@@ -153,6 +153,21 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .brandBlock .logoMark {
+    display: none;
+  }
+
+  .brand {
+    font-size: 1rem;
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+}
+
 .accentLine {
   height: 2px;
   background: linear-gradient(

@@ -1,0 +1,22 @@
+/**
+ * 반응형 토큰 — 미디어쿼리는 이 값과 동일한 px만 사용.
+ * @see docs/responsive.md
+ */
+:root {
+  --bp-xs: 360px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1024px;
+  --bp-wide: 1280px;
+
+  --content-max-tablet: 720px;
+  --content-max-desktop: 960px;
+  --content-max-wide: 1120px;
+
+  --shell-nav-width: 240px;
+  --shell-padding-mobile: 1rem;
+  --shell-padding-tablet: 1.25rem;
+  --shell-padding-desktop: 1.5rem;
+
+  --touch-min: 44px;
+  --tab-bar-height: 56px;
+}

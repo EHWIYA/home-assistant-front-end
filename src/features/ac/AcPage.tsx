@@ -58,14 +58,18 @@ function AcPageContent({
         showSyncWarning={showSyncWarning}
         syncWarningTitle={syncWarningTitle}
       />
-      <AcModeControls data={data} mutation={acMutation} />
-      <AcPlugCard plug={data.plug} mutation={plugMutation} />
-      <AcAdvancedPanel
-        data={data}
-        acState={acState}
-        showSyncWarning={showSyncWarning}
-        syncWarningTitle={syncWarningTitle}
-      />
+      <div className={shared.pageSplit}>
+        <div className={shared.pageStack}>
+          <AcModeControls data={data} mutation={acMutation} />
+          <AcPlugCard plug={data.plug} mutation={plugMutation} />
+        </div>
+        <AcAdvancedPanel
+          data={data}
+          acState={acState}
+          showSyncWarning={showSyncWarning}
+          syncWarningTitle={syncWarningTitle}
+        />
+      </div>
       <StatusFooter data={data} />
     </div>
   );

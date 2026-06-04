@@ -7,61 +7,64 @@
   overflow: hidden;
 }
 
+.shellBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
 .main {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 1rem;
+  padding: var(--shell-padding-mobile);
+}
+
+.mainInner {
+  width: 100%;
+  margin-inline: auto;
 }
 
 .mainNoTabBar {
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
-.tabBar {
-  display: flex;
-  flex-shrink: 0;
-  border-top: 1px solid #2a323c;
-  background: #141a21;
-  padding-bottom: env(safe-area-inset-bottom);
-  z-index: 10;
+/* 태블릿: 콘텐츠 중앙·최대 너비 */
+@media (min-width: 768px) {
+  .main {
+    padding: var(--shell-padding-tablet);
+  }
+
+  .mainInner {
+    max-width: var(--content-max-tablet);
+  }
 }
 
-.tab {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  min-height: 56px;
-  padding: 0.35rem 0.25rem 0.25rem;
-  font-size: 0.625rem;
-  font-weight: 500;
-  color: #9aa0a6;
-  transition: color 0.15s ease;
+/* 데스크톱: 좌측 네비 + 콘텐츠 영역 */
+@media (min-width: 1024px) {
+  .shell {
+    display: grid;
+    grid-template-columns: var(--shell-nav-width) 1fr;
+  }
+
+  .main {
+    padding: var(--shell-padding-desktop);
+  }
+
+  .mainInner {
+    max-width: var(--content-max-desktop);
+  }
+
+  .mainNoTabBar {
+    padding-bottom: var(--shell-padding-desktop);
+  }
 }
 
-.tabIcon {
-  display: flex;
-  width: 1.375rem;
-  height: 1.375rem;
-  flex-shrink: 0;
-  color: inherit;
-}
-
-.tabIcon svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.tabLabel {
-  line-height: 1.1;
-}
-
-.tabActive {
-  color: #5b9fd4;
-  font-weight: 600;
+@media (min-width: 1280px) {
+  .mainInner {
+    max-width: var(--content-max-wide);
+  }
 }

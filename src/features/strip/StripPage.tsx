@@ -39,12 +39,14 @@ export function StripPage() {
 
   return (
     <div className={shared.page}>
-      <StripStatusHero data={data} isFetching={isFetching} />
-      <StripChannelCards
-        channels={data.channels}
-        deviceOnline={data.online}
-        mutation={channelMutation}
-      />
+      <div className={shared.pageSplitDesktopOnly}>
+        <StripStatusHero data={data} isFetching={isFetching} />
+        <StripChannelCards
+          channels={data.channels}
+          deviceOnline={data.online}
+          mutation={channelMutation}
+        />
+      </div>
       <p className={shared.updated}>
         갱신: {formatUpdatedAt(data.updated_at)}
       </p>

@@ -1,7 +1,19 @@
 .grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .link {
@@ -30,9 +42,11 @@
     border-color 0.2s ease;
 }
 
-.link:hover .card {
-  border-color: #3d4a58;
-  box-shadow: 0 6px 24px var(--domain-glow, rgba(0, 0, 0, 0.2));
+@media (hover: hover) and (pointer: fine) {
+  .link:hover .card {
+    border-color: #3d4a58;
+    box-shadow: 0 6px 24px var(--domain-glow, rgba(0, 0, 0, 0.2));
+  }
 }
 
 .link:active .card {

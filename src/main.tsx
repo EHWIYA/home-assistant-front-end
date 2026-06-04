@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PwaUpdateNotifier } from "@/components/pwa/PwaUpdateNotifier";
 import { ToastProvider } from "@/components/toast/ToastProvider";
 import App from "./App";
+import "./styles/breakpoints.css";
 import "./styles/global.css";
 
 const queryClient = new QueryClient({

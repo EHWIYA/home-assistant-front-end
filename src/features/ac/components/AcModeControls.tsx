@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import gearSvg from "cupertino-icons-svg/svg/gear.svg?raw";
+import powerSvg from "cupertino-icons-svg/svg/power.svg?raw";
 import type { AcMode, AcOperatingMode, StatusResponse } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
@@ -15,6 +16,8 @@ import {
 import {
   buildAcActionControlRequest,
   buildAcOperatingModeSwitchRequest,
+  buildAcPowerOffRequest,
+  buildAcPowerOnRequest,
   deriveAcOperatingMode,
 } from "@/utils/acOperatingMode";
 import {
@@ -119,6 +122,19 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
     post(params);
   };
 
+  const handlePowerToggle = () => {
+    if (controlsDisabled) return;
+    if (acPowerOff) {
+      post(buildAcPowerOnRequest(operatingMode, mode, lastRunMode));
+      return;
+    }
+    post(buildAcPowerOffRequest(operatingMode));
+  };
+
+  const powerTogglePending = isPendingFor(mutation, (p) =>
+    acPowerOff ? p.mode !== "off" : p.mode === "off",
+  );
+
   return (
     <section
       className={`${styles.card} ${acPowerOff ? styles.cardPowerOff : ""}`.trim()}
@@ -126,10 +142,28 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
       aria-label="에어컨 제어"
     >
       <header className={styles.header}>
-        <span className={styles.iconPill}>
-          <CupertinoIcon svg={gearSvg} className="" />
-        </span>
-        <h2 className={styles.title}>제어</h2>
+        <div className={styles.headerMain}>
+          <span className={styles.iconPill}>
+            <CupertinoIcon svg={gearSvg} className="" />
+          </span>
+          <h2 className={styles.title}>제어</h2>
+        </div>
+        <button
+          type="button"
+          className={`${styles.powerToggle} ${
+            acPowerOff ? styles.powerToggleOn : styles.powerToggleOff
+          }`.trim()}
+          disabled={controlsDisabled}
+          aria-label={acPowerOff ? "에어컨 켜기" : "에어컨 끄기"}
+          onClick={handlePowerToggle}
+        >
+          <span className={styles.powerToggleIcon} aria-hidden>
+            <CupertinoIcon svg={powerSvg} className="" />
+          </span>
+          <span className={styles.powerToggleLabel}>
+            {powerTogglePending ? "…" : acPowerOff ? "켜기" : "끄기"}
+          </span>
+        </button>
       </header>
 
       <div className={styles.section}>

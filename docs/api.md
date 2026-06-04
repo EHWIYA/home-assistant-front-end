@@ -34,21 +34,22 @@ PWA: Open-Meteo 제거 → `GET /api/v1/weather/local`. mock: `src/api/mock/weat
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | `mode` | `off` \| `auto` \| `cool` \| `dry` | HA `input_select.hwiya_ac_mode` |
-| `auto_enabled` | `boolean` | HA 자동 ON/OFF 마스터 (`ac_auto_enabled`) |
-| `away_enabled` | `boolean` | HA 외출 스마트 모드 |
+| `operating_mode` | `manual` \| `auto` \| `away` | HA 3모드 상호 배타 (OpenAPI 1.8.0+) |
+| `auto_enabled` | `boolean` | 하위 호환 — `operating_mode` 미수신 시 |
+| `away_enabled` | `boolean` | 하위 호환 |
 | `last_run_mode` | `cool` \| `dry` \| null | `mode=auto` 가동 중 마지막 IR 모드 |
 | `power` | `on` \| `off` | API 합성 가동 여부 |
 | `running_source` | `plug` \| `logical` 등 | 가동 판단 근거 |
 | `state_consistent` | `boolean` | mode·power 정합성 |
 | `state_source` | `string` | 디버그용 합성 설명 |
 
-PWA: `mode=auto` 이고 `power=on` 이면 UI 모드 문구에 `last_run_mode` 반영(예: 자동 (냉방)). 외출·자동제어 마스터는 각각 토글·배지. 외출 ON 시 HA에서 외출 정책이 자동제어보다 우선.
+PWA: `mode=auto` 이고 `power=on` 이면 UI 모드 문구에 `last_run_mode` 반영(예: 자동 (냉방)). 운전모드는 **수동 | 자동 | 외출** 단일 선택(`operating_mode`). `running_source=logical` 이면 저전력 가동 배지.
 
 ## POST /api/v1/ac
 
-- Body: `{ "mode": "off" | "auto" | "cool" | "dry", "auto_enabled"?, "away_enabled"? }` — **`mode` 필수**
-- 200: `{ "ok", "applied_mode"?, "auto_enabled"?, "away_enabled"?, "partial_failure"?, "error"? }`
-- 외출·자동제어 토글 시에도 **현재 `mode`를 함께** 전송
+- Body: `{ "mode": "off" | "auto" | "cool" | "dry", "operating_mode"?, "auto_enabled"?, "away_enabled"? }` — **`mode` 필수**, `operating_mode` 지정 시 플래그보다 우선
+- 권장: 자동 `{ "mode": "auto", "operating_mode": "auto" }`, 외출 `{ "mode": "auto", "operating_mode": "away" }` (외출 시 `mode: "off"` 금지), 수동 냉방 `{ "mode": "cool", "operating_mode": "manual" }`
+- 200: `{ "ok", "applied_mode"?, "operating_mode"?, "auto_enabled"?, "away_enabled"?, "partial_failure"?, "error"? }`
 - 4xx `detail`:
   - 401/502/503/504: `{ "detail": { "detail": "<메시지>", "code": "<코드>" } }`
   - 422: `{ "detail": [ { "type", "loc", "msg", ... } ] }` (FastAPI 표준)
@@ -74,11 +75,17 @@ PWA: 플러그 50W 추정은 `/ac/state` 미수신 시 보조 fallback만. 일�
 - `last_on`, `last_off`, `last_transition`: KST `YYYY-MM-DD HH:MM:SS` \| null — null·`00:00:00`(보조)이면 PWA 「자동 기록 없음」
 - PWA: `ac_estimated_running` → 「가동 중(추정)」 배지, `ac_auto_state` → 「자동 on/off · 시각」 배지 (합치지 않음)
 
-| `ac_away_enabled` | `boolean \| null` | HA 외출 스마트 모드 |
+| `ac_away_enabled` | `boolean \| null` | 하위 호환 |
+| `ac_operating_mode` | `manual` \| `auto` \| `away` \| null | HA 3모드 파생 (OpenAPI 1.8.0+) |
 | `ac_mode` | `off` \| `auto` \| `cool` \| `dry` | HA AC 모드 select |
 | `ac_last_run_mode` | `cool` \| `dry` \| null | auto 가동 중 마지막 cool/dry |
 
-제어: `POST /api/v1/ac` (`mode` 필수, `auto_enabled`·`away_enabled` 선택). 레거시 `POST /api/v1/ac/auto` 는 mock·하위 호환만.
+제어: `POST /api/v1/ac` (`mode` + `operating_mode` 권장). 레거시 `POST /api/v1/ac/auto` 는 mock·하위 호환만.
+
+## GET /api/v1/ac/thresholds (OpenAPI 1.8.0+)
+
+- `version`: `v3.0` — `home_auto`·`away` ON/OFF 문구, `mutex` 보조
+- PWA: 에어컨 탭 「집·외출 자동 조건」. `away` 가 `home_auto` 와 동일하면 외출 HA 정본 fallback (`src/utils/acThresholdFallbacks.ts`)
 
 ## GET /api/v1/status — 추정 요금 · `electricity` (OpenAPI 1.5.0+)
 

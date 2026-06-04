@@ -109,8 +109,11 @@ function patchAcState(
   }
   if (params.mode === "off") {
     next.power = "off";
-  } else if (params.mode === "cool" || params.mode === "dry") {
-    next.last_run_mode = params.mode;
+  } else {
+    next.power = "on";
+    if (params.mode === "cool" || params.mode === "dry") {
+      next.last_run_mode = params.mode;
+    }
   }
   return next;
 }
@@ -150,6 +153,17 @@ function patchStatusAc(
   }
   if (params.mode === "cool" || params.mode === "dry") {
     next.ac_last_run_mode = params.mode;
+  }
+  if (params.mode !== "off" && previous.ac_auto_state) {
+    next.ac_auto_state = {
+      ...previous.ac_auto_state,
+      state: "on",
+    };
+  } else if (params.mode === "off" && previous.ac_auto_state) {
+    next.ac_auto_state = {
+      ...previous.ac_auto_state,
+      state: "off",
+    };
   }
   return next;
 }

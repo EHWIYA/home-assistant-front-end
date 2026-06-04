@@ -53,11 +53,9 @@ function syncMockStatusAcFields(status: StatusResponse): void {
   status.ac_operating_mode = mockAcOperatingMode;
   status.ac_auto_enabled = mockAcOperatingMode === "auto";
   if (mockAcMode === "auto") {
-    status.ac_last_run_mode = "cool";
+    status.ac_last_run_mode = status.ac_last_run_mode ?? "cool";
   } else if (mockAcMode === "cool" || mockAcMode === "dry") {
     status.ac_last_run_mode = mockAcMode;
-  } else {
-    status.ac_last_run_mode = null;
   }
 }
 
@@ -87,6 +85,13 @@ export async function setAc(action: AcActionRequest): Promise<AcActionResponse> 
   if (shouldUseMock()) {
     await new Promise((r) => setTimeout(r, 300));
     const status = mockStatus as StatusResponse;
+    if (action.mode === "off") {
+      if (mockAcMode === "cool" || mockAcMode === "dry") {
+        status.ac_last_run_mode = mockAcMode;
+      } else if (mockAcMode === "auto") {
+        status.ac_last_run_mode = status.ac_last_run_mode ?? "cool";
+      }
+    }
     mockAcMode = action.mode;
     if (action.operating_mode) {
       mockAcOperatingMode = action.operating_mode;
@@ -160,7 +165,7 @@ export async function fetchAcState(): Promise<AcStateResponse> {
     const plugW = status.plug.power_w ?? 0;
     const plugHigh = plugW >= 50;
     const mode = mockAcMode;
-    const power: "on" | "off" = mode === "off" ? "off" : plugHigh ? "on" : "off";
+    const power: "on" | "off" = mode === "off" ? "off" : "on";
     return {
       temperature: status.indoor?.temperature ?? 27.5,
       humidity: status.indoor?.humidity ?? 50,

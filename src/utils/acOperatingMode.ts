@@ -82,6 +82,55 @@ export function buildAcActionControlRequest(
   return buildAcModeControlRequest(targetMode, effective);
 }
 
+/** 제어 카드 헤더 — IR·논리 전원 끄기 (플러그와 별도) */
+export function buildAcPowerOffRequest(
+  operatingMode: AcOperatingMode | null | undefined,
+): AcActionRequest {
+  return {
+    mode: "off",
+    operating_mode: operatingMode ?? "manual",
+  };
+}
+
+/**
+ * 켜기 시 복원 mode.
+ * power=off 인데 HA mode select가 cool/auto 등으로 남은 경우 IR 재전송을 위해
+ * last_run_mode(또는 cool)를 쓰고, off→자동/외출만 mode=auto.
+ */
+export function resolveAcResumeMode(
+  operatingMode: AcOperatingMode,
+  currentMode: AcMode,
+  lastRunMode: AcLastRunMode | null | undefined,
+): AcMode {
+  const resume = lastRunMode ?? "cool";
+
+  if (operatingMode === "auto" || operatingMode === "away") {
+    if (currentMode === "off") {
+      return "auto";
+    }
+    return resume;
+  }
+
+  if (currentMode === "off" || currentMode === "auto") {
+    return resume;
+  }
+
+  return currentMode;
+}
+
+/** 제어 카드 헤더 — 켜기 시 가장 최근 동작 복원 */
+export function buildAcPowerOnRequest(
+  operatingMode: AcOperatingMode | null | undefined,
+  currentMode: AcMode,
+  lastRunMode: AcLastRunMode | null | undefined,
+): AcActionRequest {
+  const effective = operatingMode ?? "manual";
+  return {
+    mode: resolveAcResumeMode(effective, currentMode, lastRunMode),
+    operating_mode: effective,
+  };
+}
+
 export function buildAcOperatingModeSwitchRequest(
   operatingMode: AcOperatingMode,
   currentMode: AcMode,

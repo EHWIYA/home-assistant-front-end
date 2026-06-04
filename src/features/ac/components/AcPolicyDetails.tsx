@@ -1,4 +1,11 @@
 import type { AcThresholdRule, AcThresholdsResponse } from "@/api/types";
+import {
+  AC_THRESHOLD_AWAY_OFF_FALLBACK,
+  AC_THRESHOLD_AWAY_ON_FALLBACK,
+  AC_THRESHOLD_HOME_AUTO_OFF_FALLBACK,
+  AC_THRESHOLD_HOME_AUTO_ON_FALLBACK,
+  resolveAwayThresholdRule,
+} from "@/utils/acThresholdFallbacks";
 import panelStyles from "./AcAdvancedPanel.module.css";
 import styles from "./AcPolicyDetails.module.css";
 
@@ -6,14 +13,6 @@ interface AcPolicyDetailsProps {
   thresholds?: AcThresholdsResponse;
   loading?: boolean;
 }
-
-const DEFAULT_HOME_ON =
-  "27°C 이상 5분 또는 (24°C 이상·습도 70% 이상 10분)";
-const DEFAULT_HOME_OFF =
-  "25°C 미만·습도 55% 미만(각 10분 유지, 최소 가동 25분)";
-const DEFAULT_AWAY_ON =
-  "28°C 이상 20분 또는 (25°C 이상·습도 68% 이상 20분)";
-const DEFAULT_AWAY_OFF = "27°C 미만·습도 58% 미만";
 
 function ThresholdBody({ rule, fallbackOn, fallbackOff }: {
   rule: AcThresholdRule | undefined;
@@ -41,7 +40,7 @@ export function AcPolicyDetails({ thresholds, loading }: AcPolicyDetailsProps) {
   }
 
   const home = thresholds?.home_auto;
-  const away = thresholds?.away;
+  const away = resolveAwayThresholdRule(thresholds?.away, home);
 
   return (
     <div className={styles.root}>
@@ -58,8 +57,8 @@ export function AcPolicyDetails({ thresholds, loading }: AcPolicyDetailsProps) {
         <summary>집 자동 — 온도·습도 조건</summary>
         <ThresholdBody
           rule={home}
-          fallbackOn={DEFAULT_HOME_ON}
-          fallbackOff={DEFAULT_HOME_OFF}
+          fallbackOn={AC_THRESHOLD_HOME_AUTO_ON_FALLBACK}
+          fallbackOff={AC_THRESHOLD_HOME_AUTO_OFF_FALLBACK}
         />
       </details>
 
@@ -67,8 +66,8 @@ export function AcPolicyDetails({ thresholds, loading }: AcPolicyDetailsProps) {
         <summary>외출 — 온도·습도 조건</summary>
         <ThresholdBody
           rule={away}
-          fallbackOn={DEFAULT_AWAY_ON}
-          fallbackOff={DEFAULT_AWAY_OFF}
+          fallbackOn={AC_THRESHOLD_AWAY_ON_FALLBACK}
+          fallbackOff={AC_THRESHOLD_AWAY_OFF_FALLBACK}
         />
       </details>
 

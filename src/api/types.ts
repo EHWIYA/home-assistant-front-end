@@ -245,7 +245,7 @@ export interface HealthResponse {
   db_reachable?: boolean;
 }
 
-/** GET /api/v1/ac/thresholds — HA 임계값 v2 요약 */
+/** GET /api/v1/ac/thresholds — HA 임계값 v3.0 요약 */
 export interface AcThresholdRule {
   on: string;
   off: string;

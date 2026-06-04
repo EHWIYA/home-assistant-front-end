@@ -69,15 +69,18 @@ export function getAcModeDisplayText({
     return getAcOffStatusLabel(lastRunMode);
   }
 
-  if (operatingMode === "auto" || operatingMode === "away") {
+  if (operatingMode === "away") {
+    return "외출";
+  }
+
+  if (operatingMode === "auto") {
     if (mode === "cool") {
-      return operatingMode === "away" ? "외출 · 냉방" : "냉방";
+      return "냉방";
     }
     if (power === "on" && lastRunMode) {
-      const prefix = operatingMode === "away" ? "외출" : "자동";
-      return `${prefix} (${getAcLastRunModeLabel(lastRunMode)})`;
+      return `자동 (${getAcLastRunModeLabel(lastRunMode)})`;
     }
-    return operatingMode === "away" ? "외출" : AC_AI_ACTION_LABEL;
+    return AC_AI_ACTION_LABEL;
   }
 
   if (mode === "off") return "끄기";
@@ -127,10 +130,12 @@ export function getAcPrimaryStatusLabel({
   }
 
   if (isRunning && power === "on") {
-    if (operatingMode === "auto" || operatingMode === "away") {
-      const prefix = operatingMode === "away" ? "외출" : "자동";
-      if (lastRunMode === "dry") return `${prefix} · 제습`;
-      if (lastRunMode === "cool") return `${prefix} · 냉방`;
+    if (operatingMode === "away") {
+      return "외출";
+    }
+    if (operatingMode === "auto") {
+      if (lastRunMode === "dry") return "자동 · 제습";
+      if (lastRunMode === "cool") return "자동 · 냉방";
       if (mode === "cool") return "냉방 중";
       return "가동 중";
     }

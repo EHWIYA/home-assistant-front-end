@@ -7,12 +7,10 @@
 | 탭 | 경로 | 기능 |
 |----|------|------|
 | 홈 | `/` | 요약·빠른 제어 (status + strip 요약) |
-| 에어컨 | `/ac` | 플러그·환경·에어컨·수면 모드 |
+| 에어컨 | `/ac` | 플러그·환경·에어컨 제어 |
 | PC | `/pc` | Tapo PC 콘센트 제어 |
 | 멀티탭 | `/strip` | 헤이홈 4구 ON/OFF · `/strip/schedules` 스케줄 CRUD |
 | 설정 | `/settings` | API 정보 · GET /health |
-
-`/sleep` 은 `/ac` 로 리다이렉트됩니다.
 
 ## 스택
 
@@ -85,7 +83,7 @@ OpenAPI·에러 형식·`ac_estimated_running` 정의: [docs/api.md](docs/api.md
 
 ```
 src/api/          # client, types, errors, mock
-src/features/     # dashboard, ac(sleep), settings
+src/features/     # dashboard, ac, settings
 src/layouts/      # AppShell + 하단 탭
 src/hooks/        # useStatus
 ```

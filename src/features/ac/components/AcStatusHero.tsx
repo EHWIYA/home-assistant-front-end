@@ -5,10 +5,12 @@ import type { IndoorClimate } from "@/api/types";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { MiniPowerBar } from "@/components/viz/MiniPowerBar";
 import { getAcModeDisplayText } from "@/utils/acMode";
-import { formatTemperatureHumidity } from "@/utils/climate";
-import { getAcAutoEnabledLabel } from "@/utils/acAuto";
-import { getAcAwayEnabledLabel } from "@/utils/acMode";
+import {
+  deriveAcOperatingMode,
+  getAcOperatingModeLabel,
+} from "@/utils/acOperatingMode";
 import { getAcRunningBadge } from "@/utils/acRunning";
+import { formatTemperatureHumidity } from "@/utils/climate";
 import { formatPowerW } from "@/utils/power";
 import {
   getAcHomePrimaryStatus,
@@ -40,13 +42,18 @@ export function AcStatusHero({
   const theme = HOME_DOMAIN_THEME.ac;
   const primary = getAcHomePrimaryStatus(data, acState);
   const mode = acState?.mode ?? data.ac_mode ?? "off";
+  const operatingMode = deriveAcOperatingMode(
+    acState?.operating_mode ?? data.ac_operating_mode,
+    acState?.auto_enabled ?? data.ac_auto_enabled,
+    acState?.away_enabled ?? data.ac_away_enabled,
+  );
   const modeText = getAcModeDisplayText({
     mode,
     power: acState?.power,
     lastRunMode: acState?.last_run_mode ?? data.ac_last_run_mode ?? null,
+    operatingMode,
+    acAutoState: data.ac_auto_state,
   });
-  const autoEnabled = acState?.auto_enabled ?? data.ac_auto_enabled;
-  const awayEnabled = acState?.away_enabled ?? data.ac_away_enabled;
   const runningBadge = getAcRunningBadge(acState, data.ac_estimated_running);
   const dotColor =
     primary.tone === "active" ? theme.accent : TONE_DOT[primary.tone];
@@ -78,27 +85,22 @@ export function AcStatusHero({
         />
         <div>
           <p className={styles.statusLabel}>{primary.label}</p>
-          <p className={styles.modeSub}>모드 {modeText}</p>
+          <p className={styles.modeSub}>지금 · {modeText}</p>
         </div>
       </div>
 
       <div className={styles.pillRow}>
         <span
           className={`${styles.pill} ${
-            autoEnabled === true
+            operatingMode === "auto" || operatingMode === "away"
               ? styles.pillOk
-              : autoEnabled === false
+              : operatingMode === "manual"
                 ? styles.pillMuted
                 : styles.pillWarn
           }`.trim()}
         >
-          {getAcAutoEnabledLabel(autoEnabled)}
+          {getAcOperatingModeLabel(operatingMode)}
         </span>
-        {awayEnabled === true ? (
-          <span className={`${styles.pill} ${styles.pillActive}`.trim()}>
-            {getAcAwayEnabledLabel(true)}
-          </span>
-        ) : null}
         {runningBadge ? (
           <span
             className={`${styles.pill} ${

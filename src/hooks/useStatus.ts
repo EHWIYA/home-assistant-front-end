@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   fetchAcState,
+  fetchAcThresholds,
   fetchStatus,
   setAc,
   setPc,
@@ -10,11 +11,15 @@ import {
 import type {
   AcActionRequest,
   AcActionResponse,
+  AcOperatingMode,
   AcStateResponse,
   OnOffAction,
   StatusResponse,
   PlugSwitch,
 } from "@/api/types";
+import {
+  operatingModeToFlags,
+} from "@/utils/acOperatingMode";
 import {
   POLLING_STALE_TIME_MS,
   usePollingIntervalMs,
@@ -23,6 +28,7 @@ import { useStatusStream } from "@/hooks/useStatusStream";
 
 export const STATUS_QUERY_KEY = ["status"] as const;
 export const AC_STATE_QUERY_KEY = ["ac-state"] as const;
+export const AC_THRESHOLDS_QUERY_KEY = ["ac-thresholds"] as const;
 
 export type AcControlParams = AcActionRequest;
 
@@ -59,7 +65,28 @@ function getAcControlErrorMessage(
   ) {
     return "요청한 외출모드 상태와 적용 상태가 다릅니다.";
   }
+  if (
+    requested.operating_mode &&
+    response.operating_mode &&
+    response.operating_mode !== requested.operating_mode
+  ) {
+    return "요청한 운전모드와 적용 상태가 다릅니다.";
+  }
   return null;
+}
+
+function applyOperatingModePatch(
+  operatingMode: AcOperatingMode,
+): {
+  auto_enabled: boolean;
+  away_enabled: boolean;
+  operating_mode: AcOperatingMode;
+} {
+  const flags = operatingModeToFlags(operatingMode);
+  return {
+    ...flags,
+    operating_mode: operatingMode,
+  };
 }
 
 function patchAcState(
@@ -70,11 +97,15 @@ function patchAcState(
     return undefined;
   }
   const next: AcStateResponse = { ...previous, mode: params.mode };
-  if (typeof params.auto_enabled === "boolean") {
-    next.auto_enabled = params.auto_enabled;
-  }
-  if (typeof params.away_enabled === "boolean") {
-    next.away_enabled = params.away_enabled;
+  if (params.operating_mode) {
+    Object.assign(next, applyOperatingModePatch(params.operating_mode));
+  } else {
+    if (typeof params.auto_enabled === "boolean") {
+      next.auto_enabled = params.auto_enabled;
+    }
+    if (typeof params.away_enabled === "boolean") {
+      next.away_enabled = params.away_enabled;
+    }
   }
   if (params.mode === "off") {
     next.power = "off";
@@ -95,15 +126,27 @@ function patchStatusAc(
     ...previous,
     ac_mode: params.mode,
   };
-  if (typeof params.auto_enabled === "boolean") {
-    next.ac_auto_enabled = params.auto_enabled;
-    next.plug = {
-      ...previous.plug,
-      switch: params.auto_enabled ? "on" : "off",
-    };
-  }
-  if (typeof params.away_enabled === "boolean") {
-    next.ac_away_enabled = params.away_enabled;
+  if (params.operating_mode) {
+    const flags = applyOperatingModePatch(params.operating_mode);
+    next.ac_operating_mode = flags.operating_mode;
+    next.ac_auto_enabled = flags.auto_enabled;
+    next.ac_away_enabled = flags.away_enabled;
+    if (params.operating_mode === "auto") {
+      next.plug = { ...previous.plug, switch: "on" };
+    } else if (params.operating_mode === "manual") {
+      next.plug = { ...previous.plug, switch: "off" };
+    }
+  } else {
+    if (typeof params.auto_enabled === "boolean") {
+      next.ac_auto_enabled = params.auto_enabled;
+      next.plug = {
+        ...previous.plug,
+        switch: params.auto_enabled ? "on" : "off",
+      };
+    }
+    if (typeof params.away_enabled === "boolean") {
+      next.ac_away_enabled = params.away_enabled;
+    }
   }
   if (params.mode === "cool" || params.mode === "dry") {
     next.ac_last_run_mode = params.mode;
@@ -210,7 +253,15 @@ export function useAcState() {
   });
 }
 
-/** 현재 mode를 함께 보내 POST /api/v1/ac 로 자동제어 마스터 토글 */
+export function useAcThresholds() {
+  return useQuery({
+    queryKey: AC_THRESHOLDS_QUERY_KEY,
+    queryFn: fetchAcThresholds,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** @deprecated useAcControl + operating_mode 사용 권장 */
 export function useAcAutoToggle() {
   const queryClient = useQueryClient();
 
@@ -219,7 +270,15 @@ export function useAcAutoToggle() {
       const acState = queryClient.getQueryData<AcStateResponse>(AC_STATE_QUERY_KEY);
       const status = queryClient.getQueryData<StatusResponse>(STATUS_QUERY_KEY);
       const mode = acState?.mode ?? status?.ac_mode ?? "off";
-      const params: AcControlParams = { mode, auto_enabled: enabled };
+      const lastRunMode = acState?.last_run_mode ?? status?.ac_last_run_mode ?? null;
+      const params: AcControlParams =
+        enabled
+          ? { mode: "auto", operating_mode: "auto" }
+          : {
+              mode:
+                mode === "auto" || mode === "off" ? (lastRunMode ?? "cool") : mode,
+              operating_mode: "manual",
+            };
       const response = await setAc(params);
       const responseError = getAcControlErrorMessage(response, params);
       if (responseError) {
@@ -235,7 +294,15 @@ export function useAcAutoToggle() {
       const acState = queryClient.getQueryData<AcStateResponse>(AC_STATE_QUERY_KEY);
       const status = queryClient.getQueryData<StatusResponse>(STATUS_QUERY_KEY);
       const mode = acState?.mode ?? status?.ac_mode ?? "off";
-      const params: AcControlParams = { mode, auto_enabled: enabled };
+      const lastRunMode = acState?.last_run_mode ?? status?.ac_last_run_mode ?? null;
+      const params: AcControlParams =
+        enabled
+          ? { mode: "auto", operating_mode: "auto" }
+          : {
+              mode:
+                mode === "auto" || mode === "off" ? (lastRunMode ?? "cool") : mode,
+              operating_mode: "manual",
+            };
       const previousAcState = queryClient.getQueryData<AcStateResponse>(AC_STATE_QUERY_KEY);
       const previousStatus = queryClient.getQueryData<StatusResponse>(STATUS_QUERY_KEY);
       const nextAcState = patchAcState(previousAcState, params);

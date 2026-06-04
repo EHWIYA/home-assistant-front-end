@@ -1,6 +1,7 @@
 import type { StatusResponse } from "@/api/types";
 import type { StripStateResponse } from "@/api/types";
 import { useAcState } from "@/hooks/useStatus";
+import { deriveAcOperatingMode } from "@/utils/acOperatingMode";
 import styles from "./HomeAlerts.module.css";
 
 interface HomeAlertsProps {
@@ -11,11 +12,15 @@ interface HomeAlertsProps {
 
 export function HomeAlerts({ status, strip, stripLoading }: HomeAlertsProps) {
   const acStateQuery = useAcState();
-  const awayEnabled =
-    acStateQuery.data?.away_enabled ?? status.ac_away_enabled ?? false;
+  const awayActive =
+    deriveAcOperatingMode(
+      acStateQuery.data?.operating_mode ?? status.ac_operating_mode,
+      acStateQuery.data?.auto_enabled ?? status.ac_auto_enabled,
+      acStateQuery.data?.away_enabled ?? status.ac_away_enabled,
+    ) === "away";
   const badges: { key: string; label: string; className: string }[] = [];
 
-  if (awayEnabled) {
+  if (awayActive) {
     badges.push({
       key: "away",
       label: "외출모드",

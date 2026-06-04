@@ -1,29 +1,46 @@
 import { Badge } from "@/components/status/Badge";
-import type { AcStateResponse, StatusResponse } from "@/api/types";
+import type { AcOperatingMode, AcStateResponse, StatusResponse } from "@/api/types";
+import { getAcAutoTransitionBadge } from "@/utils/acAuto";
+import { getAcModeDisplayText } from "@/utils/acMode";
 import {
-  getAcAutoEnabledLabel,
-  getAcAutoTransitionBadge,
-} from "@/utils/acAuto";
-import { getAcAutoEnabledVariant } from "@/utils/acAutoBadge";
-import { getAcAwayEnabledLabel } from "@/utils/acMode";
+  deriveAcOperatingMode,
+  getAcOperatingModeLabel,
+} from "@/utils/acOperatingMode";
 import { getAcRunningBadge } from "@/utils/acRunning";
 import shared from "@/components/status/statusPage.module.css";
 
 interface AcStatusBadgesProps {
   data: Pick<
     StatusResponse,
+    | "ac_operating_mode"
     | "ac_auto_enabled"
     | "ac_auto_state"
     | "ac_estimated_running"
     | "ac_away_enabled"
     | "ac_mode"
+    | "ac_last_run_mode"
   >;
   acState?: Pick<
     AcStateResponse,
-    "power" | "running_source" | "mode" | "auto_enabled" | "away_enabled"
+    | "power"
+    | "running_source"
+    | "mode"
+    | "operating_mode"
+    | "auto_enabled"
+    | "away_enabled"
+    | "last_run_mode"
   >;
   showSyncWarning: boolean;
   syncWarningTitle?: string;
+}
+
+function getOperatingModeVariant(
+  operatingMode: AcOperatingMode | null,
+): "ok" | "muted" | "warn" {
+  if (operatingMode === "auto") return "ok";
+  if (operatingMode === "away") return "ok";
+  if (operatingMode === "manual") return "muted";
+  return "warn";
 }
 
 export function AcStatusBadges({
@@ -34,23 +51,26 @@ export function AcStatusBadges({
 }: AcStatusBadgesProps) {
   const transition = getAcAutoTransitionBadge(data.ac_auto_state);
   const runningBadge = getAcRunningBadge(acState, data.ac_estimated_running);
-  const awayEnabled = acState?.away_enabled ?? data.ac_away_enabled;
-  const autoEnabled = acState?.auto_enabled ?? data.ac_auto_enabled;
+  const operatingMode = deriveAcOperatingMode(
+    acState?.operating_mode ?? data.ac_operating_mode,
+    acState?.auto_enabled ?? data.ac_auto_enabled,
+    acState?.away_enabled ?? data.ac_away_enabled,
+  );
+  const mode = acState?.mode ?? data.ac_mode ?? "off";
+  const modeText = getAcModeDisplayText({
+    mode,
+    power: acState?.power,
+    lastRunMode: acState?.last_run_mode ?? data.ac_last_run_mode ?? null,
+    operatingMode,
+    acAutoState: data.ac_auto_state,
+  });
 
   return (
     <div className={shared.badgeRow}>
-      <Badge
-        variant={getAcAutoEnabledVariant(autoEnabled)}
-        title="HA 자동 ON/OFF 마스터 — POST /ac auto_enabled"
-      >
-        {getAcAutoEnabledLabel(autoEnabled)}
+      <Badge variant={getOperatingModeVariant(operatingMode)}>
+        {getAcOperatingModeLabel(operatingMode)}
       </Badge>
-      <Badge
-        variant={awayEnabled === true ? "ok" : awayEnabled === false ? "muted" : "warn"}
-        title="HA 외출 스마트 모드 — 켜지면 자동제어보다 우선"
-      >
-        {getAcAwayEnabledLabel(awayEnabled)}
-      </Badge>
+      <Badge variant="muted">{modeText}</Badge>
       {transition.kind === "transition" ? (
         <Badge variant="muted" title={transition.title}>
           {transition.label}

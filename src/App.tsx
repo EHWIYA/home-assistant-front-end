@@ -23,7 +23,6 @@ export default function App() {
             path="strip/schedules/:id/edit"
             element={<ScheduleFormPage />}
           />
-          <Route path="sleep" element={<Navigate to="/ac" replace />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

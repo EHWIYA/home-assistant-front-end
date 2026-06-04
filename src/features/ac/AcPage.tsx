@@ -12,7 +12,6 @@ import shared from "@/components/status/statusPage.module.css";
 import { AcAdvancedPanel } from "./components/AcAdvancedPanel";
 import { AcModeControls } from "./components/AcModeControls";
 import { AcPlugCard } from "./components/AcPlugCard";
-import { AcSleepNotice } from "./components/AcSleepNotice";
 import { AcStatusHero } from "./components/AcStatusHero";
 import { useAcSyncWarning } from "./hooks/useAcSyncWarning";
 
@@ -67,7 +66,6 @@ function AcPageContent({
         showSyncWarning={showSyncWarning}
         syncWarningTitle={syncWarningTitle}
       />
-      <AcSleepNotice />
       <StatusFooter data={data} />
     </div>
   );

@@ -1,7 +1,10 @@
 import type { AcStateResponse, PcStatus, StatusResponse } from "@/api/types";
 import type { StripStateResponse } from "@/api/types";
-import { getAcAutoEnabledLabel } from "@/utils/acAuto";
-import { getAcModeDisplayText } from "@/utils/acMode";
+import {
+  deriveAcOperatingMode,
+  getAcOperatingModeLabel,
+} from "@/utils/acOperatingMode";
+import { getAcPrimaryStatusLabel, isAcPowerOff } from "@/utils/acMode";
 import { getAcRunningBadge } from "@/utils/acRunning";
 import { formatPowerW } from "@/utils/power";
 
@@ -17,45 +20,54 @@ export function getAcHomePrimaryStatus(
   acState: AcStateResponse | undefined,
 ): HomeStatusLine {
   const mode = acState?.mode ?? status.ac_mode ?? "off";
-  const running = getAcRunningBadge(acState, status.ac_estimated_running);
-  const modeText = getAcModeDisplayText({
+  const power = acState?.power;
+  const lastRunMode = acState?.last_run_mode ?? status.ac_last_run_mode ?? null;
+  const acAutoState = status.ac_auto_state;
+  const operatingMode = deriveAcOperatingMode(
+    acState?.operating_mode ?? status.ac_operating_mode,
+    acState?.auto_enabled ?? status.ac_auto_enabled,
+    acState?.away_enabled ?? status.ac_away_enabled,
+  );
+  const runningBadge = getAcRunningBadge(acState, status.ac_estimated_running);
+  const isLowPowerRunning = runningBadge?.label === "가동 중(저전력)";
+  const isRunning = runningBadge != null && !isLowPowerRunning;
+
+  const label = getAcPrimaryStatusLabel({
     mode,
-    power: acState?.power,
-    lastRunMode: acState?.last_run_mode ?? status.ac_last_run_mode ?? null,
+    power,
+    lastRunMode,
+    operatingMode,
+    acAutoState,
+    isRunning: isRunning || isLowPowerRunning,
+    isLowPowerRunning,
   });
 
-  if (running?.label === "가동 중(저전력)") {
-    return { label: "저전력 가동", tone: "warn" };
+  if (isAcPowerOff(power, acAutoState)) {
+    return { label, tone: "idle" };
   }
-
-  if (running) {
-    if (mode === "cool") return { label: "냉방 중", tone: "active" };
-    if (mode === "dry") return { label: "제습 중", tone: "active" };
-    if (mode === "auto") {
-      if (modeText.includes("냉방")) return { label: "자동 · 냉방", tone: "active" };
-      if (modeText.includes("제습")) return { label: "자동 · 제습", tone: "active" };
-      return { label: "자동 가동", tone: "active" };
-    }
-    if (running.label === "가동 중(추정)") {
-      return { label: "가동(추정)", tone: "warn" };
-    }
-    return { label: "가동 중", tone: "active" };
+  if (isLowPowerRunning) {
+    return { label, tone: "warn" };
   }
-
-  if (mode === "off" || modeText === "끄기") {
+  if (isRunning && power === "on") {
+    return { label, tone: "active" };
+  }
+  if (mode === "off") {
     return { label: "꺼짐", tone: "idle" };
   }
-
-  return { label: modeText, tone: "idle" };
+  return { label, tone: "idle" };
 }
 
 export function getAcHomeSecondaryLine(status: StatusResponse): string {
   const parts = [formatPowerW(status.plug.power_w)];
-  const autoLabel = getAcAutoEnabledLabel(status.ac_auto_enabled);
-  if (autoLabel === "자동제어 켜짐") {
-    parts.push("자동 ON");
-  } else if (autoLabel === "자동제어 꺼짐") {
-    parts.push("자동 OFF");
+  const operatingLabel = getAcOperatingModeLabel(
+    deriveAcOperatingMode(
+      status.ac_operating_mode,
+      status.ac_auto_enabled,
+      status.ac_away_enabled,
+    ),
+  );
+  if (operatingLabel !== "—") {
+    parts.push(operatingLabel);
   }
   return parts.join(" · ");
 }

@@ -1,4 +1,5 @@
 import { apiRequest, shouldUseMock } from "./http";
+import mockAcThresholds from "./mock/acThresholds.json";
 import mockStatus from "./mock/status.json";
 import type {
   AcActionRequest,
@@ -7,17 +8,25 @@ import type {
   AcAutoToggleResponse,
   AcLastRunMode,
   AcMode,
+  AcOperatingMode,
   AcStateResponse,
+  AcThresholdsResponse,
   PcActionRequest,
   PcActionResponse,
   PlugActionRequest,
   StatusResponse,
 } from "./types";
+import { operatingModeToFlags } from "@/utils/acOperatingMode";
 
 export { ApiError, hasApiKey, shouldUseMock as isUsingMock } from "./http";
 
 let mockAcMode: AcMode = "cool";
 let mockAcAwayEnabled = false;
+let mockAcOperatingMode: AcOperatingMode = "auto";
+
+function isAcOperatingMode(value: unknown): value is AcOperatingMode {
+  return value === "manual" || value === "auto" || value === "away";
+}
 
 function toFiniteNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -41,6 +50,8 @@ function isAcLastRunMode(value: unknown): value is AcLastRunMode {
 function syncMockStatusAcFields(status: StatusResponse): void {
   status.ac_mode = mockAcMode;
   status.ac_away_enabled = mockAcAwayEnabled;
+  status.ac_operating_mode = mockAcOperatingMode;
+  status.ac_auto_enabled = mockAcOperatingMode === "auto";
   if (mockAcMode === "auto") {
     status.ac_last_run_mode = "cool";
   } else if (mockAcMode === "cool" || mockAcMode === "dry") {
@@ -77,12 +88,20 @@ export async function setAc(action: AcActionRequest): Promise<AcActionResponse> 
     await new Promise((r) => setTimeout(r, 300));
     const status = mockStatus as StatusResponse;
     mockAcMode = action.mode;
-    if (typeof action.auto_enabled === "boolean") {
-      status.ac_auto_enabled = action.auto_enabled;
-    }
-    if (typeof action.away_enabled === "boolean") {
-      mockAcAwayEnabled = action.away_enabled;
-      status.ac_away_enabled = action.away_enabled;
+    if (action.operating_mode) {
+      mockAcOperatingMode = action.operating_mode;
+      const flags = operatingModeToFlags(action.operating_mode);
+      status.ac_auto_enabled = flags.auto_enabled;
+      mockAcAwayEnabled = flags.away_enabled;
+      status.ac_away_enabled = flags.away_enabled;
+    } else {
+      if (typeof action.auto_enabled === "boolean") {
+        status.ac_auto_enabled = action.auto_enabled;
+      }
+      if (typeof action.away_enabled === "boolean") {
+        mockAcAwayEnabled = action.away_enabled;
+        status.ac_away_enabled = action.away_enabled;
+      }
     }
     syncMockStatusAcFields(status);
     status.ac_auto_state = {
@@ -102,6 +121,7 @@ export async function setAc(action: AcActionRequest): Promise<AcActionResponse> 
       applied_mode: action.mode,
       auto_enabled: status.ac_auto_enabled ?? null,
       away_enabled: status.ac_away_enabled ?? null,
+      operating_mode: mockAcOperatingMode,
       partial_failure: false,
     };
   }
@@ -147,6 +167,7 @@ export async function fetchAcState(): Promise<AcStateResponse> {
       mode,
       auto_enabled: status.ac_auto_enabled ?? false,
       away_enabled: mockAcAwayEnabled,
+      operating_mode: mockAcOperatingMode,
       last_run_mode:
         mode === "auto" && power === "on"
           ? (status.ac_last_run_mode ?? "cool")
@@ -167,6 +188,7 @@ export async function fetchAcState(): Promise<AcStateResponse> {
   const normalizedMode = raw.mode;
   const normalizedAutoEnabled = raw.auto_enabled ?? raw.auto_mode;
   const normalizedAwayEnabled = raw.away_enabled;
+  const normalizedOperatingMode = raw.operating_mode;
   const normalizedLastRunMode = raw.last_run_mode;
 
   if (normalizedTemperature == null || normalizedHumidity == null) {
@@ -181,6 +203,9 @@ export async function fetchAcState(): Promise<AcStateResponse> {
       typeof normalizedAutoEnabled === "boolean" ? normalizedAutoEnabled : false,
     away_enabled:
       typeof normalizedAwayEnabled === "boolean" ? normalizedAwayEnabled : false,
+    operating_mode: isAcOperatingMode(normalizedOperatingMode)
+      ? normalizedOperatingMode
+      : null,
     last_run_mode: isAcLastRunMode(normalizedLastRunMode)
       ? normalizedLastRunMode
       : null,
@@ -202,6 +227,14 @@ export async function fetchAcState(): Promise<AcStateResponse> {
         ? raw.last_control_result
         : null,
   };
+}
+
+export async function fetchAcThresholds(): Promise<AcThresholdsResponse> {
+  if (shouldUseMock()) {
+    await new Promise((r) => setTimeout(r, 120));
+    return mockAcThresholds as AcThresholdsResponse;
+  }
+  return apiRequest<AcThresholdsResponse>("/api/v1/ac/thresholds");
 }
 
 export async function setPc(

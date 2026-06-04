@@ -13,6 +13,9 @@ export interface OkResponse {
   ok: true;
 }
 
+/** HA 3모드 상호 배타 — OpenAPI 1.7.0+ */
+export type AcOperatingMode = "manual" | "auto" | "away";
+
 /** POST /api/v1/ac 응답 */
 export interface AcActionResponse {
   ok: boolean;
@@ -21,6 +24,7 @@ export interface AcActionResponse {
   power?: "on" | "off" | null;
   auto_enabled?: boolean | null;
   away_enabled?: boolean | null;
+  operating_mode?: AcOperatingMode | null;
   partial_failure?: boolean;
   error?: string | null;
 }
@@ -134,6 +138,11 @@ export interface StatusResponse {
   ac_auto_enabled?: boolean | null;
   /** HA 외출 스마트 모드 — OpenAPI 1.5.0+ */
   ac_away_enabled?: boolean | null;
+  /**
+   * HA 3모드 파생 — away ON→away, else auto ON→auto, else manual.
+   * OpenAPI 1.7.0+ · SSE snapshot 포함
+   */
+  ac_operating_mode?: AcOperatingMode | null;
   /** HA `input_select.hwiya_ac_mode` — OpenAPI 1.5.0+ */
   ac_mode?: AcMode | null;
   /** mode=auto 가동 중 실제 IR 모드(cool/dry) — OpenAPI 1.5.0+ */
@@ -153,9 +162,11 @@ export type AcLastRunMode = "cool" | "dry";
 
 export interface AcActionRequest {
   mode: AcMode;
-  /** HA 자동 ON/OFF 마스터 — 미전송 시 유지 */
+  /** 3모드 일괄 설정 — 지정 시 auto_enabled·away_enabled보다 우선 */
+  operating_mode?: AcOperatingMode | null;
+  /** @deprecated operating_mode 사용 권장 */
   auto_enabled?: boolean | null;
-  /** 외출 스마트 모드 — 미전송 시 유지 */
+  /** @deprecated operating_mode 사용 권장 */
   away_enabled?: boolean | null;
 }
 
@@ -181,6 +192,8 @@ export interface AcStateResponse {
   auto_enabled: boolean;
   /** HA 외출 스마트 모드 */
   away_enabled: boolean;
+  /** HA 3모드 — OpenAPI 1.7.0+ */
+  operating_mode?: AcOperatingMode | null;
   /** mode=auto·가동 중 마지막 cool/dry */
   last_run_mode?: AcLastRunMode | null;
   /** API 합성 가동 여부 (플러그·IR·ac_auto_state 종합) */
@@ -230,6 +243,20 @@ export interface StripChannelControlBody {
 export interface HealthResponse {
   status?: string;
   db_reachable?: boolean;
+}
+
+/** GET /api/v1/ac/thresholds — HA 임계값 v2 요약 */
+export interface AcThresholdRule {
+  on: string;
+  off: string;
+  notes?: string | null;
+}
+
+export interface AcThresholdsResponse {
+  version?: string;
+  home_auto: AcThresholdRule;
+  away: AcThresholdRule;
+  mutex?: string;
 }
 
 export type ScheduleActionType = "channel" | "preset";

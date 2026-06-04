@@ -11,6 +11,8 @@ import { ChannelGrid } from "@/components/viz/ChannelGrid";
 import { MiniPowerBar } from "@/components/viz/MiniPowerBar";
 import { PowerLevelBars } from "@/components/viz/PowerLevelBars";
 import { useAcState } from "@/hooks/useStatus";
+import { getAcModeDisplayText } from "@/utils/acMode";
+import { deriveAcOperatingMode } from "@/utils/acOperatingMode";
 import { formatPowerW } from "@/utils/power";
 import {
   getPowerLevelHeights,
@@ -237,8 +239,20 @@ function getAcModePillLabel(
     return undefined;
   }
   const mode = acState?.mode ?? status.ac_mode ?? "off";
-  if (mode === "cool") return "냉방";
-  if (mode === "dry") return "제습";
-  if (mode === "auto") return "자동";
+  const operatingMode = deriveAcOperatingMode(
+    acState?.operating_mode ?? status.ac_operating_mode,
+    acState?.auto_enabled ?? status.ac_auto_enabled,
+    acState?.away_enabled ?? status.ac_away_enabled,
+  );
+  const modeText = getAcModeDisplayText({
+    mode,
+    power: acState?.power,
+    lastRunMode: acState?.last_run_mode ?? status.ac_last_run_mode ?? null,
+    operatingMode,
+    acAutoState: status.ac_auto_state,
+  });
+  if (modeText.includes("냉방")) return "냉방";
+  if (modeText.includes("제습")) return "제습";
+  if (modeText.includes("자동") || modeText.includes("외출")) return "자동";
   return undefined;
 }

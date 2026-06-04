@@ -23,6 +23,7 @@
   "ac_estimated_running": true,
   "ac_auto_enabled": true,
   "ac_away_enabled": false,
+  "ac_operating_mode": "auto",
   "ac_mode": "cool",
   "ac_last_run_mode": "cool",
   "ac_auto_state": {

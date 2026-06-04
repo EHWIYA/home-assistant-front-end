@@ -17,3 +17,9 @@
 .list li {
   margin: 0.2rem 0;
 }
+
+.loading {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}

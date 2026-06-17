@@ -165,3 +165,39 @@
   background: rgba(240, 173, 78, 0.1);
   border: 1px solid rgba(240, 173, 78, 0.25);
 }
+
+.syncBannerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #f0ad4e;
+  background: rgba(240, 173, 78, 0.1);
+  border: 1px solid rgba(240, 173, 78, 0.25);
+}
+
+.syncBannerText {
+  margin: 0;
+  flex: 1 1 12rem;
+}
+
+.syncBannerBtn {
+  flex-shrink: 0;
+  padding: 0.35rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1a222c;
+  background: #f0ad4e;
+  border: none;
+  cursor: pointer;
+}
+
+.syncBannerBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

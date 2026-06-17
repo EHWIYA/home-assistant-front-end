@@ -16,4 +16,5 @@ export const routeHandles = {
     pageTitle: "스케줄 수정",
     hideTabBar: true,
   } satisfies AppRouteHandle,
+  mood: { pageTitle: "무드등" } satisfies AppRouteHandle,
 } as const;

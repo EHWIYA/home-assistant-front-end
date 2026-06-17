@@ -5,7 +5,8 @@ import chevronSvg from "cupertino-icons-svg/svg/chevron_right.svg?raw";
 import desktopSvg from "cupertino-icons-svg/svg/desktopcomputer.svg?raw";
 import snowSvg from "cupertino-icons-svg/svg/snow.svg?raw";
 import powerSvg from "cupertino-icons-svg/svg/power.svg?raw";
-import type { AcStateResponse, StatusResponse } from "@/api/types";
+import moonSvg from "cupertino-icons-svg/svg/moon_fill.svg?raw";
+import type { AcStateResponse, MoodMetaResponse, MoodStateResponse, StatusResponse } from "@/api/types";
 import type { StripStateResponse } from "@/api/types";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { ChannelGrid } from "@/components/viz/ChannelGrid";
@@ -27,6 +28,8 @@ import {
   getPcHomeSecondaryLine,
   getStripHomePrimaryStatus,
   getStripHomeSecondaryLine,
+  getMoodHomePrimaryStatus,
+  getMoodHomeSecondaryLine,
   type HomeStatusLine,
   type HomeStatusTone,
 } from "../utils/homeStatus";
@@ -36,6 +39,9 @@ interface HomeDomainSummaryProps {
   status: StatusResponse;
   strip: StripStateResponse | null;
   stripLoading: boolean;
+  moodMeta: MoodMetaResponse | null;
+  moodState: MoodStateResponse | null;
+  moodLoading: boolean;
 }
 
 const TONE_DOT: Record<HomeStatusTone, string> = {
@@ -49,6 +55,9 @@ export function HomeDomainSummary({
   status,
   strip,
   stripLoading,
+  moodMeta,
+  moodState,
+  moodLoading,
 }: HomeDomainSummaryProps) {
   const acStateQuery = useAcState();
   const acPrimary = getAcHomePrimaryStatus(status, acStateQuery.data);
@@ -56,6 +65,7 @@ export function HomeDomainSummary({
   const acTheme = HOME_DOMAIN_THEME.ac;
   const pcTheme = HOME_DOMAIN_THEME.pc;
   const stripTheme = HOME_DOMAIN_THEME.strip;
+  const moodTheme = HOME_DOMAIN_THEME.mood;
   const acModePill = getAcModePillLabel(acStateQuery.data, status);
 
   return (
@@ -132,6 +142,15 @@ export function HomeDomainSummary({
             />
           ) : null
         }
+      />
+
+      <DomainCard
+        to={paths.mood}
+        title="무드등"
+        icon={moonSvg}
+        theme={moodTheme}
+        primary={getMoodHomePrimaryStatus(moodLoading, moodMeta, moodState)}
+        secondary={getMoodHomeSecondaryLine(moodMeta, moodState)}
       />
     </div>
   );

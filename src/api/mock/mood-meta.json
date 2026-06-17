@@ -1,0 +1,7 @@
+{
+  "room": "자취방",
+  "device": "무드등",
+  "path": "home_assistant",
+  "entity_id": "light.mudeudeung",
+  "state_readable": true
+}

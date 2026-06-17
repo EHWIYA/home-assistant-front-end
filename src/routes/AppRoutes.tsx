@@ -8,6 +8,7 @@ import { ScheduleFormPage } from "@/features/strip/ScheduleFormPage";
 import { SchedulesPage } from "@/features/strip/SchedulesPage";
 import { StripLayout } from "@/features/strip/StripLayout";
 import { StripPage } from "@/features/strip/StripPage";
+import { MoodPage } from "@/features/mood/MoodPage";
 import { routeHandles } from "@/routes/handles";
 import { paths } from "@/routes/paths";
 
@@ -48,6 +49,7 @@ export const appRouter = createBrowserRouter([
           },
         ],
       },
+      { path: "mood", element: <MoodPage />, handle: routeHandles.mood },
       { path: "*", element: <Navigate to={paths.home} replace /> },
     ],
   },

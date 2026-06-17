@@ -20,6 +20,11 @@ export const HOME_DOMAIN_THEME = {
     accentSoft: "rgba(232, 184, 74, 0.14)",
     accentGlow: "rgba(232, 184, 74, 0.35)",
   },
+  mood: {
+    accent: "#c77dff",
+    accentSoft: "rgba(199, 125, 255, 0.14)",
+    accentGlow: "rgba(199, 125, 255, 0.35)",
+  },
   settings: {
     accent: "#8b9eb0",
     accentSoft: "rgba(139, 158, 176, 0.14)",

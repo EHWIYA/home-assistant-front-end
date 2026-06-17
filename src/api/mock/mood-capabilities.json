@@ -1,0 +1,31 @@
+{
+  "actions": [
+    "power",
+    "brightness",
+    "color",
+    "color-hs",
+    "color-rgb",
+    "command"
+  ],
+  "colors": [
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "purple",
+    "white",
+    "warm",
+    "cool",
+    "rainbow"
+  ],
+  "color_modes": ["named", "hs"],
+  "color_mode": "hs",
+  "hs_range": { "hue": [0, 360], "saturation": [0, 100] },
+  "rgb_range": [0, 255],
+  "color_temperature": false,
+  "brightness_range": [1, 100],
+  "supports_state": true,
+  "supports_rgb": true,
+  "supports_hex": true,
+  "supports_hs": true
+}

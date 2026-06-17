@@ -13,6 +13,9 @@ export const TOAST_RESOURCE = {
   status: "상태",
   acStatus: "에어컨 상태",
   stripStatus: "멀티탭 상태",
+  moodMeta: "무드등 정보",
+  moodCapabilities: "무드등 기능",
+  moodState: "무드등 상태",
   schedules: "스케줄",
   schedulesList: "스케줄 목록",
   scheduleRuns: "실행 이력",
@@ -23,5 +26,10 @@ export const TOAST_DEVICE = {
   plug: "플러그",
   pc: "PC",
   strip: "멀티탭",
+  mood: "무드등",
   schedule: "스케줄",
+} as const;
+
+export const TOAST_COMMAND = {
+  sent: "명령을 보냈습니다",
 } as const;

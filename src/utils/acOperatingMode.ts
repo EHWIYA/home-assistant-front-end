@@ -64,12 +64,10 @@ export function buildAcActionControlRequest(
   const effective = operatingMode ?? "manual";
 
   if (targetMode === "auto") {
-    if (effective === "auto") {
-      return { mode: "auto", operating_mode: "auto" };
-    }
     if (effective === "away") {
       return { mode: "auto", operating_mode: "away" };
     }
+    return { mode: "auto", operating_mode: "auto" };
   }
 
   if (

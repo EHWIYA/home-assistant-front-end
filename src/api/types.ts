@@ -300,3 +300,102 @@ export interface ScheduleRun {
 export interface ScheduleRunsResponse {
   runs: ScheduleRun[];
 }
+
+/** 무드등 색상 — OpenAPI 1.9.0 */
+export type MoodColorName =
+  | "red"
+  | "blue"
+  | "green"
+  | "yellow"
+  | "purple"
+  | "white"
+  | "warm"
+  | "cool"
+  | "rainbow";
+
+export type MoodColorTemperatureMode = "warm" | "cool";
+
+/** POST /api/v1/mood/power */
+export interface MoodPowerRequest {
+  on: boolean;
+}
+
+/** POST /api/v1/mood/brightness */
+export interface MoodBrightnessRequest {
+  percent: number;
+}
+
+/** POST /api/v1/mood/color */
+export interface MoodColorRequest {
+  name: MoodColorName;
+}
+
+/** POST /api/v1/mood/color-temperature */
+export interface MoodColorTemperatureRequest {
+  mode: MoodColorTemperatureMode;
+}
+
+/** POST /api/v1/mood/command */
+export interface MoodCommandRequest {
+  command: string;
+}
+
+/** POST /api/v1/mood/color-rgb */
+export interface MoodColorRgbRequest {
+  hex?: string;
+  r?: number;
+  g?: number;
+  b?: number;
+}
+
+/** POST /api/v1/mood/color-hs */
+export interface MoodColorHsRequest {
+  hue: number;
+  saturation: number;
+}
+
+/** POST /api/v1/mood/* 응답 */
+export interface MoodActionResponse {
+  ok: boolean;
+  command?: string;
+  control_path?: string;
+}
+
+/** GET /api/v1/mood/capabilities */
+export interface MoodCapabilitiesResponse {
+  actions: string[];
+  colors: string[];
+  color_modes?: string[];
+  /** 단일 색 모드 (예: light.mudeudeung → "hs") */
+  color_mode?: string;
+  /** false이면 Kelvin 색온도 UI 미표시 */
+  color_temperature?: boolean;
+  /** HS 색조·채도 허용 범위 */
+  hs_range?: { hue: [number, number]; saturation: [number, number] };
+  rgb_range?: [number, number];
+  brightness_range: [number, number];
+  supports_state?: boolean;
+  supports_rgb?: boolean;
+  supports_hex?: boolean;
+  supports_hs?: boolean;
+}
+
+/** GET /api/v1/mood/meta */
+export interface MoodMetaResponse {
+  room: string;
+  device: string;
+  path: string;
+  entity_id?: string | null;
+  state_readable: boolean;
+}
+
+/** GET /api/v1/mood/state — meta.state_readable=true(HA 직접)일 때 실값 */
+export interface MoodStateResponse {
+  on: boolean | null;
+  brightness: number | null;
+  color: string | null;
+  /** [hue 0–360, saturation 0–100] */
+  hs?: [number, number] | null;
+  rgb?: [number, number, number] | null;
+  note?: string | null;
+}

@@ -10,6 +10,7 @@ export const paths = {
   stripSchedulesNew: "/strip/schedules/new",
   stripScheduleEdit: (id: string) =>
     `/strip/schedules/${encodeURIComponent(id)}/edit`,
+  mood: "/mood",
 } as const;
 
 export type AppPath =

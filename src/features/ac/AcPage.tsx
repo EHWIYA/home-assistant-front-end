@@ -43,12 +43,17 @@ function AcPageContent({
 }) {
   const acStateQuery = useAcState();
   const acState = acStateQuery.data;
-  const { showSyncWarning, syncWarningTitle } = useAcSyncWarning(
+  const { showSyncWarning, isSettingMismatch, syncWarningTitle } = useAcSyncWarning(
     data,
     acState,
     acMutation,
     acStateQuery,
   );
+
+  const reapplyAuto = () => {
+    if (acMutation.isPending) return;
+    acMutation.mutate({ mode: "auto", operating_mode: "auto" });
+  };
 
   return (
     <div className={shared.page}>
@@ -56,7 +61,10 @@ function AcPageContent({
         data={data}
         acState={acState}
         showSyncWarning={showSyncWarning}
+        isSettingMismatch={isSettingMismatch}
         syncWarningTitle={syncWarningTitle}
+        onReapplyAuto={reapplyAuto}
+        reapplyAutoPending={acMutation.isPending}
       />
       <div className={shared.pageSplit}>
         <div className={shared.pageStack}>

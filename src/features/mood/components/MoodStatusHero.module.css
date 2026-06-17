@@ -1,0 +1,102 @@
+.card {
+  position: relative;
+  background: #1a222c;
+  border-radius: 16px;
+  padding: 1rem 1.125rem;
+  border: 1px solid #2a323c;
+  border-left: 3px solid var(--mood-accent, #c77dff);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.iconPill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  background: rgba(199, 125, 255, 0.14);
+  color: var(--mood-accent, #c77dff);
+  flex-shrink: 0;
+}
+
+.iconPill svg {
+  width: 1rem;
+  height: 1rem;
+  display: block;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusLabel {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.modeSub {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.625rem;
+}
+
+.pathPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  background: rgba(255, 255, 255, 0.05);
+  color: #6b7280;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.infoBanner {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #9aa0a6;
+  background: rgba(199, 125, 255, 0.06);
+  border: 1px solid rgba(199, 125, 255, 0.15);
+}

@@ -1,5 +1,11 @@
-import type { AcStateResponse, PcStatus, StatusResponse } from "@/api/types";
-import type { StripStateResponse } from "@/api/types";
+import type {
+  AcStateResponse,
+  MoodMetaResponse,
+  MoodStateResponse,
+  PcStatus,
+  StatusResponse,
+  StripStateResponse,
+} from "@/api/types";
 import {
   deriveAcOperatingMode,
   getAcOperatingModeLabel,
@@ -120,4 +126,40 @@ export function getStripHomeSecondaryLine(
   if (!strip) return "채널 정보 없음";
   if (!strip.online) return "연결 확인 필요";
   return "탭하여 채널·스케줄 관리";
+}
+
+export function getMoodHomePrimaryStatus(
+  loading: boolean,
+  meta: MoodMetaResponse | null | undefined,
+  state: MoodStateResponse | null | undefined,
+): HomeStatusLine {
+  if (loading) {
+    return { label: "불러오는 중…", tone: "idle" };
+  }
+  if (!meta) {
+    return { label: "연결 안 됨", tone: "warn" };
+  }
+  if (meta.state_readable && state) {
+    if (state.on === true) {
+      return { label: "켜짐", tone: "active" };
+    }
+    if (state.on === false) {
+      return { label: "꺼짐", tone: "idle" };
+    }
+  }
+  if (meta.state_readable) {
+    return { label: "상태 조회 중…", tone: "idle" };
+  }
+  return { label: "상태 미확인", tone: "idle" };
+}
+
+export function getMoodHomeSecondaryLine(
+  meta: MoodMetaResponse | null | undefined,
+  state: MoodStateResponse | null | undefined,
+): string {
+  if (!meta) return "무드등";
+  if (meta.state_readable && state?.brightness != null) {
+    return `밝기 ${Math.round(state.brightness)}%`;
+  }
+  return `${meta.room} · ${meta.device}`;
 }

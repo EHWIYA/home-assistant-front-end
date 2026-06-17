@@ -1,6 +1,7 @@
 import { StatusQueryGate } from "@/components/status/StatusQueryGate";
 import { StatusFooter } from "@/components/status/StatusFooter";
 import { useStripState } from "@/hooks/useStrip";
+import { useMoodMeta, useMoodState } from "@/hooks/useMood";
 import shared from "@/components/status/statusPage.module.css";
 import homeStyles from "./HomePage.module.css";
 import { HomeAlerts } from "./components/HomeAlerts";
@@ -10,6 +11,9 @@ import { HomeOverviewStrip } from "./components/HomeOverviewStrip";
 
 export function HomePage() {
   const stripQuery = useStripState();
+  const moodMetaQuery = useMoodMeta();
+  const moodStateReadable = moodMetaQuery.data?.state_readable === true;
+  const moodStateQuery = useMoodState(moodStateReadable);
 
   return (
     <StatusQueryGate>
@@ -32,6 +36,9 @@ export function HomePage() {
             status={data}
             strip={stripQuery.data ?? null}
             stripLoading={stripQuery.isLoading}
+            moodMeta={moodMetaQuery.data ?? null}
+            moodState={moodStateQuery.data ?? null}
+            moodLoading={moodMetaQuery.isLoading || (moodStateReadable && moodStateQuery.isLoading)}
           />
           <StatusFooter data={data} />
         </div>

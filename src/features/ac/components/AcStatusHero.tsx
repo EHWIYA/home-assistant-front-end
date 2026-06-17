@@ -30,14 +30,20 @@ interface AcStatusHeroProps {
   data: StatusResponse;
   acState: AcStateResponse | undefined;
   showSyncWarning: boolean;
+  isSettingMismatch?: boolean;
   syncWarningTitle: string;
+  onReapplyAuto?: () => void;
+  reapplyAutoPending?: boolean;
 }
 
 export function AcStatusHero({
   data,
   acState,
   showSyncWarning,
+  isSettingMismatch = false,
   syncWarningTitle,
+  onReapplyAuto,
+  reapplyAutoPending = false,
 }: AcStatusHeroProps) {
   const theme = HOME_DOMAIN_THEME.ac;
   const primary = getAcHomePrimaryStatus(data, acState);
@@ -124,9 +130,25 @@ export function AcStatusHero({
       <ClimateGrid indoor={data.indoor} weatherOutdoor={data.weather_outdoor} />
 
       {showSyncWarning ? (
-        <p className={styles.syncBanner} title={syncWarningTitle}>
-          장치 상태 동기화 중 — 잠시 후 다시 확인해 주세요.
-        </p>
+        isSettingMismatch && onReapplyAuto ? (
+          <div className={styles.syncBannerRow} title={syncWarningTitle}>
+            <p className={styles.syncBannerText}>
+              설정 불일치 — 자동 모드가 HA에서 꺼져 있어요.
+            </p>
+            <button
+              type="button"
+              className={styles.syncBannerBtn}
+              disabled={reapplyAutoPending}
+              onClick={onReapplyAuto}
+            >
+              {reapplyAutoPending ? "적용 중…" : "자동 모드 다시 적용"}
+            </button>
+          </div>
+        ) : (
+          <p className={styles.syncBanner} title={syncWarningTitle}>
+            장치 상태 동기화 중 — 잠시 후 다시 확인해 주세요.
+          </p>
+        )
       ) : null}
     </section>
   );

@@ -51,11 +51,13 @@ export function useAcSyncWarning(
         (hasHardFailureSignal || hasFetchFailureSignal) &&
         !isRecentSuccessfulControl;
 
+  const isSettingMismatch = stateConsistent === false;
+
   const syncWarningTitle = stateSource
     ? `state_consistent=false · ${stateSource}${runningSource ? ` · running_source=${runningSource}` : ""}`
     : runningSource
       ? `정합성 확인 중 · running_source=${runningSource}`
       : "mode·power·정합성 확인 중입니다.";
 
-  return { showSyncWarning, syncWarningTitle };
+  return { showSyncWarning, isSettingMismatch, syncWarningTitle };
 }

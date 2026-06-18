@@ -4,6 +4,7 @@ import mockSchedulesSeed from "./mock/schedules.json";
 import type {
   Schedule,
   ScheduleCreateBody,
+  ScheduleListResponse,
   SchedulePatchBody,
   SchedulePreviewResponse,
   ScheduleRun,
@@ -35,7 +36,11 @@ export async function fetchSchedules(
     channel != null
       ? `?channel=${encodeURIComponent(String(channel))}`
       : "";
-  return apiRequest<Schedule[]>(`/api/v1/schedules${qs}`);
+  const res = await apiRequest<ScheduleListResponse | Schedule[]>(
+    `/api/v1/schedules${qs}`,
+  );
+  if (Array.isArray(res)) return res;
+  return res.schedules ?? [];
 }
 
 export async function fetchSchedulePreview(

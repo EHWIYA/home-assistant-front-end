@@ -3,7 +3,6 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { paths } from "@/routes/paths";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { holidayDates } from "@/api/meta";
 import type {
   ScheduleActionType,
   ScheduleCreateBody,
@@ -12,7 +11,6 @@ import type {
 } from "@/api/types";
 import {
   useCreateSchedule,
-  useHolidays,
   usePatchSchedule,
   useSchedules,
   useStripPresets,
@@ -20,23 +18,19 @@ import {
 import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
 import { useQueryErrorToast } from "@/hooks/useQueryErrorToast";
 import {
-  endOfMonthKst,
-  startOfMonthKst,
-} from "@/utils/calendar";
-import {
   DEFAULT_SCHEDULE_FORM,
-  HOLIDAY_MODE_LABELS,
   isValidTimeKst,
   parseChannelRouteParam,
-  WEEKDAY_LABELS,
 } from "@/utils/schedule";
 import {
   TOAST_DEVICE,
   TOAST_GUIDE,
   TOAST_RESOURCE,
 } from "@/utils/toastMessages";
-import { ScheduleMonthCalendar } from "./components/ScheduleMonthCalendar";
+import { HolidayOptions } from "./components/HolidayOptions";
+import { OnOffSegment } from "./components/OnOffSegment";
 import { TimeKstPicker12h } from "./components/TimeKstPicker12h";
+import { WeekdayPicker } from "./components/WeekdayPicker";
 import shared from "@/components/status/statusPage.module.css";
 import styles from "./ScheduleFormPage.module.css";
 
@@ -45,13 +39,9 @@ export function ScheduleFormPage() {
   const routeChannel = parseChannelRouteParam(n);
   const isEdit = Boolean(id);
   const navigate = useNavigate();
-  const now = new Date();
-  const [calendarYear, setCalendarYear] = useState(now.getFullYear());
-  const [calendarMonth, setCalendarMonth] = useState(now.getMonth());
 
   const schedulesQuery = useSchedules(routeChannel ?? undefined);
   const presetsQuery = useStripPresets();
-  const holidaysQuery = useHolidays(calendarYear);
   const createMutation = useCreateSchedule(routeChannel ?? undefined);
   const patchMutation = usePatchSchedule(routeChannel ?? undefined);
 
@@ -77,10 +67,11 @@ export function ScheduleFormPage() {
   );
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const editSchedule = useMemo(
-    () => schedulesQuery.data?.find((s) => s.id === id),
-    [schedulesQuery.data, id],
-  );
+  const editSchedule = useMemo(() => {
+    const list = schedulesQuery.data;
+    if (!Array.isArray(list) || !id) return undefined;
+    return list.find((s) => s.id === id);
+  }, [schedulesQuery.data, id]);
 
   useEffect(() => {
     if (routeChannel != null) {
@@ -143,14 +134,6 @@ export function ScheduleFormPage() {
     );
   }
 
-  function toggleWeekday(weekday: number) {
-    setDaysOfWeek((prev) =>
-      prev.includes(weekday)
-        ? prev.filter((d) => d !== weekday)
-        : [...prev, weekday],
-    );
-  }
-
   function buildBody(): ScheduleCreateBody | null {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -162,7 +145,7 @@ export function ScheduleFormPage() {
       return null;
     }
     if (daysOfWeek.length === 0) {
-      setValidationError("요일을 하나 이상 선택하세요. 달력에서 날짜를 눌러 요일을 지정할 수 있습니다.");
+      setValidationError("요일을 하나 이상 선택하세요.");
       return null;
     }
     if (actionType === "preset" && !presetName.trim()) {
@@ -255,9 +238,6 @@ export function ScheduleFormPage() {
     );
   }
 
-  const previewFrom = startOfMonthKst(calendarYear, calendarMonth);
-  const previewTo = endOfMonthKst(calendarYear, calendarMonth);
-
   return (
     <div className={`${styles.page} ${shared.pageForm}`.trim()}>
       <Link to={listPath} className={styles.back}>
@@ -271,9 +251,19 @@ export function ScheduleFormPage() {
       <Card>
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="schedule-name">
-              이름
-            </label>
+            <div className={styles.labelRow}>
+              <label className={styles.label} htmlFor="schedule-name">
+                이름
+              </label>
+              <label className={styles.enabledToggle}>
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={(e) => setEnabled(e.target.checked)}
+                />
+                활성화
+              </label>
+            </div>
             <input
               id="schedule-name"
               className={styles.input}
@@ -283,15 +273,6 @@ export function ScheduleFormPage() {
               maxLength={80}
             />
           </div>
-
-          <label className={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(e) => setEnabled(e.target.checked)}
-            />
-            활성화
-          </label>
 
           {routeChannel == null ? (
             <div className={styles.field}>
@@ -313,36 +294,37 @@ export function ScheduleFormPage() {
           ) : null}
 
           {(routeChannel != null ? "channel" : actionType) === "channel" ? (
-            <div className={styles.row}>
-              <div className={styles.field}>
-                <span className={styles.label}>채널</span>
-                <select
-                  className={styles.select}
-                  value={channelNumber}
-                  disabled={routeChannel != null}
-                  onChange={(e) =>
-                    setChannelNumber(Number(e.target.value) as StripChannelNumber)
-                  }
-                >
-                  {[1, 2, 3, 4].map((num) => (
-                    <option key={num} value={num}>
-                      채널 {num}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            routeChannel != null ? (
               <div className={styles.field}>
                 <span className={styles.label}>동작</span>
-                <select
-                  className={styles.select}
-                  value={channelOn ? "on" : "off"}
-                  onChange={(e) => setChannelOn(e.target.value === "on")}
-                >
-                  <option value="on">켜기 (ON)</option>
-                  <option value="off">끄기 (OFF)</option>
-                </select>
+                <OnOffSegment value={channelOn} onChange={setChannelOn} />
               </div>
-            </div>
+            ) : (
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <span className={styles.label}>채널</span>
+                  <select
+                    className={styles.select}
+                    value={channelNumber}
+                    onChange={(e) =>
+                      setChannelNumber(
+                        Number(e.target.value) as StripChannelNumber,
+                      )
+                    }
+                  >
+                    {[1, 2, 3, 4].map((num) => (
+                      <option key={num} value={num}>
+                        채널 {num}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.field}>
+                  <span className={styles.label}>동작</span>
+                  <OnOffSegment value={channelOn} onChange={setChannelOn} />
+                </div>
+              </div>
+            )
           ) : (
             <div className={styles.field}>
               <span className={styles.label}>프리셋</span>
@@ -362,74 +344,21 @@ export function ScheduleFormPage() {
           )}
 
           <div className={styles.field}>
-            <span className={styles.label}>시간 (KST)</span>
+            <span className={styles.label}>시간</span>
             <TimeKstPicker12h value={timeKst} onChange={setTimeKst} />
           </div>
 
           <div className={styles.field}>
-            <span className={styles.label}>요일 — 달력에서 날짜를 눌러 선택</span>
-            <ScheduleMonthCalendar
-              year={calendarYear}
-              month={calendarMonth}
-              holidays={holidayDates(holidaysQuery.data)}
-              selectedWeekdays={daysOfWeek}
-              onToggleWeekday={toggleWeekday}
-              onMonthChange={(y, m) => {
-                setCalendarYear(y);
-                setCalendarMonth(m);
-              }}
-            />
-            <div className={styles.days}>
-              {WEEKDAY_LABELS.map((label, day) => (
-                <label
-                  key={label}
-                  className={`${styles.dayChip} ${
-                    daysOfWeek.includes(day) ? styles.dayChipActive : ""
-                  }`.trim()}
-                >
-                  <input
-                    type="checkbox"
-                    checked={daysOfWeek.includes(day)}
-                    onChange={() => toggleWeekday(day)}
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-            <p className={styles.hint}>
-              미리보기 기간: {previewFrom} ~ {previewTo}
-            </p>
+            <span className={styles.label}>반복 요일</span>
+            <WeekdayPicker value={daysOfWeek} onChange={setDaysOfWeek} />
           </div>
 
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <span className={styles.label}>공휴일</span>
-              <select
-                className={styles.select}
-                value={holidayMode}
-                onChange={(e) =>
-                  setHolidayMode(e.target.value as ScheduleHolidayMode)
-                }
-              >
-                {(Object.keys(HOLIDAY_MODE_LABELS) as ScheduleHolidayMode[]).map(
-                  (mode) => (
-                    <option key={mode} value={mode}>
-                      {HOLIDAY_MODE_LABELS[mode]}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
-          </div>
-
-          <label className={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={includeSubstitute}
-              onChange={(e) => setIncludeSubstitute(e.target.checked)}
-            />
-            대체공휴일 포함
-          </label>
+          <HolidayOptions
+            holidayMode={holidayMode}
+            includeSubstitute={includeSubstitute}
+            onHolidayModeChange={setHolidayMode}
+            onIncludeSubstituteChange={setIncludeSubstitute}
+          />
 
           {validationError ? (
             <p className={styles.errorDetail}>{validationError}</p>

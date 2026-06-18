@@ -41,6 +41,28 @@
   color: #9aa0a6;
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.enabledToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #9aa0a6;
+  cursor: pointer;
+  user-select: none;
+}
+
+.enabledToggle input {
+  accent-color: #5b9fd4;
+}
+
 .input,
 .select {
   width: 100%;
@@ -58,34 +80,6 @@
   outline: none;
 }
 
-.days {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.dayChip {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.55rem;
-  border: 1px solid #2a323c;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.dayChipActive {
-  border-color: #5b9fd4;
-  background: #1a2836;
-  color: #5b9fd4;
-}
-
-.dayChip input {
-  accent-color: #5b9fd4;
-}
-
 .row {
   display: flex;
   gap: 0.75rem;
@@ -93,13 +87,6 @@
 
 .row .field {
   flex: 1;
-}
-
-.checkboxRow {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
 }
 
 .errorDetail {

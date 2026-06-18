@@ -1,0 +1,76 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+}
+
+.day {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid #2a323c;
+  border-radius: 50%;
+  background: #141a21;
+  color: #9aa0a6;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.dayWeekend:not(.dayActive) {
+  color: #7eb8e8;
+}
+
+.dayActive {
+  border-color: #5b9fd4;
+  background: #1a3448;
+  color: #e8f4fc;
+}
+
+.dayWeekend.dayActive {
+  color: #e8f4fc;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .day:not(.dayActive):hover {
+    border-color: #3d4a56;
+    background: #1a2129;
+  }
+}
+
+.presets {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.preset {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #9aa0a6;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.presetActive {
+  border-color: #2a323c;
+  background: #141a21;
+  color: #e8eaed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .preset:not(.presetActive):hover {
+    color: #cfd3d7;
+  }
+}

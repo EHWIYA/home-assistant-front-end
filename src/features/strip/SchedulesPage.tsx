@@ -95,14 +95,13 @@ export function SchedulesPage() {
         <h2 className={styles.title}>채널 {channel} 스케줄</h2>
       </header>
 
-      <Card>
+      <Card className={styles.calendarCard}>
+        <p className={styles.calendarTitle}>실행 예정</p>
         <ScheduleMonthCalendar
           year={year}
           month={month}
           holidays={holidayDates(holidaysQuery.data)}
-          selectedWeekdays={[]}
           previewByDate={previewByDate}
-          onToggleWeekday={() => {}}
           onMonthChange={(y, m) => {
             setYear(y);
             setMonth(m);

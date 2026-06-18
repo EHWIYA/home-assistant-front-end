@@ -3,6 +3,7 @@ import mockPresetsSeed from "./mock/strip-presets.json";
 import type {
   StripPreset,
   StripPresetCreateBody,
+  StripPresetListResponse,
   StripPresetPatchBody,
   StripStateResponse,
 } from "./types";
@@ -19,7 +20,11 @@ export async function fetchStripPresets(): Promise<StripPreset[]> {
       channels: p.channels.map((c) => ({ ...c })),
     }));
   }
-  return apiRequest<StripPreset[]>("/api/v1/strip/presets");
+  const res = await apiRequest<StripPresetListResponse | StripPreset[]>(
+    "/api/v1/strip/presets",
+  );
+  if (Array.isArray(res)) return res;
+  return res.presets ?? [];
 }
 
 export async function createStripPreset(

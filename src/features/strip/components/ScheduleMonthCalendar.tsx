@@ -12,9 +12,7 @@ interface ScheduleMonthCalendarProps {
   year: number;
   month: number;
   holidays: readonly string[];
-  selectedWeekdays: number[];
   previewByDate?: ReadonlyMap<string, SchedulePreviewOccurrence[]>;
-  onToggleWeekday: (weekday: number) => void;
   onMonthChange: (year: number, month: number) => void;
 }
 
@@ -22,9 +20,7 @@ export function ScheduleMonthCalendar({
   year,
   month,
   holidays,
-  selectedWeekdays,
   previewByDate,
-  onToggleWeekday,
   onMonthChange,
 }: ScheduleMonthCalendarProps) {
   const holidaySet = useMemo(() => new Set(holidays), [holidays]);
@@ -46,56 +42,55 @@ export function ScheduleMonthCalendar({
   return (
     <div className={styles.root}>
       <div className={styles.nav}>
-        <button type="button" className={styles.navBtn} onClick={prevMonth}>
+        <button
+          type="button"
+          className={styles.navBtn}
+          onClick={prevMonth}
+          aria-label="이전 달"
+        >
           ‹
         </button>
         <p className={styles.monthLabel}>
           {year}년 {month + 1}월
         </p>
-        <button type="button" className={styles.navBtn} onClick={nextMonth}>
+        <button
+          type="button"
+          className={styles.navBtn}
+          onClick={nextMonth}
+          aria-label="다음 달"
+        >
           ›
         </button>
       </div>
 
       <div className={styles.weekdayRow} aria-hidden>
-        {["월", "화", "수", "목", "금", "토", "일"].map((label) => (
-          <span key={label} className={styles.weekdayHead}>
+        {["월", "화", "수", "목", "금", "토", "일"].map((label, i) => (
+          <span
+            key={label}
+            className={`${styles.weekdayHead} ${
+              i === 5 ? styles.weekdaySat : i === 6 ? styles.weekdaySun : ""
+            }`.trim()}
+          >
             {label}
           </span>
         ))}
       </div>
 
-      <div className={styles.grid} role="grid" aria-label="스케줄 요일 달력">
+      <div className={styles.grid} role="grid" aria-label="스케줄 미리보기 달력">
         {cells.map((cell) => (
           <CalendarCell
             key={cell.date}
             cell={cell}
             tone={getCalendarDayTone(cell.date, holidaySet)}
-            selected={selectedWeekdays.includes(cell.weekday)}
             preview={previewByDate?.get(cell.date)}
-            onToggleWeekday={onToggleWeekday}
           />
         ))}
       </div>
 
-      <ul className={styles.legend}>
-        <li>
-          <span className={`${styles.swatch} ${styles.toneHoliday}`} />
-          공휴일·일요일
-        </li>
-        <li>
-          <span className={`${styles.swatch} ${styles.toneSaturday}`} />
-          토요일
-        </li>
-        <li>
-          <span className={`${styles.swatch} ${styles.toneWeekday}`} />
-          평일
-        </li>
-        <li>
-          <span className={`${styles.swatch} ${styles.toneSelected}`} />
-          선택 요일
-        </li>
-      </ul>
+      <p className={styles.footnote}>
+        <span className={styles.previewMark} aria-hidden />
+        실행 예정
+      </p>
     </div>
   );
 }
@@ -103,45 +98,36 @@ export function ScheduleMonthCalendar({
 interface CalendarCellProps {
   cell: MonthCell;
   tone: ReturnType<typeof getCalendarDayTone>;
-  selected: boolean;
   preview?: SchedulePreviewOccurrence[];
-  onToggleWeekday: (weekday: number) => void;
 }
 
-function CalendarCell({
-  cell,
-  tone,
-  selected,
-  preview,
-  onToggleWeekday,
-}: CalendarCellProps) {
-  const toneClass =
-    tone === "holiday" || tone === "sunday"
-      ? styles.toneHoliday
-      : tone === "saturday"
-        ? styles.toneSaturday
-        : styles.toneWeekday;
-
+function CalendarCell({ cell, tone, preview }: CalendarCellProps) {
   const hasPreview = Boolean(preview?.length);
   const today = formatDateKst(new Date()) === cell.date;
 
+  const dayClass =
+    tone === "holiday" || tone === "sunday"
+      ? styles.daySun
+      : tone === "saturday"
+        ? styles.daySat
+        : "";
+
   return (
-    <button
-      type="button"
+    <div
       role="gridcell"
-      className={`${styles.cell} ${toneClass} ${
-        !cell.inMonth ? styles.cellOutside : ""
-      } ${selected ? styles.cellSelected : ""} ${
+      className={`${styles.cell} ${!cell.inMonth ? styles.cellOutside : ""} ${
         hasPreview ? styles.cellHasPreview : ""
       } ${today ? styles.cellToday : ""}`.trim()}
-      onClick={() => onToggleWeekday(cell.weekday)}
-      aria-pressed={selected}
-      aria-label={`${cell.day}일`}
+      aria-label={
+        hasPreview
+          ? `${cell.day}일, 실행 ${preview!.length}건`
+          : `${cell.day}일`
+      }
     >
-      <span className={styles.cellDay}>{cell.day}</span>
+      <span className={`${styles.cellDay} ${dayClass}`.trim()}>{cell.day}</span>
       {hasPreview ? (
-        <span className={styles.previewDot} aria-hidden />
+        <span className={styles.previewMark} aria-hidden />
       ) : null}
-    </button>
+    </div>
   );
 }

@@ -329,6 +329,11 @@ export interface ScheduleRunsResponse {
   runs: ScheduleRun[];
 }
 
+/** GET /api/v1/schedules — OpenAPI 2.0.0 */
+export interface ScheduleListResponse {
+  schedules: Schedule[];
+}
+
 export interface SchedulePreviewSlot {
   schedule_id: string;
   schedule_name: string;
@@ -368,6 +373,11 @@ export interface StripPreset {
   channels: StripPresetChannel[];
   created_at?: string;
   updated_at?: string;
+}
+
+/** GET /api/v1/strip/presets — OpenAPI 2.0.0 */
+export interface StripPresetListResponse {
+  presets: StripPreset[];
 }
 
 export interface StripPresetCreateBody {

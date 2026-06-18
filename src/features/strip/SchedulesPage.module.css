@@ -37,6 +37,19 @@
   font-weight: 700;
 }
 
+.calendarCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.calendarTitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #9aa0a6;
+}
+
 .toolbar {
   display: flex;
   justify-content: flex-end;

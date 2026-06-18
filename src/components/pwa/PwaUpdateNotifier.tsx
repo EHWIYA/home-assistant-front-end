@@ -1,16 +1,49 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { useToast } from "@/components/toast/ToastProvider";
 
 const AUTO_UPDATE_DELAY_MS = 1800;
+const SW_UPDATE_INTERVAL_MS = 60 * 60 * 1000;
 
 export function PwaUpdateNotifier() {
   const { showToast } = useToast();
   const didNotifyUpdateRef = useRef(false);
   const didNotifyOfflineRef = useRef(false);
   const timerRef = useRef<number | null>(null);
+  const [swRegistration, setSwRegistration] =
+    useState<ServiceWorkerRegistration | null>(null);
   const { needRefresh: [needRefresh], offlineReady: [offlineReady], updateServiceWorker } =
-    useRegisterSW();
+    useRegisterSW({
+      onRegisteredSW(_swUrl, registration) {
+        if (registration) {
+          setSwRegistration(registration);
+        }
+      },
+    });
+
+  useEffect(() => {
+    if (!swRegistration) {
+      return;
+    }
+
+    const checkForUpdate = () => {
+      void swRegistration.update();
+    };
+
+    const intervalId = window.setInterval(checkForUpdate, SW_UPDATE_INTERVAL_MS);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkForUpdate();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [swRegistration]);
 
   useEffect(() => {
     if (!offlineReady || didNotifyOfflineRef.current) {

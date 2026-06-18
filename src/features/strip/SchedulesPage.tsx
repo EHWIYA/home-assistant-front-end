@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import type { SchedulePreviewOccurrence } from "@/api/types";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { paths } from "@/routes/paths";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import type { Schedule, ScheduleRun } from "@/api/types";
+import type { Schedule, ScheduleRun, StripChannelNumber } from "@/api/types";
 import {
   useDeleteSchedule,
+  useHolidays,
+  useSchedulePreview,
   useScheduleRuns,
   useSchedules,
 } from "@/hooks/useSchedules";
@@ -13,20 +16,54 @@ import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
 import { useQueryErrorToast } from "@/hooks/useQueryErrorToast";
 import { formatExecutedAt } from "@/utils/date";
 import {
+  endOfMonthKst,
+  startOfMonthKst,
+} from "@/utils/calendar";
+import {
+  formatDaysOfWeek,
+  formatScheduleAction,
+  formatTimeKst12h,
+  parseChannelRouteParam,
+} from "@/utils/schedule";
+import {
   TOAST_DEVICE,
   TOAST_GUIDE,
   TOAST_RESOURCE,
 } from "@/utils/toastMessages";
-import {
-  formatDaysOfWeek,
-  formatScheduleAction,
-} from "@/utils/schedule";
+import { ScheduleMonthCalendar } from "./components/ScheduleMonthCalendar";
 import styles from "./SchedulesPage.module.css";
 
 export function SchedulesPage() {
+  const { n } = useParams<{ n: string }>();
+  const channel = parseChannelRouteParam(n);
   const navigate = useNavigate();
-  const { data, isLoading, isError, error, refetch } = useSchedules();
-  const deleteMutation = useDeleteSchedule();
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+
+  const from = startOfMonthKst(year, month);
+  const to = endOfMonthKst(year, month);
+
+  const { data, isLoading, isError, error, refetch } = useSchedules(
+    channel ?? undefined,
+  );
+  const holidaysQuery = useHolidays(year);
+  const previewQuery = useSchedulePreview(
+    from,
+    to,
+    channel ?? undefined,
+    channel != null,
+  );
+  const deleteMutation = useDeleteSchedule(channel ?? undefined);
+
+  const previewByDate = useMemo(() => {
+    const map = new Map<string, SchedulePreviewOccurrence[]>();
+    for (const day of previewQuery.data?.days ?? []) {
+      map.set(day.date, day.occurrences);
+    }
+    return map;
+  }, [previewQuery.data]);
+
   useQueryErrorToast({
     isError,
     error,
@@ -40,17 +77,48 @@ export function SchedulesPage() {
     "control",
   );
 
+  if (channel == null) {
+    return (
+      <div className={styles.page}>
+        <p className={styles.errorDetail}>잘못된 채널 번호입니다.</p>
+        <Link to={paths.strip} className={styles.back}>
+          ← 멀티탭
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <Link to={paths.strip} className={styles.back}>
           ← 멀티탭
         </Link>
-        <h2 className={styles.title}>스케줄</h2>
+        <h2 className={styles.title}>채널 {channel} 스케줄</h2>
       </header>
 
+      <Card>
+        <ScheduleMonthCalendar
+          year={year}
+          month={month}
+          holidays={holidaysQuery.data?.holidays ?? []}
+          selectedWeekdays={[]}
+          previewByDate={previewByDate}
+          onToggleWeekday={() => {}}
+          onMonthChange={(y, m) => {
+            setYear(y);
+            setMonth(m);
+          }}
+        />
+        {previewQuery.isLoading ? (
+          <p className={styles.message}>미리보기 불러오는 중…</p>
+        ) : null}
+      </Card>
+
       <div className={styles.toolbar}>
-        <Button onClick={() => navigate(paths.stripSchedulesNew)}>
+        <Button
+          onClick={() => navigate(paths.stripChannelSchedulesNew(channel))}
+        >
           새 스케줄
         </Button>
       </div>
@@ -79,12 +147,13 @@ export function SchedulesPage() {
               <ScheduleItem
                 key={schedule.id}
                 schedule={schedule}
+                channel={channel}
                 deleting={
                   deleteMutation.isPending &&
                   deleteMutation.variables === schedule.id
                 }
                 onEdit={() =>
-                  navigate(paths.stripScheduleEdit(schedule.id))
+                  navigate(paths.stripChannelScheduleEdit(channel, schedule.id))
                 }
                 onDelete={() => {
                   if (
@@ -106,6 +175,7 @@ export function SchedulesPage() {
 
 interface ScheduleItemProps {
   schedule: Schedule;
+  channel: StripChannelNumber;
   deleting: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -129,9 +199,13 @@ function ScheduleItem({
         ) : null}
       </div>
       <p className={styles.itemMeta}>
-        {schedule.time_kst} · {formatDaysOfWeek(schedule.days_of_week)} ·{" "}
+        {formatTimeKst12h(schedule.time_kst)} ·{" "}
+        {formatDaysOfWeek(schedule.days_of_week)} ·{" "}
         {formatScheduleAction(schedule)}
       </p>
+      {schedule.holiday_mode === "skip" ? (
+        <p className={styles.itemHint}>공휴일 건너뜀</p>
+      ) : null}
       <div className={styles.itemActions}>
         <Button variant="secondary" onClick={onEdit}>
           수정
@@ -188,6 +262,11 @@ function RunsPanel({ loading, error, runs }: RunsPanelProps) {
           key={run.id ?? `${run.executed_at}-${i}`}
           className={run.success ? styles.runOk : styles.runFail}
         >
+          {run.scheduled_at ? (
+            <>
+              예정 {formatExecutedAt(run.scheduled_at)} → 실행{" "}
+            </>
+          ) : null}
           {formatExecutedAt(run.executed_at)} —{" "}
           {run.success ? "성공" : "실패"}
           {run.detail ? ` (${run.detail})` : ""}

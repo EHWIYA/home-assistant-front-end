@@ -1,6 +1,10 @@
+import { Link } from "react-router-dom";
+import calendarSvg from "cupertino-icons-svg/svg/calendar.svg?raw";
 import type { CSSProperties } from "react";
 import type { StripChannel, StripChannelNumber } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
+import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
+import { paths } from "@/routes/paths";
 import { HOME_DOMAIN_THEME } from "@/features/home/utils/homeDomainTheme";
 import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
 import { TOAST_DEVICE, TOAST_GUIDE } from "@/utils/toastMessages";
@@ -95,12 +99,23 @@ function ChannelTile({
   const canToggle = channel.on !== null && deviceOnline;
   const isOn = channel.on === true;
   const nextOn = !isOn;
+  const ch = channel.channel as StripChannelNumber;
 
   return (
     <article
       className={`${styles.tile} ${isOn ? styles.tileOn : styles.tileOff}`.trim()}
     >
-      <p className={styles.channelNum}>CH {channel.channel}</p>
+      <div className={styles.tileTop}>
+        <p className={styles.channelNum}>CH {channel.channel}</p>
+        <Link
+          to={paths.stripChannelSchedules(ch)}
+          className={styles.scheduleBtn}
+          aria-label={`채널 ${channel.channel} 스케줄`}
+          title="스케줄"
+        >
+          <CupertinoIcon svg={calendarSvg} className={styles.scheduleIcon} />
+        </Link>
+      </div>
       <p className={styles.channelTitle}>{channelLabel(channel)}</p>
       <p
         className={`${styles.channelState} ${

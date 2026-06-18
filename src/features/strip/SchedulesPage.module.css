@@ -107,6 +107,12 @@
   color: #9aa0a6;
 }
 
+.itemHint {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
 .itemActions {
   display: flex;
   flex-wrap: wrap;

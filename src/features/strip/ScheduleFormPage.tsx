@@ -1,65 +1,118 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { paths } from "@/routes/paths";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import type { ScheduleCreateBody, StripChannelNumber } from "@/api/types";
+import type {
+  ScheduleActionType,
+  ScheduleCreateBody,
+  ScheduleHolidayMode,
+  StripChannelNumber,
+} from "@/api/types";
 import {
   useCreateSchedule,
+  useHolidays,
   usePatchSchedule,
   useSchedules,
+  useStripPresets,
 } from "@/hooks/useSchedules";
 import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
 import { useQueryErrorToast } from "@/hooks/useQueryErrorToast";
+import {
+  endOfMonthKst,
+  startOfMonthKst,
+} from "@/utils/calendar";
+import {
+  DEFAULT_SCHEDULE_FORM,
+  HOLIDAY_MODE_LABELS,
+  isValidTimeKst,
+  parseChannelRouteParam,
+  WEEKDAY_LABELS,
+} from "@/utils/schedule";
 import {
   TOAST_DEVICE,
   TOAST_GUIDE,
   TOAST_RESOURCE,
 } from "@/utils/toastMessages";
-import {
-  DEFAULT_SCHEDULE_FORM,
-  isValidTimeKst,
-  WEEKDAY_LABELS,
-} from "@/utils/schedule";
+import { ScheduleMonthCalendar } from "./components/ScheduleMonthCalendar";
+import { TimeKstPicker12h } from "./components/TimeKstPicker12h";
 import shared from "@/components/status/statusPage.module.css";
 import styles from "./ScheduleFormPage.module.css";
 
 export function ScheduleFormPage() {
-  const { id } = useParams<{ id: string }>();
+  const { n, id } = useParams<{ n?: string; id?: string }>();
+  const routeChannel = parseChannelRouteParam(n);
   const isEdit = Boolean(id);
   const navigate = useNavigate();
-  const schedulesQuery = useSchedules();
-  const createMutation = useCreateSchedule();
-  const patchMutation = usePatchSchedule();
+  const now = new Date();
+  const [calendarYear, setCalendarYear] = useState(now.getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(now.getMonth());
+
+  const schedulesQuery = useSchedules(routeChannel ?? undefined);
+  const presetsQuery = useStripPresets();
+  const holidaysQuery = useHolidays(calendarYear);
+  const createMutation = useCreateSchedule(routeChannel ?? undefined);
+  const patchMutation = usePatchSchedule(routeChannel ?? undefined);
 
   const [name, setName] = useState(DEFAULT_SCHEDULE_FORM.name);
   const [enabled, setEnabled] = useState(DEFAULT_SCHEDULE_FORM.enabled);
+  const [actionType, setActionType] = useState<ScheduleActionType>(
+    DEFAULT_SCHEDULE_FORM.action_type,
+  );
   const [channelNumber, setChannelNumber] = useState<StripChannelNumber>(
-    DEFAULT_SCHEDULE_FORM.channel_number,
+    routeChannel ?? DEFAULT_SCHEDULE_FORM.channel_number,
   );
   const [channelOn, setChannelOn] = useState(DEFAULT_SCHEDULE_FORM.channel_on);
+  const [presetName, setPresetName] = useState(DEFAULT_SCHEDULE_FORM.preset_name);
   const [timeKst, setTimeKst] = useState(DEFAULT_SCHEDULE_FORM.time_kst);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
     DEFAULT_SCHEDULE_FORM.days_of_week,
   );
+  const [holidayMode, setHolidayMode] = useState<ScheduleHolidayMode>(
+    DEFAULT_SCHEDULE_FORM.holiday_mode,
+  );
+  const [includeSubstitute, setIncludeSubstitute] = useState(
+    DEFAULT_SCHEDULE_FORM.include_substitute,
+  );
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  const editSchedule = useMemo(
+    () => schedulesQuery.data?.find((s) => s.id === id),
+    [schedulesQuery.data, id],
+  );
+
   useEffect(() => {
-    if (!isEdit || !id || !schedulesQuery.data) return;
-    const found = schedulesQuery.data.find((s) => s.id === id);
-    if (!found) return;
-    setName(found.name);
-    setEnabled(found.enabled);
-    setTimeKst(found.time_kst);
-    setDaysOfWeek([...found.days_of_week]);
-    if (found.action_type === "channel") {
-      setChannelNumber((found.channel_number ?? 1) as StripChannelNumber);
-      setChannelOn(found.channel_on ?? true);
+    if (routeChannel != null) {
+      setChannelNumber(routeChannel);
+      if (actionType === "channel") return;
     }
-  }, [isEdit, id, schedulesQuery.data]);
+  }, [routeChannel, actionType]);
+
+  useEffect(() => {
+    if (!isEdit || !id || !editSchedule) return;
+    setName(editSchedule.name);
+    setEnabled(editSchedule.enabled);
+    setActionType(editSchedule.action_type);
+    setTimeKst(editSchedule.time_kst);
+    setDaysOfWeek([...editSchedule.days_of_week]);
+    setHolidayMode(editSchedule.holiday_mode ?? "skip");
+    setIncludeSubstitute(editSchedule.include_substitute ?? true);
+    if (editSchedule.action_type === "channel") {
+      setChannelNumber((editSchedule.channel_number ?? 1) as StripChannelNumber);
+      setChannelOn(editSchedule.channel_on ?? true);
+    } else {
+      setPresetName(editSchedule.preset_name ?? "");
+    }
+  }, [isEdit, id, editSchedule]);
+
+  const listPath =
+    routeChannel != null
+      ? paths.stripChannelSchedules(routeChannel)
+      : paths.stripChannelSchedules(1);
 
   const pending = createMutation.isPending || patchMutation.isPending;
   const mutationError = createMutation.error ?? patchMutation.error;
+
   useQueryErrorToast({
     isError: isEdit && schedulesQuery.isError,
     error: schedulesQuery.error,
@@ -79,9 +132,21 @@ export function ScheduleFormPage() {
     "control",
   );
 
-  function toggleDay(day: number) {
+  if (isEdit && !n && editSchedule?.channel_number) {
+    const ch = editSchedule.channel_number as StripChannelNumber;
+    return (
+      <Navigate
+        to={paths.stripChannelScheduleEdit(ch, id!)}
+        replace
+      />
+    );
+  }
+
+  function toggleWeekday(weekday: number) {
     setDaysOfWeek((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+      prev.includes(weekday)
+        ? prev.filter((d) => d !== weekday)
+        : [...prev, weekday],
     );
   }
 
@@ -92,22 +157,42 @@ export function ScheduleFormPage() {
       return null;
     }
     if (!isValidTimeKst(timeKst)) {
-      setValidationError("시간은 HH:MM 형식(00:00~23:59)이어야 합니다.");
+      setValidationError("시간 형식이 올바르지 않습니다.");
       return null;
     }
     if (daysOfWeek.length === 0) {
-      setValidationError("요일을 하나 이상 선택하세요.");
+      setValidationError("요일을 하나 이상 선택하세요. 달력에서 날짜를 눌러 요일을 지정할 수 있습니다.");
+      return null;
+    }
+    if (actionType === "preset" && !presetName.trim()) {
+      setValidationError("프리셋을 선택하세요.");
       return null;
     }
     setValidationError(null);
-    return {
+
+    const common = {
       name: trimmed,
       enabled,
+      time_kst: timeKst,
+      days_of_week: [...daysOfWeek].sort((a, b) => a - b),
+      recurrence_type: "weekly" as const,
+      holiday_mode: holidayMode,
+      include_substitute: includeSubstitute,
+    };
+
+    if (actionType === "preset") {
+      return {
+        ...common,
+        action_type: "preset",
+        preset_name: presetName.trim(),
+      };
+    }
+
+    return {
+      ...common,
       action_type: "channel",
       channel_number: channelNumber,
       channel_on: channelOn,
-      time_kst: timeKst,
-      days_of_week: [...daysOfWeek].sort((a, b) => a - b),
     };
   }
 
@@ -119,13 +204,24 @@ export function ScheduleFormPage() {
     if (isEdit && id) {
       patchMutation.mutate(
         { id, body },
-        { onSuccess: () => navigate(paths.stripSchedules) },
+        { onSuccess: () => navigate(listPath) },
       );
     } else {
       createMutation.mutate(body, {
-        onSuccess: () => navigate(paths.stripSchedules),
+        onSuccess: () => navigate(listPath),
       });
     }
+  }
+
+  if (routeChannel == null && n != null) {
+    return (
+      <div className={`${styles.page} ${shared.pageForm}`.trim()}>
+        <p className={styles.errorDetail}>잘못된 채널 번호입니다.</p>
+        <Link to={paths.strip} className={styles.back}>
+          멀티탭으로
+        </Link>
+      </div>
+    );
   }
 
   if (isEdit && schedulesQuery.isLoading) {
@@ -136,31 +232,35 @@ export function ScheduleFormPage() {
     return (
       <div className={`${styles.page} ${shared.pageForm}`.trim()}>
         <p className={styles.errorDetail}>스케줄 조회 실패</p>
-        <Link to={paths.stripSchedules} className={styles.back}>
+        <Link to={listPath} className={styles.back}>
           목록으로
         </Link>
       </div>
     );
   }
 
-  if (isEdit && id && schedulesQuery.data && !schedulesQuery.data.some((s) => s.id === id)) {
+  if (isEdit && id && schedulesQuery.data && !editSchedule) {
     return (
       <div className={`${styles.page} ${shared.pageForm}`.trim()}>
         <p className={styles.errorDetail}>스케줄을 찾을 수 없습니다.</p>
-        <Link to={paths.stripSchedules} className={styles.back}>
+        <Link to={listPath} className={styles.back}>
           목록으로
         </Link>
       </div>
     );
   }
 
+  const previewFrom = startOfMonthKst(calendarYear, calendarMonth);
+  const previewTo = endOfMonthKst(calendarYear, calendarMonth);
+
   return (
     <div className={`${styles.page} ${shared.pageForm}`.trim()}>
-      <Link to={paths.stripSchedules} className={styles.back}>
+      <Link to={listPath} className={styles.back}>
         ← 스케줄 목록
       </Link>
       <h2 className={styles.title}>
         {isEdit ? "스케줄 수정" : "새 스케줄"}
+        {routeChannel != null ? ` · 채널 ${routeChannel}` : ""}
       </h2>
 
       <Card>
@@ -188,54 +288,87 @@ export function ScheduleFormPage() {
             활성화
           </label>
 
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="schedule-time">
-                시간 (KST)
-              </label>
-              <input
-                id="schedule-time"
-                type="time"
-                className={styles.input}
-                value={timeKst}
-                onChange={(e) => setTimeKst(e.target.value)}
-              />
+          <div className={styles.field}>
+            <span className={styles.label}>동작 유형</span>
+            <select
+              className={styles.select}
+              value={actionType}
+              onChange={(e) =>
+                setActionType(e.target.value as ScheduleActionType)
+              }
+            >
+              <option value="channel">채널 제어</option>
+              <option value="preset">프리셋 적용</option>
+            </select>
+          </div>
+
+          {actionType === "channel" ? (
+            <div className={styles.row}>
+              <div className={styles.field}>
+                <span className={styles.label}>채널</span>
+                <select
+                  className={styles.select}
+                  value={channelNumber}
+                  disabled={routeChannel != null}
+                  onChange={(e) =>
+                    setChannelNumber(Number(e.target.value) as StripChannelNumber)
+                  }
+                >
+                  {[1, 2, 3, 4].map((num) => (
+                    <option key={num} value={num}>
+                      채널 {num}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>동작</span>
+                <select
+                  className={styles.select}
+                  value={channelOn ? "on" : "off"}
+                  onChange={(e) => setChannelOn(e.target.value === "on")}
+                >
+                  <option value="on">켜기 (ON)</option>
+                  <option value="off">끄기 (OFF)</option>
+                </select>
+              </div>
             </div>
+          ) : (
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="schedule-channel">
-                채널
-              </label>
+              <span className={styles.label}>프리셋</span>
               <select
-                id="schedule-channel"
                 className={styles.select}
-                value={channelNumber}
-                onChange={(e) =>
-                  setChannelNumber(Number(e.target.value) as StripChannelNumber)
-                }
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
               >
-                {[1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n}>
-                    채널 {n}
+                <option value="">선택…</option>
+                {(presetsQuery.data ?? []).map((preset) => (
+                  <option key={preset.name} value={preset.name}>
+                    {preset.name}
                   </option>
                 ))}
               </select>
             </div>
+          )}
+
+          <div className={styles.field}>
+            <span className={styles.label}>시간 (KST)</span>
+            <TimeKstPicker12h value={timeKst} onChange={setTimeKst} />
           </div>
 
           <div className={styles.field}>
-            <span className={styles.label}>동작</span>
-            <select
-              className={styles.select}
-              value={channelOn ? "on" : "off"}
-              onChange={(e) => setChannelOn(e.target.value === "on")}
-            >
-              <option value="on">켜기 (ON)</option>
-              <option value="off">끄기 (OFF)</option>
-            </select>
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>요일 (월=0 … 일=6)</span>
+            <span className={styles.label}>요일 — 달력에서 날짜를 눌러 선택</span>
+            <ScheduleMonthCalendar
+              year={calendarYear}
+              month={calendarMonth}
+              holidays={holidaysQuery.data?.holidays ?? []}
+              selectedWeekdays={daysOfWeek}
+              onToggleWeekday={toggleWeekday}
+              onMonthChange={(y, m) => {
+                setCalendarYear(y);
+                setCalendarMonth(m);
+              }}
+            />
             <div className={styles.days}>
               {WEEKDAY_LABELS.map((label, day) => (
                 <label
@@ -247,18 +380,46 @@ export function ScheduleFormPage() {
                   <input
                     type="checkbox"
                     checked={daysOfWeek.includes(day)}
-                    onChange={() => toggleDay(day)}
+                    onChange={() => toggleWeekday(day)}
                   />
                   {label}
                 </label>
               ))}
             </div>
+            <p className={styles.hint}>
+              미리보기 기간: {previewFrom} ~ {previewTo}
+            </p>
           </div>
 
-          <p className={styles.hint}>
-            프리셋 스케줄은 DB 시드 후 지원 예정입니다. 현재는 채널
-            제어만 등록할 수 있습니다.
-          </p>
+          <div className={styles.row}>
+            <div className={styles.field}>
+              <span className={styles.label}>공휴일</span>
+              <select
+                className={styles.select}
+                value={holidayMode}
+                onChange={(e) =>
+                  setHolidayMode(e.target.value as ScheduleHolidayMode)
+                }
+              >
+                {(Object.keys(HOLIDAY_MODE_LABELS) as ScheduleHolidayMode[]).map(
+                  (mode) => (
+                    <option key={mode} value={mode}>
+                      {HOLIDAY_MODE_LABELS[mode]}
+                    </option>
+                  ),
+                )}
+              </select>
+            </div>
+          </div>
+
+          <label className={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={includeSubstitute}
+              onChange={(e) => setIncludeSubstitute(e.target.checked)}
+            />
+            대체공휴일 포함
+          </label>
 
           {validationError ? (
             <p className={styles.errorDetail}>{validationError}</p>
@@ -274,7 +435,7 @@ export function ScheduleFormPage() {
               variant="secondary"
               fullWidth
               disabled={pending}
-              onClick={() => navigate(paths.stripSchedules)}
+              onClick={() => navigate(listPath)}
             >
               취소
             </Button>

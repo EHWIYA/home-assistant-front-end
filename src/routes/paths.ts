@@ -6,6 +6,13 @@ export const paths = {
   pc: "/pc",
   settings: "/settings",
   strip: "/strip",
+  stripChannelSchedules: (channel: number) =>
+    `/strip/channels/${channel}/schedules`,
+  stripChannelSchedulesNew: (channel: number) =>
+    `/strip/channels/${channel}/schedules/new`,
+  stripChannelScheduleEdit: (channel: number, id: string) =>
+    `/strip/channels/${channel}/schedules/${encodeURIComponent(id)}/edit`,
+  /** @deprecated 채널 1로 리다이렉트 — 신규 경로는 stripChannelSchedules 사용 */
   stripSchedules: "/strip/schedules",
   stripSchedulesNew: "/strip/schedules/new",
   stripScheduleEdit: (id: string) =>

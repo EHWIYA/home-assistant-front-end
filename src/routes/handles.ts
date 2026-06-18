@@ -8,11 +8,20 @@ export const routeHandles = {
   settings: { pageTitle: "설정" } satisfies AppRouteHandle,
   strip: { pageTitle: "멀티탭" } satisfies AppRouteHandle,
   stripSchedules: { pageTitle: "스케줄" } satisfies AppRouteHandle,
+  stripChannelSchedules: { pageTitle: "채널 스케줄" } satisfies AppRouteHandle,
   stripScheduleNew: {
     pageTitle: "새 스케줄",
     hideTabBar: true,
   } satisfies AppRouteHandle,
+  stripChannelScheduleNew: {
+    pageTitle: "새 스케줄",
+    hideTabBar: true,
+  } satisfies AppRouteHandle,
   stripScheduleEdit: {
+    pageTitle: "스케줄 수정",
+    hideTabBar: true,
+  } satisfies AppRouteHandle,
+  stripChannelScheduleEdit: {
     pageTitle: "스케줄 수정",
     hideTabBar: true,
   } satisfies AppRouteHandle,

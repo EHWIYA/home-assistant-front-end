@@ -33,14 +33,29 @@ export const appRouter = createBrowserRouter([
         children: [
           { index: true, element: <StripPage /> },
           {
-            path: "schedules",
+            path: "channels/:n/schedules",
             element: <SchedulesPage />,
-            handle: routeHandles.stripSchedules,
+            handle: routeHandles.stripChannelSchedules,
+          },
+          {
+            path: "channels/:n/schedules/new",
+            element: <ScheduleFormPage />,
+            handle: routeHandles.stripChannelScheduleNew,
+          },
+          {
+            path: "channels/:n/schedules/:id/edit",
+            element: <ScheduleFormPage />,
+            handle: routeHandles.stripChannelScheduleEdit,
+          },
+          {
+            path: "schedules",
+            element: <Navigate to={paths.stripChannelSchedules(1)} replace />,
           },
           {
             path: "schedules/new",
-            element: <ScheduleFormPage />,
-            handle: routeHandles.stripScheduleNew,
+            element: (
+              <Navigate to={paths.stripChannelSchedulesNew(1)} replace />
+            ),
           },
           {
             path: "schedules/:id/edit",

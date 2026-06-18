@@ -261,6 +261,10 @@ export interface AcThresholdsResponse {
 
 export type ScheduleActionType = "channel" | "preset";
 
+export type ScheduleRecurrenceType = "weekly";
+
+export type ScheduleHolidayMode = "skip" | "run";
+
 export interface Schedule {
   id: string;
   name: string;
@@ -271,11 +275,14 @@ export interface Schedule {
   preset_name?: string | null;
   time_kst: string;
   days_of_week: number[];
+  recurrence_type?: ScheduleRecurrenceType;
+  holiday_mode?: ScheduleHolidayMode;
+  include_substitute?: boolean;
   created_at?: string;
   updated_at?: string;
 }
 
-export interface ScheduleCreateBody {
+export interface ScheduleCreateBodyChannel {
   name: string;
   enabled?: boolean;
   action_type: "channel";
@@ -283,7 +290,26 @@ export interface ScheduleCreateBody {
   channel_on: boolean;
   time_kst: string;
   days_of_week: number[];
+  recurrence_type?: ScheduleRecurrenceType;
+  holiday_mode?: ScheduleHolidayMode;
+  include_substitute?: boolean;
 }
+
+export interface ScheduleCreateBodyPreset {
+  name: string;
+  enabled?: boolean;
+  action_type: "preset";
+  preset_name: string;
+  time_kst: string;
+  days_of_week: number[];
+  recurrence_type?: ScheduleRecurrenceType;
+  holiday_mode?: ScheduleHolidayMode;
+  include_substitute?: boolean;
+}
+
+export type ScheduleCreateBody =
+  | ScheduleCreateBodyChannel
+  | ScheduleCreateBodyPreset;
 
 export type SchedulePatchBody = Partial<ScheduleCreateBody> & {
   enabled?: boolean;
@@ -292,14 +318,59 @@ export type SchedulePatchBody = Partial<ScheduleCreateBody> & {
 export interface ScheduleRun {
   id?: string;
   schedule_id?: string;
+  scheduled_at?: string;
   executed_at: string;
   success: boolean;
+  status?: string;
   detail?: string | null;
 }
 
 export interface ScheduleRunsResponse {
   runs: ScheduleRun[];
 }
+
+export interface SchedulePreviewOccurrence {
+  schedule_id: string;
+  name: string;
+  time_kst: string;
+  action_type: ScheduleActionType;
+  channel_number?: number | null;
+  preset_name?: string | null;
+  skipped?: boolean;
+}
+
+export interface SchedulePreviewDay {
+  date: string;
+  occurrences: SchedulePreviewOccurrence[];
+}
+
+export interface SchedulePreviewResponse {
+  days: SchedulePreviewDay[];
+}
+
+export interface HolidaysResponse {
+  year: number;
+  holidays: string[];
+}
+
+export interface StripPresetChannel {
+  channel: StripChannelNumber;
+  on: boolean;
+}
+
+export interface StripPreset {
+  name: string;
+  channels: StripPresetChannel[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StripPresetCreateBody {
+  name: string;
+  channels: StripPresetChannel[];
+}
+
+export type StripPresetPatchBody = Partial<StripPresetCreateBody>;
 
 /** 무드등 색상 — OpenAPI 1.9.0 */
 export type MoodColorName =

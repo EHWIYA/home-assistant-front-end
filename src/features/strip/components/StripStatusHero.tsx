@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-import { paths } from "@/routes/paths";
 import powerSvg from "cupertino-icons-svg/svg/power.svg?raw";
 import type { CSSProperties } from "react";
 import type { StripStateResponse } from "@/api/types";
@@ -46,9 +44,6 @@ export function StripStatusHero({ data, isFetching }: StripStatusHeroProps) {
           </span>
           <h2 className={styles.title}>헤이홈 멀티탭</h2>
         </div>
-        <Link to={paths.stripSchedules} className={styles.scheduleLink}>
-          스케줄 →
-        </Link>
       </header>
 
       <div className={styles.statusRow}>

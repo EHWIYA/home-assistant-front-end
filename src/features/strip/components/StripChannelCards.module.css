@@ -37,6 +37,39 @@
   border: 1px solid #2a323c;
   background: rgba(255, 255, 255, 0.03);
   min-width: 0;
+  position: relative;
+}
+
+.tileTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.scheduleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  color: #9aa0a6;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2a323c;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scheduleBtn:hover {
+    color: #e8b84a;
+    border-color: rgba(232, 184, 74, 0.45);
+  }
+}
+
+.scheduleIcon {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .tileOn {

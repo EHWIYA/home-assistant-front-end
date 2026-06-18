@@ -4,8 +4,10 @@ import type {
   Schedule,
   ScheduleCreateBody,
   SchedulePatchBody,
+  SchedulePreviewResponse,
   ScheduleRun,
   ScheduleRunsResponse,
+  StripChannelNumber,
 } from "./types";
 
 let mockSchedules: Schedule[] = [
@@ -16,12 +18,49 @@ function nextMockId(): string {
   return `mock-schedule-${Date.now()}`;
 }
 
-export async function fetchSchedules(): Promise<Schedule[]> {
+export async function fetchSchedules(
+  channel?: StripChannelNumber,
+): Promise<Schedule[]> {
   if (shouldUseMock()) {
     await new Promise((r) => setTimeout(r, 200));
-    return mockSchedules.map((s) => ({ ...s }));
+    const list = mockSchedules.map((s) => ({ ...s }));
+    if (channel == null) return list;
+    return list.filter(
+      (s) =>
+        s.action_type === "channel" && s.channel_number === channel,
+    );
   }
-  return apiRequest<Schedule[]>("/api/v1/schedules");
+  const qs =
+    channel != null
+      ? `?channel=${encodeURIComponent(String(channel))}`
+      : "";
+  return apiRequest<Schedule[]>(`/api/v1/schedules${qs}`);
+}
+
+export async function fetchSchedulePreview(
+  from: string,
+  to: string,
+  channel?: StripChannelNumber,
+): Promise<SchedulePreviewResponse> {
+  if (shouldUseMock()) {
+    await new Promise((r) => setTimeout(r, 200));
+    const { default: mockPreview } = await import("./mock/schedule-preview.json");
+    const data = mockPreview as SchedulePreviewResponse;
+    if (channel == null) return data;
+    return {
+      days: data.days.map((day) => ({
+        ...day,
+        occurrences: day.occurrences.filter(
+          (o) => o.channel_number == null || o.channel_number === channel,
+        ),
+      })),
+    };
+  }
+  const params = new URLSearchParams({ from, to });
+  if (channel != null) params.set("channel", String(channel));
+  return apiRequest<SchedulePreviewResponse>(
+    `/api/v1/schedules/preview?${params.toString()}`,
+  );
 }
 
 export async function createSchedule(
@@ -90,7 +129,8 @@ export async function fetchScheduleRuns(
     await new Promise((r) => setTimeout(r, 200));
     return [
       {
-        executed_at: new Date(Date.now() - 86_400_000).toISOString(),
+        scheduled_at: new Date(Date.now() - 86_400_000).toISOString(),
+        executed_at: new Date(Date.now() - 86_400_000 + 1200).toISOString(),
         success: true,
       },
     ];

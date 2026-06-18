@@ -1,108 +1,60 @@
 {
-  "days": [
+  "slots": [
     {
-      "date": "2026-06-16",
-      "occurrences": [
-        {
-          "schedule_id": "mock-schedule-1",
-          "name": "아침 콘센트",
-          "time_kst": "08:00",
-          "action_type": "channel",
-          "channel_number": 1
-        }
-      ]
+      "schedule_id": "mock-schedule-1",
+      "schedule_name": "아침 콘센트",
+      "at_kst": "2026-06-16T08:00:00+09:00",
+      "action_type": "channel",
+      "channel_number": 1
     },
     {
-      "date": "2026-06-17",
-      "occurrences": [
-        {
-          "schedule_id": "mock-schedule-1",
-          "name": "아침 콘센트",
-          "time_kst": "08:00",
-          "action_type": "channel",
-          "channel_number": 1
-        }
-      ]
+      "schedule_id": "mock-schedule-1",
+      "schedule_name": "아침 콘센트",
+      "at_kst": "2026-06-17T08:00:00+09:00",
+      "action_type": "channel",
+      "channel_number": 1
     },
     {
-      "date": "2026-06-18",
-      "occurrences": [
-        {
-          "schedule_id": "mock-schedule-1",
-          "name": "아침 콘센트",
-          "time_kst": "08:00",
-          "action_type": "channel",
-          "channel_number": 1
-        }
-      ]
+      "schedule_id": "mock-schedule-1",
+      "schedule_name": "아침 콘센트",
+      "at_kst": "2026-06-18T08:00:00+09:00",
+      "action_type": "channel",
+      "channel_number": 1
     },
     {
-      "date": "2026-06-19",
-      "occurrences": [
-        {
-          "schedule_id": "mock-schedule-1",
-          "name": "아침 콘센트",
-          "time_kst": "08:00",
-          "action_type": "channel",
-          "channel_number": 1
-        }
-      ]
+      "schedule_id": "mock-schedule-1",
+      "schedule_name": "아침 콘센트",
+      "at_kst": "2026-06-19T08:00:00+09:00",
+      "action_type": "channel",
+      "channel_number": 1
     },
     {
-      "date": "2026-06-20",
-      "occurrences": []
+      "schedule_id": "mock-schedule-1",
+      "schedule_name": "아침 콘센트",
+      "at_kst": "2026-06-22T08:00:00+09:00",
+      "action_type": "channel",
+      "channel_number": 1
     },
     {
-      "date": "2026-06-21",
-      "occurrences": []
+      "schedule_id": "mock-schedule-1",
+      "schedule_name": "아침 콘센트",
+      "at_kst": "2026-06-23T08:00:00+09:00",
+      "action_type": "channel",
+      "channel_number": 1
     },
     {
-      "date": "2026-06-22",
-      "occurrences": [
-        {
-          "schedule_id": "mock-schedule-1",
-          "name": "아침 콘센트",
-          "time_kst": "08:00",
-          "action_type": "channel",
-          "channel_number": 1
-        }
-      ]
+      "schedule_id": "mock-schedule-1",
+      "schedule_name": "아침 콘센트",
+      "at_kst": "2026-06-24T08:00:00+09:00",
+      "action_type": "channel",
+      "channel_number": 1
     },
     {
-      "date": "2026-06-23",
-      "occurrences": [
-        {
-          "schedule_id": "mock-schedule-1",
-          "name": "아침 콘센트",
-          "time_kst": "08:00",
-          "action_type": "channel",
-          "channel_number": 1
-        }
-      ]
-    },
-    {
-      "date": "2026-06-24",
-      "occurrences": [
-        {
-          "schedule_id": "mock-schedule-1",
-          "name": "아침 콘센트",
-          "time_kst": "08:00",
-          "action_type": "channel",
-          "channel_number": 1
-        }
-      ]
-    },
-    {
-      "date": "2026-06-25",
-      "occurrences": [
-        {
-          "schedule_id": "mock-schedule-1",
-          "name": "아침 콘센트",
-          "time_kst": "08:00",
-          "action_type": "channel",
-          "channel_number": 1
-        }
-      ]
+      "schedule_id": "mock-schedule-1",
+      "schedule_name": "아침 콘센트",
+      "at_kst": "2026-06-25T08:00:00+09:00",
+      "action_type": "channel",
+      "channel_number": 1
     }
   ]
 }

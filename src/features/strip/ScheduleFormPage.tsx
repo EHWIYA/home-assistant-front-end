@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { paths } from "@/routes/paths";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { holidayDates } from "@/api/meta";
 import type {
   ScheduleActionType,
   ScheduleCreateBody,
@@ -168,6 +169,10 @@ export function ScheduleFormPage() {
       setValidationError("프리셋을 선택하세요.");
       return null;
     }
+    if (routeChannel != null && actionType === "preset") {
+      setValidationError("채널 스케줄 화면에서는 채널 제어만 등록할 수 있습니다.");
+      return null;
+    }
     setValidationError(null);
 
     const common = {
@@ -288,21 +293,26 @@ export function ScheduleFormPage() {
             활성화
           </label>
 
-          <div className={styles.field}>
-            <span className={styles.label}>동작 유형</span>
-            <select
-              className={styles.select}
-              value={actionType}
-              onChange={(e) =>
-                setActionType(e.target.value as ScheduleActionType)
-              }
-            >
-              <option value="channel">채널 제어</option>
-              <option value="preset">프리셋 적용</option>
-            </select>
-          </div>
+          {routeChannel == null ? (
+            <div className={styles.field}>
+              <span className={styles.label}>동작 유형</span>
+              <select
+                className={styles.select}
+                value={actionType}
+                onChange={(e) =>
+                  setActionType(e.target.value as ScheduleActionType)
+                }
+              >
+                <option value="channel">채널 제어</option>
+                <option value="preset">프리셋 적용</option>
+              </select>
+              <p className={styles.hint}>
+                프리셋 스케줄은 채널별 목록에 표시되지 않습니다.
+              </p>
+            </div>
+          ) : null}
 
-          {actionType === "channel" ? (
+          {(routeChannel != null ? "channel" : actionType) === "channel" ? (
             <div className={styles.row}>
               <div className={styles.field}>
                 <span className={styles.label}>채널</span>
@@ -361,7 +371,7 @@ export function ScheduleFormPage() {
             <ScheduleMonthCalendar
               year={calendarYear}
               month={calendarMonth}
-              holidays={holidaysQuery.data?.holidays ?? []}
+              holidays={holidayDates(holidaysQuery.data)}
               selectedWeekdays={daysOfWeek}
               onToggleWeekday={toggleWeekday}
               onMonthChange={(y, m) => {

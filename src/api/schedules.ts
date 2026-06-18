@@ -1,4 +1,5 @@
 import { apiRequest, apiRequestNoContent, shouldUseMock } from "./http";
+import { groupPreviewSlotsByDate } from "@/utils/schedulePreview";
 import mockSchedulesSeed from "./mock/schedules.json";
 import type {
   Schedule,
@@ -46,14 +47,11 @@ export async function fetchSchedulePreview(
     await new Promise((r) => setTimeout(r, 200));
     const { default: mockPreview } = await import("./mock/schedule-preview.json");
     const data = mockPreview as SchedulePreviewResponse;
-    if (channel == null) return data;
+    if (channel == null) return { slots: [...data.slots] };
     return {
-      days: data.days.map((day) => ({
-        ...day,
-        occurrences: day.occurrences.filter(
-          (o) => o.channel_number == null || o.channel_number === channel,
-        ),
-      })),
+      slots: data.slots.filter(
+        (s) => s.channel_number == null || s.channel_number === channel,
+      ),
     };
   }
   const params = new URLSearchParams({ from, to });
@@ -61,6 +59,13 @@ export async function fetchSchedulePreview(
   return apiRequest<SchedulePreviewResponse>(
     `/api/v1/schedules/preview?${params.toString()}`,
   );
+}
+
+/** preview `slots` → 달력용 날짜별 Map */
+export function buildPreviewByDate(
+  response: SchedulePreviewResponse | undefined,
+): Map<string, import("./types").SchedulePreviewOccurrence[]> {
+  return groupPreviewSlotsByDate(response?.slots ?? []);
 }
 
 export async function createSchedule(

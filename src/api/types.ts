@@ -329,6 +329,20 @@ export interface ScheduleRunsResponse {
   runs: ScheduleRun[];
 }
 
+export interface SchedulePreviewSlot {
+  schedule_id: string;
+  schedule_name: string;
+  at_kst: string;
+  action_type: ScheduleActionType;
+  channel_number?: number | null;
+  preset_name?: string | null;
+}
+
+export interface SchedulePreviewResponse {
+  slots: SchedulePreviewSlot[];
+}
+
+/** 달력 UI용 — `slots`를 날짜별로 묶은 결과 */
 export interface SchedulePreviewOccurrence {
   schedule_id: string;
   name: string;
@@ -336,21 +350,12 @@ export interface SchedulePreviewOccurrence {
   action_type: ScheduleActionType;
   channel_number?: number | null;
   preset_name?: string | null;
-  skipped?: boolean;
-}
-
-export interface SchedulePreviewDay {
-  date: string;
-  occurrences: SchedulePreviewOccurrence[];
-}
-
-export interface SchedulePreviewResponse {
-  days: SchedulePreviewDay[];
 }
 
 export interface HolidaysResponse {
   year: number;
-  holidays: string[];
+  dates: string[];
+  source?: string;
 }
 
 export interface StripPresetChannel {

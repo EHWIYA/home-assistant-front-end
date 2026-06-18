@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import type { SchedulePreviewOccurrence } from "@/api/types";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { paths } from "@/routes/paths";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { buildPreviewByDate } from "@/api/schedules";
+import { holidayDates } from "@/api/meta";
 import type { Schedule, ScheduleRun, StripChannelNumber } from "@/api/types";
 import {
   useDeleteSchedule,
@@ -56,13 +57,10 @@ export function SchedulesPage() {
   );
   const deleteMutation = useDeleteSchedule(channel ?? undefined);
 
-  const previewByDate = useMemo(() => {
-    const map = new Map<string, SchedulePreviewOccurrence[]>();
-    for (const day of previewQuery.data?.days ?? []) {
-      map.set(day.date, day.occurrences);
-    }
-    return map;
-  }, [previewQuery.data]);
+  const previewByDate = useMemo(
+    () => buildPreviewByDate(previewQuery.data),
+    [previewQuery.data],
+  );
 
   useQueryErrorToast({
     isError,
@@ -101,7 +99,7 @@ export function SchedulesPage() {
         <ScheduleMonthCalendar
           year={year}
           month={month}
-          holidays={holidaysQuery.data?.holidays ?? []}
+          holidays={holidayDates(holidaysQuery.data)}
           selectedWeekdays={[]}
           previewByDate={previewByDate}
           onToggleWeekday={() => {}}

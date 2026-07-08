@@ -21,6 +21,35 @@
   line-height: 1.4;
 }
 
+.toastWithAction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  pointer-events: auto;
+}
+
+.toastMessage {
+  flex: 1;
+  min-width: 0;
+}
+
+.toastAction {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+.toastAction:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .error {
   background: #371818;
   border-color: #8f2c2c;

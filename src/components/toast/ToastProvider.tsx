@@ -16,12 +16,20 @@ interface ToastItem {
   id: number;
   message: string;
   variant: ToastVariant;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 interface ShowToastOptions {
   variant?: ToastVariant;
   category?: ToastCategory;
   durationMs?: number;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 interface ToastContextValue {
@@ -53,7 +61,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const durationMs = options?.durationMs ?? TOAST_DURATION_MS[variant];
 
     const id = nextIdRef.current++;
-    setItems((prev) => [...prev, { id, message: finalMessage, variant }]);
+    setItems((prev) => [
+      ...prev,
+      {
+        id,
+        message: finalMessage,
+        variant,
+        action: options?.action,
+      },
+    ]);
     window.setTimeout(() => {
       setItems((prev) => prev.filter((item) => item.id !== id));
     }, durationMs);
@@ -66,8 +82,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className={styles.viewport} aria-live="polite" aria-atomic="false">
         {items.map((item) => (
-          <div key={item.id} className={`${styles.toast} ${styles[item.variant]}`} role="status">
-            {item.message}
+          <div
+            key={item.id}
+            className={`${styles.toast} ${styles[item.variant]} ${item.action ? styles.toastWithAction : ""}`.trim()}
+            role="status"
+          >
+            <span className={styles.toastMessage}>{item.message}</span>
+            {item.action ? (
+              <button
+                type="button"
+                className={styles.toastAction}
+                onClick={() => {
+                  item.action?.onClick();
+                  setItems((prev) => prev.filter((entry) => entry.id !== item.id));
+                }}
+              >
+                {item.action.label}
+              </button>
+            ) : null}
           </div>
         ))}
       </div>

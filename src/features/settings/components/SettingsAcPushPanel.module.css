@@ -151,3 +151,18 @@
   font-size: 0.6875rem;
   color: #6b7280;
 }
+
+.recentSection {
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.recentTitle {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

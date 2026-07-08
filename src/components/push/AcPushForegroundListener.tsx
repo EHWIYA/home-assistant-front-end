@@ -3,24 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { onMessage, type MessagePayload } from "firebase/messaging";
 import { useToast } from "@/components/toast/ToastProvider";
 import {
-  resolvePushNavigationUrl,
-  syncAcPushIfEnabled,
-} from "@/push/acPush";
+  buildAcPushDetailPath,
+  parseAcPushAlertFromPayload,
+} from "@/push/alertPayload";
+import { persistAcPushAlert } from "@/push/alertStorage";
+import { syncAcPushIfEnabled } from "@/push/acPush";
 import { isFirebaseConfigured } from "@/push/config";
 import { getOrInitMessaging, isPushMessagingSupported } from "@/push/firebase";
 
-function getForegroundTitle(payload: MessagePayload): string {
-  return (
-    payload.notification?.title ??
-    (typeof payload.data?.title === "string" ? payload.data.title : "에어컨 이상")
-  );
-}
-
-function getForegroundBody(payload: MessagePayload): string {
-  return (
-    payload.notification?.body ??
-    (typeof payload.data?.body === "string" ? payload.data.body : "")
-  );
+function getForegroundPreview(payload: MessagePayload): { title: string; body: string } {
+  const alert = parseAcPushAlertFromPayload(payload);
+  return { title: alert.title, body: alert.body };
 }
 
 export function AcPushForegroundListener() {
@@ -46,15 +39,20 @@ export function AcPushForegroundListener() {
 
       const messaging = getOrInitMessaging();
       onMessage(messaging, (payload) => {
-        const title = getForegroundTitle(payload);
-        const body = getForegroundBody(payload);
-        const message = body ? `${title}: ${body}` : title;
-        showToast(message, { variant: "warn", category: "sync", durationMs: 6000 });
+        const alert = parseAcPushAlertFromPayload(payload);
+        void persistAcPushAlert(alert);
 
-        const target = resolvePushNavigationUrl(
-          payload.data as Record<string, string> | undefined,
-        );
-        navigate(target);
+        const { title, body } = getForegroundPreview(payload);
+        const message = body ? `${title}: ${body}` : title;
+        showToast(message, {
+          variant: "warn",
+          category: "sync",
+          durationMs: 8000,
+          action: {
+            label: "자세히",
+            onClick: () => navigate(buildAcPushDetailPath(alert.fingerprint)),
+          },
+        });
       });
     })();
 

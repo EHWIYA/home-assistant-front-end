@@ -56,8 +56,13 @@ if (!Object.values(config).every(Boolean)) {
   const stub = `// Firebase env 미설정 — .env 또는 GHA Secrets 확인 후 prebuild 실행
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/ac";
-  const target = new URL(url, self.location.origin).href;
+  const fingerprint = event.notification.data && event.notification.data.fingerprint;
+  const url = new URL("/ac", self.location.origin);
+  url.searchParams.set("from", "push");
+  if (fingerprint) {
+    url.searchParams.set("fingerprint", fingerprint);
+  }
+  const target = url.href;
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const client of list) {
@@ -83,29 +88,106 @@ importScripts("https://www.gstatic.com/firebasejs/${FIREBASE_CDN}/firebase-messa
 firebase.initializeApp(${JSON.stringify(config, null, 2)});
 
 const messaging = firebase.messaging();
+const ALERT_DB = "hwiya-ac-push";
+const ALERT_STORE = "alerts";
+const ALERT_HISTORY_MAX = 10;
 
-messaging.onBackgroundMessage((payload) => {
+function openAlertDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(ALERT_DB, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(ALERT_STORE)) {
+        db.createObjectStore(ALERT_STORE, { keyPath: "fingerprint" });
+      }
+    };
+  });
+}
+
+function saveAlertToIdb(alert) {
+  return openAlertDb().then((db) => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(ALERT_STORE, "readwrite");
+      tx.objectStore(ALERT_STORE).put(alert);
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
+  });
+}
+
+function buildAlertFromPayload(payload) {
+  const data = payload.data || {};
   const title =
-    payload.notification?.title ||
-    (payload.data && payload.data.title) ||
+    (payload.notification && payload.notification.title) ||
+    data.title ||
     "에어컨 이상";
   const body =
-    payload.notification?.body ||
-    (payload.data && payload.data.body) ||
+    (payload.notification && payload.notification.body) ||
+    data.body ||
     "";
-  const data = payload.data || {};
-  return self.registration.showNotification(title, {
+  const fingerprint =
+    (data.fingerprint && String(data.fingerprint).trim()) ||
+    "push-" + Date.now();
+  return {
+    fingerprint,
+    title,
     body,
-    icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
-    data,
+    receivedAt: new Date().toISOString(),
+    topic: data.topic || undefined,
+    url: data.url || undefined,
+    issueId: data.issue_id || data.issueId || undefined,
+    status: data.status || undefined,
+    overall: data.overall || undefined,
+    checkedAtKst: data.checked_at_kst || data.checkedAtKst || undefined,
+    llmEscalate: data.llm_escalate || data.llmEscalate || undefined,
+    summaryJson: data.summary || undefined,
+  };
+}
+
+function buildAcPushClickUrl(fingerprint) {
+  const url = new URL("/ac", self.location.origin);
+  url.searchParams.set("from", "push");
+  if (fingerprint) {
+    url.searchParams.set("fingerprint", fingerprint);
+  }
+  return url.href;
+}
+
+messaging.onBackgroundMessage((payload) => {
+  const alert = buildAlertFromPayload(payload);
+  const body = String(alert.body || "").replace(/\\\\n/g, "\\n");
+  const notificationData = Object.assign({}, payload.data || {}, {
+    fingerprint: alert.fingerprint,
+    receivedAt: alert.receivedAt,
+    title: alert.title,
+    body: alert.body,
   });
+
+  return saveAlertToIdb(alert)
+    .catch(() => undefined)
+    .then(() =>
+      self.registration.showNotification(alert.title, {
+        body,
+        tag: alert.fingerprint,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        data: notificationData,
+      }),
+    );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const raw = event.notification.data?.url || "/ac";
-  const target = new URL(raw, self.location.origin).href;
+  const fingerprint = event.notification.data && event.notification.data.fingerprint;
+  const target = buildAcPushClickUrl(fingerprint);
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const client of list) {

@@ -5,6 +5,7 @@ import { useAcPushToggle } from "@/hooks/useAcPush";
 import { HOME_DOMAIN_THEME } from "@/features/home/utils/homeDomainTheme";
 import { getPwaDisplayMode } from "@/utils/pwaDisplayMode";
 import { isIosDevice } from "@/push/deviceLabel";
+import { SettingsAcPushRecentAlerts } from "./SettingsAcPushRecentAlerts";
 import styles from "./SettingsAcPushPanel.module.css";
 
 const theme = HOME_DOMAIN_THEME.ac;
@@ -87,6 +88,11 @@ export function SettingsAcPushPanel() {
           <p className={styles.iosNote}>iOS 16.4 이상 · 홈 화면 PWA 필요</p>
         </div>
       ) : null}
+
+      <div className={styles.recentSection}>
+        <h3 className={styles.recentTitle}>최근 알림</h3>
+        <SettingsAcPushRecentAlerts />
+      </div>
     </section>
   );
 }

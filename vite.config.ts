@@ -1,15 +1,38 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { VitePWA } from "vite-plugin-pwa";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import react from "@vitejs/plugin-react";
+import { defineConfig, type Plugin } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
+
+const repoRoot = path.dirname(fileURLToPath(import.meta.url));
+
+function generateFcmSwPlugin(): Plugin {
+  const run = () => {
+    spawnSync(process.execPath, ["scripts/generate-fcm-sw.mjs"], {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
+  };
+  return {
+    name: "generate-fcm-sw",
+    configureServer() {
+      run();
+    },
+    buildStart() {
+      run();
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
+    generateFcmSwPlugin(),
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      filename: "sw-v2.js",
-      includeAssets: ["icons/*.png", "icons/*.svg"],
+      filename: "sw-v3.js",
+      includeAssets: ["icons/*.png", "icons/*.svg", "firebase-messaging-sw.js"],
       manifest: {
         name: "hwiyaIoT",
         short_name: "hwiyaIoT",
@@ -39,6 +62,7 @@ export default defineConfig({
       },
       workbox: {
         // HTML은 precache하지 않음 — 온라인에서 NetworkFirst로 최신 shell 수신
+        importScripts: ["firebase-messaging-sw.js"],
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
         globIgnores: ["**/*.html"],
         navigateFallback: null,

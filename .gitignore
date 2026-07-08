@@ -17,6 +17,9 @@ lerna-debug.log*
 .env.local
 .env.*.local
 
+# generated (from .env via scripts/generate-fcm-sw.mjs)
+public/firebase-messaging-sw.js
+
 # local
 *.local
 

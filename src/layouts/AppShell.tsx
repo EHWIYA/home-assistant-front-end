@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { AcPushForegroundListener } from "@/components/push/AcPushForegroundListener";
 import { useAppRouteHandle } from "@/routes/handle";
 import { AppHeader } from "./AppHeader";
 import { MainTabNav } from "./MainTabNav";
@@ -9,6 +10,7 @@ export function AppShell() {
 
   return (
     <div className={styles.shell}>
+      <AcPushForegroundListener />
       <MainTabNav layout="side" />
 
       <div className={styles.shellBody}>

@@ -33,12 +33,27 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
+          VITE_IOT_API_KEY: ${{ secrets.VITE_IOT_API_KEY }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
         run: |
           export VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://iot-api.iwhya.kr}"
+          export VITE_API_KEY="${VITE_API_KEY:-${VITE_IOT_API_KEY:-}}"
           if [ -z "${VITE_API_KEY:-}" ]; then
             echo "::error::VITE_API_KEY Secret 미설정 — iot-api X-API-Key와 동일 값을 GitHub Secrets에 등록하세요."
             exit 1
           fi
+          for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID VITE_FIREBASE_VAPID_KEY; do
+            eval "val=\${$key:-}"
+            if [ -z "$val" ]; then
+              echo "::error::${key} Secret 미설정 — FCM Web Push 빌드에 필요합니다."
+              exit 1
+            fi
+          done
           npm run build
 
       - uses: actions/upload-artifact@v4

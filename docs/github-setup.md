@@ -13,9 +13,19 @@ Secrets 등록이 끝났다면 `main` push 또는 Actions → **Deploy to NAS** 
 | `NAS_DEPLOY_PATH` | `/home/iwh/iot/web/dist` | nginx 정적 루트 |
 | `NAS_SSH_KEY` | *(보안 채널)* | ed25519 개인키 전문 (`-----BEGIN` ~ `-----END`). iot-api와 동일 키 가능 |
 | `TS_AUTH_KEY` | *(보안 채널)* | Tailscale reusable auth key. deploy 필수 |
-| `VITE_API_KEY` | 백엔드 `IOT_API_KEY` 와 **동일** | `X-API-Key` — 빌드 시 번들 포함. **없으면 401** |
+| `VITE_API_KEY` | 백엔드 `IOT_API_KEY` 와 **동일** | `X-API-Key` · push register `Bearer` — 빌드 시 번들 포함. **없으면 401** |
+| `VITE_FIREBASE_API_KEY` | Firebase Console Web API Key | FCM Web Push |
+| `VITE_FIREBASE_AUTH_DOMAIN` | `hwiya-iot.firebaseapp.com` | FCM |
+| `VITE_FIREBASE_PROJECT_ID` | `hwiya-iot` | FCM |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `413459408588` | FCM |
+| `VITE_FIREBASE_APP_ID` | `1:413459408588:web:…` | FCM |
+| `VITE_FIREBASE_VAPID_KEY` | Cloud Messaging Web Push **public** key | `getToken` · SW |
 
-> 키 값은 채팅·레포에 넣지 말고 Secret만 등록. 로컬은 `.env`(git 제외)에 `VITE_API_KEY` 설정.
+> `VITE_IOT_API_KEY` 로 등록돼 있으면 `VITE_API_KEY` 와 **동일 값**이어야 합니다. 워크플로는 둘 중 하나를 사용합니다.
+>
+> 키 값은 채팅·레포에 넣지 말고 Secret만 등록. 로컬은 `.env`(git 제외)에 설정.
+>
+> **GitHub에 넣지 말 것:** FCM 서비스 계정 JSON (NAS 전용)
 
 ## Variables (선택)
 

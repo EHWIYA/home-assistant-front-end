@@ -57,12 +57,8 @@ if (!Object.values(config).every(Boolean)) {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const fingerprint = event.notification.data && event.notification.data.fingerprint;
-  const url = new URL("/ac", self.location.origin);
-  url.searchParams.set("from", "push");
-  if (fingerprint) {
-    url.searchParams.set("fingerprint", fingerprint);
-  }
-  const target = url.href;
+  const path = fingerprint ? "/alerts/" + encodeURIComponent(fingerprint) : "/alerts";
+  const target = new URL(path, self.location.origin).href;
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const client of list) {
@@ -90,7 +86,37 @@ firebase.initializeApp(${JSON.stringify(config, null, 2)});
 const messaging = firebase.messaging();
 const ALERT_DB = "hwiya-ac-push";
 const ALERT_STORE = "alerts";
-const ALERT_HISTORY_MAX = 10;
+const ALERT_HISTORY_MAX = 30;
+const ALERT_BODY_MAX = 1200;
+const ALERT_TITLE_MAX = 200;
+const ALERT_SUMMARY_JSON_MAX = 4000;
+
+function truncateText(value, max) {
+  if (!value || value.length <= max) {
+    return value || "";
+  }
+  return value.slice(0, max) + "…";
+}
+
+function compactAlertForStorage(alert) {
+  const compact = {
+    fingerprint: alert.fingerprint,
+    title: truncateText(String(alert.title || ""), ALERT_TITLE_MAX),
+    body: truncateText(String(alert.body || ""), ALERT_BODY_MAX),
+    receivedAt: alert.receivedAt,
+  };
+  if (alert.topic) compact.topic = alert.topic;
+  if (alert.url) compact.url = alert.url;
+  if (alert.issueId) compact.issueId = alert.issueId;
+  if (alert.status) compact.status = alert.status;
+  if (alert.overall) compact.overall = alert.overall;
+  if (alert.checkedAtKst) compact.checkedAtKst = alert.checkedAtKst;
+  if (alert.llmEscalate) compact.llmEscalate = alert.llmEscalate;
+  if (alert.summaryJson) {
+    compact.summaryJson = truncateText(String(alert.summaryJson), ALERT_SUMMARY_JSON_MAX);
+  }
+  return compact;
+}
 
 function openAlertDb() {
   return new Promise((resolve, reject) => {
@@ -107,19 +133,52 @@ function openAlertDb() {
 }
 
 function saveAlertToIdb(alert) {
+  const compact = compactAlertForStorage(alert);
   return openAlertDb().then((db) => {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(ALERT_STORE, "readwrite");
-      tx.objectStore(ALERT_STORE).put(alert);
+      tx.objectStore(ALERT_STORE).put(compact);
       tx.oncomplete = () => {
-        db.close();
-        resolve();
+        pruneAlerts(db)
+          .catch(() => undefined)
+          .finally(() => {
+            db.close();
+            resolve();
+          });
       };
       tx.onerror = () => {
         db.close();
         reject(tx.error);
       };
     });
+  });
+}
+
+function pruneAlerts(db) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(ALERT_STORE, "readonly");
+    const request = tx.objectStore(ALERT_STORE).getAll();
+    request.onsuccess = () => {
+      const records = request.result || [];
+      if (records.length <= ALERT_HISTORY_MAX) {
+        resolve();
+        return;
+      }
+      const stale = records
+        .slice()
+        .sort((a, b) => Date.parse(b.receivedAt || 0) - Date.parse(a.receivedAt || 0))
+        .slice(ALERT_HISTORY_MAX);
+      const pruneTx = db.transaction(ALERT_STORE, "readwrite");
+      const store = pruneTx.objectStore(ALERT_STORE);
+      for (const item of stale) {
+        if (item && item.fingerprint) {
+          store.delete(item.fingerprint);
+        }
+      }
+      pruneTx.oncomplete = () => resolve();
+      pruneTx.onerror = () => reject(pruneTx.error);
+    };
+    request.onerror = () => reject(request.error);
   });
 }
 
@@ -152,13 +211,11 @@ function buildAlertFromPayload(payload) {
   };
 }
 
-function buildAcPushClickUrl(fingerprint) {
-  const url = new URL("/ac", self.location.origin);
-  url.searchParams.set("from", "push");
-  if (fingerprint) {
-    url.searchParams.set("fingerprint", fingerprint);
-  }
-  return url.href;
+function buildAlertClickUrl(fingerprint) {
+  const path = fingerprint
+    ? "/alerts/" + encodeURIComponent(fingerprint)
+    : "/alerts";
+  return new URL(path, self.location.origin).href;
 }
 
 messaging.onBackgroundMessage((payload) => {
@@ -187,7 +244,7 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const fingerprint = event.notification.data && event.notification.data.fingerprint;
-  const target = buildAcPushClickUrl(fingerprint);
+  const target = buildAlertClickUrl(fingerprint);
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const client of list) {

@@ -16,10 +16,16 @@
 }
 
 .main {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+  padding: 0;
+}
+
+.mainContent {
   padding: var(--shell-padding-mobile);
 }
 
@@ -34,7 +40,7 @@
 
 /* 태블릿: 콘텐츠 중앙·최대 너비 */
 @media (min-width: 768px) {
-  .main {
+  .mainContent {
     padding: var(--shell-padding-tablet);
   }
 
@@ -50,7 +56,7 @@
     grid-template-columns: var(--shell-nav-width) 1fr;
   }
 
-  .main {
+  .mainContent {
     padding: var(--shell-padding-desktop);
   }
 

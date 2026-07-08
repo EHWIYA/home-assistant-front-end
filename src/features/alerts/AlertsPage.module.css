@@ -1,0 +1,79 @@
+.page {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.hero {
+  background: #1a222c;
+  border-radius: 16px;
+  padding: 1rem 1.125rem;
+  border: 1px solid #2a323c;
+  border-left: 3px solid var(--alerts-accent, #5b9fd4);
+}
+
+.heroHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.heroIcon {
+  display: flex;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--alerts-accent, #5b9fd4);
+}
+
+.heroIcon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #e8eaed;
+}
+
+.heroDesc {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+  line-height: 1.5;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #9aa0a6;
+  line-height: 1.5;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.backLink {
+  font-size: 0.8125rem;
+  color: #8eb8dc;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}

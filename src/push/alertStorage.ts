@@ -1,4 +1,6 @@
+import { compactAcPushAlertForStorage } from "./alertCompact";
 import {
+  deleteAllAcPushAlertsFromIdb,
   readAcPushAlertFromIdb,
   readAllAcPushAlertsFromIdb,
   writeAcPushAlertToIdb,
@@ -6,8 +8,8 @@ import {
 import { parseAcPushAlertFromRecord } from "./alertPayload";
 import {
   AC_PUSH_ALERT_HISTORY_KEY,
-  AC_PUSH_ALERT_HISTORY_MAX,
   AC_PUSH_LAST_ALERT_KEY,
+  AC_PUSH_LAST_FINGERPRINT_KEY,
   type AcPushAlert,
 } from "./alertTypes";
 
@@ -23,66 +25,94 @@ function readJson<T>(key: string): T | null {
   }
 }
 
-function writeJson(key: string, value: unknown): void {
+function writeLastFingerprint(fingerprint: string): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(AC_PUSH_LAST_FINGERPRINT_KEY, fingerprint);
   } catch {
     // quota / private mode
   }
 }
 
-function upsertHistory(history: AcPushAlert[], alert: AcPushAlert): AcPushAlert[] {
-  const next = [alert, ...history.filter((item) => item.fingerprint !== alert.fingerprint)];
-  return next
-    .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt))
-    .slice(0, AC_PUSH_ALERT_HISTORY_MAX);
-}
-
-export function readLastAcPushAlert(): AcPushAlert | null {
-  const raw = readJson<Record<string, unknown>>(AC_PUSH_LAST_ALERT_KEY);
-  if (!raw) {
+function readLastFingerprint(): string | null {
+  try {
+    return localStorage.getItem(AC_PUSH_LAST_FINGERPRINT_KEY);
+  } catch {
     return null;
   }
-  return parseAcPushAlertFromRecord(raw);
 }
 
-export function readAcPushAlertHistory(): AcPushAlert[] {
-  const raw = readJson<Record<string, unknown>[]>(AC_PUSH_ALERT_HISTORY_KEY);
-  if (!raw) {
+function clearLegacyLocalStorage(): void {
+  try {
+    localStorage.removeItem(AC_PUSH_LAST_ALERT_KEY);
+    localStorage.removeItem(AC_PUSH_ALERT_HISTORY_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/** 예전 localStorage 히스토리를 IndexedDB로 1회 이전 */
+async function migrateLegacyLocalStorageToIdb(): Promise<void> {
+  const legacyHistory = readJson<Record<string, unknown>[]>(AC_PUSH_ALERT_HISTORY_KEY);
+  const legacyLast = readJson<Record<string, unknown>>(AC_PUSH_LAST_ALERT_KEY);
+
+  const candidates: Record<string, unknown>[] = [];
+  if (legacyLast) {
+    candidates.push(legacyLast);
+  }
+  if (legacyHistory) {
+    candidates.push(...legacyHistory);
+  }
+
+  for (const raw of candidates) {
+    const alert = parseAcPushAlertFromRecord(raw);
+    if (alert) {
+      try {
+        await writeAcPushAlertToIdb(alert);
+      } catch {
+        // ignore per-item migration failure
+      }
+    }
+  }
+
+  if (candidates.length > 0) {
+    clearLegacyLocalStorage();
+  }
+}
+
+let migrationPromise: Promise<void> | null = null;
+
+function ensureLegacyMigration(): Promise<void> {
+  if (!migrationPromise) {
+    migrationPromise = migrateLegacyLocalStorageToIdb();
+  }
+  return migrationPromise;
+}
+
+export async function loadAcPushAlertHistory(): Promise<AcPushAlert[]> {
+  await ensureLegacyMigration();
+  try {
+    return await readAllAcPushAlertsFromIdb();
+  } catch {
     return [];
   }
-  return raw
-    .map((item) => parseAcPushAlertFromRecord(item))
-    .filter((item): item is AcPushAlert => item !== null)
-    .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
-}
-
-export function findAcPushAlertInLocal(fingerprint: string): AcPushAlert | null {
-  const history = readAcPushAlertHistory();
-  return history.find((item) => item.fingerprint === fingerprint) ?? null;
 }
 
 export async function persistAcPushAlert(alert: AcPushAlert): Promise<void> {
-  writeJson(AC_PUSH_LAST_ALERT_KEY, alert);
-  writeJson(AC_PUSH_ALERT_HISTORY_KEY, upsertHistory(readAcPushAlertHistory(), alert));
+  writeLastFingerprint(alert.fingerprint);
   try {
     await writeAcPushAlertToIdb(alert);
   } catch {
-    // SW·foreground 공유 저장 실패는 localStorage만으로도 P0 동작
+    // SW·foreground 공유 저장 실패 시에도 푸시 수신 자체는 유지
   }
 }
 
 export async function resolveAcPushAlert(fingerprint?: string | null): Promise<AcPushAlert | null> {
+  await ensureLegacyMigration();
+
   if (fingerprint) {
-    const fromLocal = findAcPushAlertInLocal(fingerprint);
-    if (fromLocal) {
-      return fromLocal;
-    }
     try {
       const fromIdb = await readAcPushAlertFromIdb(fingerprint);
       if (fromIdb) {
-        writeJson(AC_PUSH_LAST_ALERT_KEY, fromIdb);
-        writeJson(AC_PUSH_ALERT_HISTORY_KEY, upsertHistory(readAcPushAlertHistory(), fromIdb));
         return fromIdb;
       }
     } catch {
@@ -91,21 +121,37 @@ export async function resolveAcPushAlert(fingerprint?: string | null): Promise<A
     return null;
   }
 
-  return readLastAcPushAlert();
+  const lastFingerprint = readLastFingerprint();
+  if (lastFingerprint) {
+    try {
+      const fromIdb = await readAcPushAlertFromIdb(lastFingerprint);
+      if (fromIdb) {
+        return fromIdb;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const history = await loadAcPushAlertHistory();
+  return history[0] ?? null;
 }
 
-/** SW IndexedDB에만 있는 항목을 설정 화면 히스토리에 반영 */
-export async function mergeAcPushAlertHistoryFromIdb(): Promise<AcPushAlert[]> {
-  const local = readAcPushAlertHistory();
+export async function clearAcPushAlertHistory(): Promise<void> {
+  clearLegacyLocalStorage();
   try {
-    const fromIdb = await readAllAcPushAlertsFromIdb();
-    let merged = local;
-    for (const alert of fromIdb) {
-      merged = upsertHistory(merged, alert);
-    }
-    writeJson(AC_PUSH_ALERT_HISTORY_KEY, merged);
-    return merged;
+    localStorage.removeItem(AC_PUSH_LAST_FINGERPRINT_KEY);
   } catch {
-    return local;
+    // ignore
   }
+  await deleteAllAcPushAlertsFromIdb();
+}
+
+/** @deprecated loadAcPushAlertHistory 사용 */
+export async function mergeAcPushAlertHistoryFromIdb(): Promise<AcPushAlert[]> {
+  return loadAcPushAlertHistory();
+}
+
+export function estimateAcPushAlertBytes(alert: AcPushAlert): number {
+  return JSON.stringify(compactAcPushAlertForStorage(alert)).length;
 }

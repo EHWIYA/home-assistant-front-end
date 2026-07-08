@@ -1,22 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { buildAcPushDetailPath } from "@/push/alertPayload";
-import { mergeAcPushAlertHistoryFromIdb } from "@/push/alertStorage";
+import { buildAlertDetailPath } from "@/push/alertPayload";
+import { formatAcPushAlertTime } from "@/push/alertFormat";
+import { loadAcPushAlertHistory } from "@/push/alertStorage";
 import type { AcPushAlert } from "@/push/alertTypes";
+import { paths } from "@/routes/paths";
 import styles from "./SettingsAcPushRecentAlerts.module.css";
 
-function formatAlertTime(iso: string): string {
-  const parsed = Date.parse(iso);
-  if (!Number.isFinite(parsed)) {
-    return iso;
-  }
-  return new Date(parsed).toLocaleString("ko-KR", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+const SETTINGS_RECENT_LIMIT = 3;
 
 export function SettingsAcPushRecentAlerts() {
   const [alerts, setAlerts] = useState<AcPushAlert[]>([]);
@@ -24,9 +15,9 @@ export function SettingsAcPushRecentAlerts() {
 
   useEffect(() => {
     let cancelled = false;
-    void mergeAcPushAlertHistoryFromIdb().then((history) => {
+    void loadAcPushAlertHistory().then((history) => {
       if (!cancelled) {
-        setAlerts(history);
+        setAlerts(history.slice(0, SETTINGS_RECENT_LIMIT));
         setLoading(false);
       }
     });
@@ -39,21 +30,27 @@ export function SettingsAcPushRecentAlerts() {
     return <p className={styles.hint}>최근 알림을 불러오는 중…</p>;
   }
 
-  if (alerts.length === 0) {
-    return <p className={styles.empty}>아직 저장된 알림이 없습니다.</p>;
-  }
-
   return (
-    <ul className={styles.list}>
-      {alerts.map((alert) => (
-        <li key={alert.fingerprint}>
-          <Link className={styles.item} to={buildAcPushDetailPath(alert.fingerprint)}>
-            <span className={styles.itemTitle}>{alert.title}</span>
-            {alert.body ? <span className={styles.itemBody}>{alert.body}</span> : null}
-            <span className={styles.itemTime}>{formatAlertTime(alert.receivedAt)}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <>
+      {alerts.length === 0 ? (
+        <p className={styles.empty}>아직 저장된 알림이 없습니다.</p>
+      ) : (
+        <ul className={styles.list}>
+          {alerts.map((alert) => (
+            <li key={alert.fingerprint}>
+              <Link className={styles.item} to={buildAlertDetailPath(alert.fingerprint)}>
+                <span className={styles.itemTitle}>{alert.title}</span>
+                {alert.body ? <span className={styles.itemBody}>{alert.body}</span> : null}
+                <span className={styles.itemTime}>{formatAcPushAlertTime(alert.receivedAt)}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <Link className={styles.inboxLink} to={paths.alerts}>
+        알림함 전체 보기
+      </Link>
+    </>
   );
 }

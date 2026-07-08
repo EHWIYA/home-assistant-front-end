@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { onMessage, type MessagePayload } from "firebase/messaging";
 import { useToast } from "@/components/toast/ToastProvider";
 import {
-  buildAcPushDetailPath,
+  buildAlertDetailPath,
   parseAcPushAlertFromPayload,
 } from "@/push/alertPayload";
 import { persistAcPushAlert } from "@/push/alertStorage";
@@ -50,7 +50,7 @@ export function AcPushForegroundListener() {
           durationMs: 8000,
           action: {
             label: "자세히",
-            onClick: () => navigate(buildAcPushDetailPath(alert.fingerprint)),
+            onClick: () => navigate(buildAlertDetailPath(alert.fingerprint)),
           },
         });
       });

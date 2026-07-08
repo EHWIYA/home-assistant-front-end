@@ -1,0 +1,15 @@
+.page {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.backLink {
+  font-size: 0.8125rem;
+  color: #8eb8dc;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}

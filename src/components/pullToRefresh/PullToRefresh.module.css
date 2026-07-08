@@ -1,0 +1,72 @@
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.indicatorInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding-bottom: 0.5rem;
+  color: #8eb8dc;
+}
+
+.arrow {
+  display: inline-flex;
+  width: 1.125rem;
+  height: 1.125rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.arrow :global(svg) {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.arrowReady {
+  transform: rotate(180deg);
+  color: #5b9fd4;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #9aa3ad;
+}
+
+.spinner {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid rgba(91, 159, 212, 0.25);
+  border-top-color: #5b9fd4;
+  border-radius: 50%;
+  animation: pullRefreshSpin 0.7s linear infinite;
+}
+
+@keyframes pullRefreshSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrow {
+    transition: none;
+  }
+
+  .spinner {
+    animation: none;
+    border-top-color: #5b9fd4;
+  }
+}

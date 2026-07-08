@@ -5,6 +5,9 @@ export const paths = {
   ac: "/ac",
   pc: "/pc",
   settings: "/settings",
+  alerts: "/alerts",
+  alertDetail: (fingerprint: string) =>
+    `/alerts/${encodeURIComponent(fingerprint)}`,
   strip: "/strip",
   stripChannelSchedules: (channel: number) =>
     `/strip/channels/${channel}/schedules`,

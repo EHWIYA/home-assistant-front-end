@@ -6,6 +6,8 @@ export const routeHandles = {
   ac: { pageTitle: "에어컨" } satisfies AppRouteHandle,
   pc: { pageTitle: "PC" } satisfies AppRouteHandle,
   settings: { pageTitle: "설정" } satisfies AppRouteHandle,
+  alerts: { pageTitle: "알림함" } satisfies AppRouteHandle,
+  alertDetail: { pageTitle: "알림 상세" } satisfies AppRouteHandle,
   strip: { pageTitle: "멀티탭" } satisfies AppRouteHandle,
   stripSchedules: { pageTitle: "스케줄" } satisfies AppRouteHandle,
   stripChannelSchedules: { pageTitle: "채널 스케줄" } satisfies AppRouteHandle,

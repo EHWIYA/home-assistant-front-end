@@ -9,19 +9,16 @@ import {
   type AcControlParams,
 } from "@/hooks/useStatus";
 import shared from "@/components/status/statusPage.module.css";
-import {
-  AcPushAlertCard,
-  AcPushAlertLoadingCard,
-  AcPushAlertMissingCard,
-} from "./components/AcPushAlertCard";
 import { AcAdvancedPanel } from "./components/AcAdvancedPanel";
 import { AcModeControls } from "./components/AcModeControls";
 import { AcPlugCard } from "./components/AcPlugCard";
 import { AcStatusHero } from "./components/AcStatusHero";
-import { useAcPushAlertDetail } from "./hooks/useAcPushAlertDetail";
+import { useLegacyAcPushRedirect } from "./hooks/useLegacyAcPushRedirect";
 import { useAcSyncWarning } from "./hooks/useAcSyncWarning";
 
 export function AcPage() {
+  useLegacyAcPushRedirect();
+
   const plugMutation = usePlugToggle();
   const acMutation = useAcControl();
 
@@ -49,8 +46,6 @@ function AcPageContent({
 }) {
   const acStateQuery = useAcState();
   const acState = acStateQuery.data;
-  const { fromPush, alert, loading: pushAlertLoading, dismiss: dismissPushAlert } =
-    useAcPushAlertDetail();
   const { showSyncWarning, isSettingMismatch, syncWarningTitle } = useAcSyncWarning(
     data,
     acState,
@@ -65,13 +60,6 @@ function AcPageContent({
 
   return (
     <div className={shared.page}>
-      {fromPush && pushAlertLoading ? <AcPushAlertLoadingCard /> : null}
-      {fromPush && !pushAlertLoading && alert ? (
-        <AcPushAlertCard alert={alert} onDismiss={dismissPushAlert} />
-      ) : null}
-      {fromPush && !pushAlertLoading && !alert ? (
-        <AcPushAlertMissingCard onDismiss={dismissPushAlert} />
-      ) : null}
       <AcStatusHero
         data={data}
         acState={acState}

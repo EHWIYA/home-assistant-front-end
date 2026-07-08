@@ -2,24 +2,12 @@ import type { CSSProperties } from "react";
 import bellSvg from "cupertino-icons-svg/svg/bell_fill.svg?raw";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { normalizeNotificationBody } from "@/push/alertPayload";
+import { formatAcPushAlertTime } from "@/push/alertFormat";
 import type { AcPushAlert } from "@/push/alertTypes";
 import { HOME_DOMAIN_THEME } from "@/features/home/utils/homeDomainTheme";
 import styles from "./AcPushAlertCard.module.css";
 
 const theme = HOME_DOMAIN_THEME.ac;
-
-function formatAlertTime(iso: string): string {
-  const parsed = Date.parse(iso);
-  if (!Number.isFinite(parsed)) {
-    return iso;
-  }
-  return new Date(parsed).toLocaleString("ko-KR", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function formatStatusLabel(status: string | undefined): string | null {
   if (!status?.trim()) {
@@ -41,12 +29,13 @@ function formatStatusLabel(status: string | undefined): string | null {
 interface AcPushAlertCardProps {
   alert: AcPushAlert;
   onDismiss: () => void;
+  hideDismiss?: boolean;
 }
 
-export function AcPushAlertCard({ alert, onDismiss }: AcPushAlertCardProps) {
+export function AcPushAlertCard({ alert, onDismiss, hideDismiss = false }: AcPushAlertCardProps) {
   const body = normalizeNotificationBody(alert.body);
   const statusLabel = formatStatusLabel(alert.status ?? alert.overall);
-  const timeLabel = alert.checkedAtKst?.trim() || formatAlertTime(alert.receivedAt);
+  const timeLabel = alert.checkedAtKst?.trim() || formatAcPushAlertTime(alert.receivedAt);
 
   return (
     <section
@@ -59,9 +48,11 @@ export function AcPushAlertCard({ alert, onDismiss }: AcPushAlertCardProps) {
           <CupertinoIcon svg={bellSvg} className={styles.headIcon} />
           <h2 className={styles.title}>에어컨 이상 알림</h2>
         </div>
-        <button type="button" className={styles.dismiss} onClick={onDismiss}>
-          닫기
-        </button>
+        {hideDismiss ? null : (
+          <button type="button" className={styles.dismiss} onClick={onDismiss}>
+            닫기
+          </button>
+        )}
       </header>
 
       <h3 className={styles.alertTitle}>{alert.title}</h3>
@@ -120,7 +111,13 @@ export function AcPushAlertCard({ alert, onDismiss }: AcPushAlertCardProps) {
   );
 }
 
-export function AcPushAlertMissingCard({ onDismiss }: { onDismiss: () => void }) {
+export function AcPushAlertMissingCard({
+  onDismiss,
+  hideDismiss = false,
+}: {
+  onDismiss: () => void;
+  hideDismiss?: boolean;
+}) {
   return (
     <section
       className={styles.card}
@@ -132,9 +129,11 @@ export function AcPushAlertMissingCard({ onDismiss }: { onDismiss: () => void })
           <CupertinoIcon svg={bellSvg} className={styles.headIcon} />
           <h2 className={styles.title}>에어컨 이상 알림</h2>
         </div>
-        <button type="button" className={styles.dismiss} onClick={onDismiss}>
-          닫기
-        </button>
+        {hideDismiss ? null : (
+          <button type="button" className={styles.dismiss} onClick={onDismiss}>
+            닫기
+          </button>
+        )}
       </header>
       <p className={styles.missing}>
         알림 내용을 불러오지 못했습니다. 설정의 최근 알림에서 다시 확인해 보세요.

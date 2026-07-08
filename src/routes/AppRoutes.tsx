@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "@/layouts/AppShell";
+import { AlertDetailPage } from "@/features/alerts/AlertDetailPage";
+import { AlertsPage } from "@/features/alerts/AlertsPage";
 import { AcPage } from "@/features/ac/AcPage";
 import { HomePage } from "@/features/home/HomePage";
 import { PcPage } from "@/features/pc/PcPage";
@@ -25,6 +27,12 @@ export const appRouter = createBrowserRouter([
         path: "settings",
         element: <SettingsPage />,
         handle: routeHandles.settings,
+      },
+      { path: "alerts", element: <AlertsPage />, handle: routeHandles.alerts },
+      {
+        path: "alerts/:fingerprint",
+        element: <AlertDetailPage />,
+        handle: routeHandles.alertDetail,
       },
       {
         path: "strip",

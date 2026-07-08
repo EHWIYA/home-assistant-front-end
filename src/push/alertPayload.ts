@@ -129,12 +129,13 @@ export function parseAcPushAlertFromRecord(raw: Record<string, unknown>): AcPush
   };
 }
 
+export function buildAlertDetailPath(fingerprint: string): string {
+  return paths.alertDetail(fingerprint);
+}
+
+/** @deprecated buildAlertDetailPath 사용 */
 export function buildAcPushDetailPath(fingerprint: string): string {
-  const params = new URLSearchParams({
-    from: "push",
-    fingerprint,
-  });
-  return `${paths.ac}?${params.toString()}`;
+  return buildAlertDetailPath(fingerprint);
 }
 
 export function normalizeNotificationBody(body: string): string {

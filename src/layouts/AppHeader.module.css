@@ -31,8 +31,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  /* safe-area는 body padding-top에서 처리 — 이중 적용 시 세로 공간 부족으로 탭바 클리핑 */
   padding: 0.625rem 1rem 0.75rem;
-  padding-top: max(0.625rem, env(safe-area-inset-top));
 }
 
 .brandBlock {

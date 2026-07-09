@@ -48,7 +48,8 @@
   width: var(--shell-nav-width);
   border-right: 1px solid #2a323c;
   background: #141a21;
-  padding-top: max(0.75rem, env(safe-area-inset-top));
+  /* safe-area-top은 body padding-top에서 처리 */
+  padding-top: 0.75rem;
   padding-bottom: env(safe-area-inset-bottom);
   overflow-y: auto;
 }

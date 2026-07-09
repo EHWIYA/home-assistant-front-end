@@ -31,11 +31,14 @@ export function usePullToRefresh({
   const [isDragging, setIsDragging] = useState(false);
 
   const startYRef = useRef(0);
+  /** scrollTop===0 터치 시작 — 아직 당김인지 스크롤인지 미확정 */
+  const watchingPullRef = useRef(false);
   const pullingRef = useRef(false);
   const pullDistanceRef = useRef(0);
   const refreshPromiseRef = useRef<Promise<unknown> | null>(null);
 
   const resetPull = useCallback(() => {
+    watchingPullRef.current = false;
     pullingRef.current = false;
     pullDistanceRef.current = 0;
     setIsDragging(false);
@@ -73,50 +76,59 @@ export function usePullToRefresh({
 
       const scrollTop = scrollRef.current?.scrollTop ?? 0;
       if (scrollTop > 0) {
-        pullingRef.current = false;
+        watchingPullRef.current = false;
         return;
       }
 
       startYRef.current = event.touches[0]?.clientY ?? 0;
-      pullingRef.current = true;
-      setIsDragging(true);
+      watchingPullRef.current = true;
     },
     [isRefreshing, scrollRef],
   );
 
   const onTouchMove = useCallback(
     (event: TouchEvent<HTMLElement>) => {
-      if (!pullingRef.current || isRefreshing) {
+      if ((!watchingPullRef.current && !pullingRef.current) || isRefreshing) {
         return;
       }
 
       const scrollTop = scrollRef.current?.scrollTop ?? 0;
       if (scrollTop > 0) {
-        pullingRef.current = false;
-        pullDistanceRef.current = 0;
-        setPullDistance(0);
-        setIsDragging(false);
+        resetPull();
         return;
       }
 
       const currentY = event.touches[0]?.clientY ?? startYRef.current;
       const delta = currentY - startYRef.current;
       if (delta <= 0) {
-        pullDistanceRef.current = 0;
-        setPullDistance(0);
+        if (pullingRef.current) {
+          resetPull();
+        } else {
+          watchingPullRef.current = false;
+        }
         return;
       }
 
+      watchingPullRef.current = false;
+      pullingRef.current = true;
+      setIsDragging(true);
       event.preventDefault();
       const nextDistance = applyPullResistance(delta);
       pullDistanceRef.current = nextDistance;
       setPullDistance(nextDistance);
     },
-    [isRefreshing, scrollRef],
+    [isRefreshing, resetPull, scrollRef],
   );
 
   const onTouchEnd = useCallback(() => {
-    if (!pullingRef.current || isRefreshing) {
+    if (!watchingPullRef.current && !pullingRef.current) {
+      return;
+    }
+    if (isRefreshing) {
+      return;
+    }
+    if (!pullingRef.current) {
+      watchingPullRef.current = false;
       return;
     }
 
@@ -135,7 +147,7 @@ export function usePullToRefresh({
     }
 
     const blockOverscroll = (event: Event) => {
-      if (!pullingRef.current || isRefreshing) {
+      if (!pullingRef.current || isRefreshing || pullDistanceRef.current <= 0) {
         return;
       }
       if ((scrollRef.current?.scrollTop ?? 0) <= 0) {

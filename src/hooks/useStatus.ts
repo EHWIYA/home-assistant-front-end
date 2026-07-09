@@ -175,6 +175,7 @@ export function useStatus() {
 
   useStatusStream({
     queryKey: STATUS_QUERY_KEY,
+    acStateQueryKey: AC_STATE_QUERY_KEY,
     queryClient,
     onActiveChange: setSseActive,
   });

@@ -1,8 +1,9 @@
 import type { AcMode, AcOperatingMode, AcStateResponse, StatusResponse } from "@/api/types";
 import { useAcThresholds } from "@/hooks/useStatus";
 import { getAcAutoTransitionBadge } from "@/utils/acAuto";
-import { deriveAcOperatingMode, getAcOperatingModeLabel } from "@/utils/acOperatingMode";
+import { getAcOperatingModeLabel } from "@/utils/acOperatingMode";
 import { getAcModeDisplayText, isAcPowerOff } from "@/utils/acMode";
+import { resolveAcStateView } from "@/utils/acStateView";
 import {
   formatMutexLineForUser,
   splitMutexLines,
@@ -25,21 +26,21 @@ export function AcAdvancedPanel({
   syncWarningTitle,
 }: AcAdvancedPanelProps) {
   const thresholdsQuery = useAcThresholds();
-  const mode = acState?.mode ?? data.ac_mode ?? "off";
-  const operatingMode = deriveAcOperatingMode(
-    acState?.operating_mode ?? data.ac_operating_mode,
-    acState?.auto_enabled ?? data.ac_auto_enabled,
-    acState?.away_enabled ?? data.ac_away_enabled,
-  );
+  const view = resolveAcStateView(data, acState);
   const modeText = getAcModeDisplayText({
-    mode,
-    power: acState?.power,
-    lastRunMode: acState?.last_run_mode ?? data.ac_last_run_mode ?? null,
-    operatingMode,
+    mode: view.mode,
+    power: view.power,
+    lastRunMode: view.lastRunMode,
+    operatingMode: view.operatingMode,
     acAutoState: data.ac_auto_state,
+    plugEstimatedRunning: data.ac_estimated_running,
   });
-  const powerOff = isAcPowerOff(acState?.power, data.ac_auto_state);
-  const help = getModeHelpCopy(operatingMode, mode, powerOff);
+  const powerOff = isAcPowerOff(view.power, {
+    acAutoState: data.ac_auto_state,
+    plugEstimatedRunning: data.ac_estimated_running,
+    statusMode: view.mode,
+  });
+  const help = getModeHelpCopy(view.operatingMode, view.mode, powerOff);
   const mutexLines = thresholdsQuery.data?.mutex
     ? splitMutexLines(thresholdsQuery.data.mutex)
     : [];
@@ -58,7 +59,7 @@ export function AcAdvancedPanel({
           data={data}
           acState={acState}
           modeText={modeText}
-          operatingMode={operatingMode}
+          operatingMode={view.operatingMode}
         />
 
         {help ? (
@@ -114,7 +115,11 @@ function StatusSnapshot({
   operatingMode: AcOperatingMode | null;
 }) {
   const transition = getAcAutoTransitionBadge(data.ac_auto_state);
-  const runningBadge = getAcRunningBadge(acState, data.ac_estimated_running);
+  const view = resolveAcStateView(data, acState);
+  const runningBadge = getAcRunningBadge(
+    view.runningFields,
+    data.ac_estimated_running,
+  );
   const operatingLabel = getAcOperatingModeLabel(operatingMode);
 
   const secondaryParts: string[] = [];

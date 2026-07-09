@@ -18,13 +18,13 @@ import {
   buildAcOperatingModeSwitchRequest,
   buildAcPowerOffRequest,
   buildAcPowerOnRequest,
-  deriveAcOperatingMode,
 } from "@/utils/acOperatingMode";
 import {
   getAcModeDisplayText,
   isAcPowerOff,
   resolveAcUiActionMode,
 } from "@/utils/acMode";
+import { resolveAcStateView } from "@/utils/acStateView";
 import { TOAST_DEVICE, TOAST_GUIDE, TOAST_RESOURCE } from "@/utils/toastMessages";
 import styles from "./AcModeControls.module.css";
 
@@ -74,26 +74,28 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
   const theme = HOME_DOMAIN_THEME.ac;
   const acStateQuery = useAcState();
   const acState = acStateQuery.data;
-  const mode = acState?.mode ?? data.ac_mode ?? "off";
-  const lastRunMode = acState?.last_run_mode ?? data.ac_last_run_mode ?? null;
-  const operatingMode = deriveAcOperatingMode(
-    acState?.operating_mode ?? data.ac_operating_mode,
-    acState?.auto_enabled ?? data.ac_auto_enabled,
-    acState?.away_enabled ?? data.ac_away_enabled,
-  );
+  const view = resolveAcStateView(data, acState);
+  const mode = view.mode;
+  const lastRunMode = view.lastRunMode;
+  const operatingMode = view.operatingMode;
   const operatingKnown = operatingMode != null;
   const controlsDisabled = mutation.isPending || acStateQuery.isLoading;
   const post = (params: AcControlParams) => mutation.mutate(params);
   const actionOptions = getAcActionOptions(operatingMode, mode);
   const actionColumns = actionOptions.length >= 4 ? 2 : 3;
   const uiActionMode = resolveAcUiActionMode(mode, operatingMode);
-  const acPowerOff = isAcPowerOff(acState?.power, data.ac_auto_state);
+  const acPowerOff = isAcPowerOff(view.power, {
+    acAutoState: data.ac_auto_state,
+    plugEstimatedRunning: data.ac_estimated_running,
+    statusMode: view.mode,
+  });
   const modeDisplay = getAcModeDisplayText({
     mode,
-    power: acState?.power,
+    power: view.power,
     lastRunMode,
     operatingMode,
     acAutoState: data.ac_auto_state,
+    plugEstimatedRunning: data.ac_estimated_running,
   });
 
   useMutationErrorToast(

@@ -6,10 +6,10 @@ import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { MiniPowerBar } from "@/components/viz/MiniPowerBar";
 import { getAcModeDisplayText } from "@/utils/acMode";
 import {
-  deriveAcOperatingMode,
   getAcOperatingModeLabel,
 } from "@/utils/acOperatingMode";
 import { getAcRunningBadge } from "@/utils/acRunning";
+import { resolveAcStateView } from "@/utils/acStateView";
 import { formatTemperatureHumidity } from "@/utils/climate";
 import { formatPowerW } from "@/utils/power";
 import {
@@ -46,21 +46,20 @@ export function AcStatusHero({
   reapplyAutoPending = false,
 }: AcStatusHeroProps) {
   const theme = HOME_DOMAIN_THEME.ac;
+  const view = resolveAcStateView(data, acState);
   const primary = getAcHomePrimaryStatus(data, acState);
-  const mode = acState?.mode ?? data.ac_mode ?? "off";
-  const operatingMode = deriveAcOperatingMode(
-    acState?.operating_mode ?? data.ac_operating_mode,
-    acState?.auto_enabled ?? data.ac_auto_enabled,
-    acState?.away_enabled ?? data.ac_away_enabled,
-  );
   const modeText = getAcModeDisplayText({
-    mode,
-    power: acState?.power,
-    lastRunMode: acState?.last_run_mode ?? data.ac_last_run_mode ?? null,
-    operatingMode,
+    mode: view.mode,
+    power: view.power,
+    lastRunMode: view.lastRunMode,
+    operatingMode: view.operatingMode,
     acAutoState: data.ac_auto_state,
+    plugEstimatedRunning: data.ac_estimated_running,
   });
-  const runningBadge = getAcRunningBadge(acState, data.ac_estimated_running);
+  const runningBadge = getAcRunningBadge(
+    view.runningFields,
+    data.ac_estimated_running,
+  );
   const dotColor =
     primary.tone === "active" ? theme.accent : TONE_DOT[primary.tone];
 
@@ -98,14 +97,14 @@ export function AcStatusHero({
       <div className={styles.pillRow}>
         <span
           className={`${styles.pill} ${
-            operatingMode === "auto" || operatingMode === "away"
+            view.operatingMode === "auto" || view.operatingMode === "away"
               ? styles.pillOk
-              : operatingMode === "manual"
+              : view.operatingMode === "manual"
                 ? styles.pillMuted
                 : styles.pillWarn
           }`.trim()}
         >
-          {getAcOperatingModeLabel(operatingMode)}
+          {getAcOperatingModeLabel(view.operatingMode)}
         </span>
         {runningBadge ? (
           <span

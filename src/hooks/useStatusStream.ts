@@ -18,13 +18,17 @@ function applyStatusEvent(
 
 interface UseStatusStreamOptions {
   queryKey: QueryKey;
+  acStateQueryKey?: QueryKey;
   queryClient: QueryClient;
   onActiveChange: (active: boolean) => void;
 }
 
+const AC_STATE_REFETCH_DEBOUNCE_MS = 400;
+
 /** GET /api/v1/status/stream — snapshot·status 이벤트로 캐시 갱신. 실패 시 onActiveChange(false). */
 export function useStatusStream({
   queryKey,
+  acStateQueryKey,
   queryClient,
   onActiveChange,
 }: UseStatusStreamOptions): void {
@@ -39,6 +43,23 @@ export function useStatusStream({
 
     let es: EventSource | null = null;
     let disposed = false;
+    let acStateRefetchTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleAcStateRefetch = () => {
+      if (!acStateQueryKey) return;
+      if (acStateRefetchTimer) clearTimeout(acStateRefetchTimer);
+      acStateRefetchTimer = setTimeout(() => {
+        acStateRefetchTimer = null;
+        void queryClient.invalidateQueries({ queryKey: acStateQueryKey });
+      }, AC_STATE_REFETCH_DEBOUNCE_MS);
+    };
+
+    const clearAcStateRefetchTimer = () => {
+      if (acStateRefetchTimer) {
+        clearTimeout(acStateRefetchTimer);
+        acStateRefetchTimer = null;
+      }
+    };
 
     const setActive = (active: boolean) => {
       onActiveChangeRef.current(active);
@@ -58,6 +79,7 @@ export function useStatusStream({
 
       const onPayload = (ev: MessageEvent<string>) => {
         applyStatusEvent(queryClient, queryKey, ev.data);
+        scheduleAcStateRefetch();
       };
 
       es.addEventListener("snapshot", onPayload);
@@ -86,8 +108,9 @@ export function useStatusStream({
 
     return () => {
       disposed = true;
+      clearAcStateRefetchTimer();
       document.removeEventListener("visibilitychange", onVisibility);
       disconnect();
     };
-  }, [queryClient, queryKey]);
+  }, [acStateQueryKey, queryClient, queryKey]);
 }

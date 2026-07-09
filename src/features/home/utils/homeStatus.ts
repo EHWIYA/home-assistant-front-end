@@ -12,6 +12,7 @@ import {
 } from "@/utils/acOperatingMode";
 import { getAcPrimaryStatusLabel, isAcPowerOff } from "@/utils/acMode";
 import { getAcRunningBadge } from "@/utils/acRunning";
+import { resolveAcStateView } from "@/utils/acStateView";
 import { formatPowerW } from "@/utils/power";
 
 export type HomeStatusTone = "active" | "idle" | "warn" | "danger";
@@ -25,39 +26,42 @@ export function getAcHomePrimaryStatus(
   status: StatusResponse,
   acState: AcStateResponse | undefined,
 ): HomeStatusLine {
-  const mode = acState?.mode ?? status.ac_mode ?? "off";
-  const power = acState?.power;
-  const lastRunMode = acState?.last_run_mode ?? status.ac_last_run_mode ?? null;
+  const view = resolveAcStateView(status, acState);
   const acAutoState = status.ac_auto_state;
-  const operatingMode = deriveAcOperatingMode(
-    acState?.operating_mode ?? status.ac_operating_mode,
-    acState?.auto_enabled ?? status.ac_auto_enabled,
-    acState?.away_enabled ?? status.ac_away_enabled,
+  const runningBadge = getAcRunningBadge(
+    view.runningFields,
+    status.ac_estimated_running,
   );
-  const runningBadge = getAcRunningBadge(acState, status.ac_estimated_running);
   const isLowPowerRunning = runningBadge?.label === "가동 중(저전력)";
   const isRunning = runningBadge != null && !isLowPowerRunning;
 
   const label = getAcPrimaryStatusLabel({
-    mode,
-    power,
-    lastRunMode,
-    operatingMode,
+    mode: view.mode,
+    power: view.power,
+    lastRunMode: view.lastRunMode,
+    operatingMode: view.operatingMode,
     acAutoState,
+    plugEstimatedRunning: status.ac_estimated_running,
     isRunning: isRunning || isLowPowerRunning,
     isLowPowerRunning,
   });
 
-  if (isAcPowerOff(power, acAutoState)) {
+  if (
+    isAcPowerOff(view.power, {
+      acAutoState,
+      plugEstimatedRunning: status.ac_estimated_running,
+      statusMode: view.mode,
+    })
+  ) {
     return { label, tone: "idle" };
   }
   if (isLowPowerRunning) {
     return { label, tone: "warn" };
   }
-  if (isRunning && power === "on") {
+  if (isRunning && view.power === "on") {
     return { label, tone: "active" };
   }
-  if (mode === "off") {
+  if (view.mode === "off") {
     return { label: "꺼짐", tone: "idle" };
   }
   return { label, tone: "idle" };

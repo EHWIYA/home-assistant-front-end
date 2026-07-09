@@ -14,7 +14,7 @@ import { MiniPowerBar } from "@/components/viz/MiniPowerBar";
 import { PowerLevelBars } from "@/components/viz/PowerLevelBars";
 import { useAcState } from "@/hooks/useStatus";
 import { getAcModeDisplayText } from "@/utils/acMode";
-import { deriveAcOperatingMode } from "@/utils/acOperatingMode";
+import { resolveAcStateView } from "@/utils/acStateView";
 import { formatPowerW } from "@/utils/power";
 import {
   getPowerLevelHeights,
@@ -258,18 +258,14 @@ function getAcModePillLabel(
   if (primary.tone !== "active") {
     return undefined;
   }
-  const mode = acState?.mode ?? status.ac_mode ?? "off";
-  const operatingMode = deriveAcOperatingMode(
-    acState?.operating_mode ?? status.ac_operating_mode,
-    acState?.auto_enabled ?? status.ac_auto_enabled,
-    acState?.away_enabled ?? status.ac_away_enabled,
-  );
+  const view = resolveAcStateView(status, acState);
   const modeText = getAcModeDisplayText({
-    mode,
-    power: acState?.power,
-    lastRunMode: acState?.last_run_mode ?? status.ac_last_run_mode ?? null,
-    operatingMode,
+    mode: view.mode,
+    power: view.power,
+    lastRunMode: view.lastRunMode,
+    operatingMode: view.operatingMode,
     acAutoState: status.ac_auto_state,
+    plugEstimatedRunning: status.ac_estimated_running,
   });
   if (modeText.includes("냉방")) return "냉방";
   if (modeText.includes("제습")) return "제습";

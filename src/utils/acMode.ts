@@ -15,14 +15,33 @@ export function getAcLastRunModeLabel(
   return "—";
 }
 
-/** /ac/state power=off 또는 ac_auto_state.state=off */
+export interface AcPowerOffHints {
+  acAutoState?: AcAutoState | null;
+  /** status.plug 전력 기반 추정 가동 — stale power=off 보정 */
+  plugEstimatedRunning?: boolean;
+  /** /status ac_mode — power 미수신 시 꺼짐 오판 방지 */
+  statusMode?: AcMode | null;
+}
+
+/** /ac/state power·status 신호 종합. power 미수신 시 ac_auto_state만으로 꺼짐 판정하지 않음 */
 export function isAcPowerOff(
   power: AcStateResponse["power"] | undefined,
-  acAutoState?: AcAutoState | null,
+  hints: AcPowerOffHints = {},
 ): boolean {
-  if (power === "off") return true;
+  const { acAutoState, plugEstimatedRunning, statusMode } = hints;
+
+  if (power === "off") {
+    if (plugEstimatedRunning) return false;
+    if (acAutoState?.state === "on") return false;
+    return true;
+  }
   if (power === "on") return false;
-  return acAutoState?.state === "off";
+
+  if (plugEstimatedRunning) return false;
+  if (acAutoState?.state === "on") return false;
+  if (statusMode != null && statusMode !== "off") return false;
+  if (acAutoState?.state === "off") return true;
+  return false;
 }
 
 export function getAcOffStatusLabel(
@@ -56,6 +75,15 @@ export interface AcModeDisplayInput {
   lastRunMode?: AcLastRunMode | null;
   operatingMode?: AcOperatingMode | null;
   acAutoState?: AcAutoState | null;
+  plugEstimatedRunning?: boolean;
+}
+
+function acPowerOffHints(input: AcModeDisplayInput): AcPowerOffHints {
+  return {
+    acAutoState: input.acAutoState,
+    plugEstimatedRunning: input.plugEstimatedRunning,
+    statusMode: input.mode,
+  };
 }
 
 export function getAcModeDisplayText({
@@ -64,8 +92,9 @@ export function getAcModeDisplayText({
   lastRunMode,
   operatingMode,
   acAutoState,
+  plugEstimatedRunning,
 }: AcModeDisplayInput): string {
-  if (isAcPowerOff(power, acAutoState)) {
+  if (isAcPowerOff(power, acPowerOffHints({ mode, acAutoState, plugEstimatedRunning }))) {
     return getAcOffStatusLabel(lastRunMode);
   }
 
@@ -107,6 +136,7 @@ export interface AcPrimaryStatusInput {
   lastRunMode?: AcLastRunMode | null;
   operatingMode?: AcOperatingMode | null;
   acAutoState?: AcAutoState | null;
+  plugEstimatedRunning?: boolean;
   isRunning: boolean;
   isLowPowerRunning: boolean;
 }
@@ -118,10 +148,11 @@ export function getAcPrimaryStatusLabel({
   lastRunMode,
   operatingMode,
   acAutoState,
+  plugEstimatedRunning,
   isRunning,
   isLowPowerRunning,
 }: AcPrimaryStatusInput): string {
-  if (isAcPowerOff(power, acAutoState)) {
+  if (isAcPowerOff(power, acPowerOffHints({ mode, acAutoState, plugEstimatedRunning }))) {
     return getAcOffStatusLabel(lastRunMode);
   }
 
@@ -154,5 +185,6 @@ export function getAcPrimaryStatusLabel({
     lastRunMode,
     operatingMode,
     acAutoState,
+    plugEstimatedRunning,
   });
 }

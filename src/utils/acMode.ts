@@ -52,17 +52,41 @@ export function getAcOffStatusLabel(
   return "꺼짐";
 }
 
+export interface AcUiActionModeInput {
+  mode: AcMode;
+  operatingMode?: AcOperatingMode | null;
+  lastRunMode?: AcLastRunMode | null;
+  power?: AcStateResponse["power"];
+  acAutoState?: AcAutoState | null;
+  plugEstimatedRunning?: boolean;
+}
+
 /**
- * 자동/외출 시 mode=dry 등 잔존 → ②는 인공지능(auto) 선택.
- * 수동이거나 냉방·제습 명시 시 해당 mode.
+ * ② 동작 타일 하이라이트.
+ * 자동/외출 + mode=auto 가동 중이면 last_run_mode(냉방/제습)와 문구를 맞춤.
  */
-export function resolveAcUiActionMode(
-  mode: AcMode,
-  operatingMode: AcOperatingMode | null | undefined,
-): AcMode {
+export function resolveAcUiActionMode({
+  mode,
+  operatingMode,
+  lastRunMode,
+  power,
+  acAutoState,
+  plugEstimatedRunning,
+}: AcUiActionModeInput): AcMode {
   if (operatingMode === "auto" || operatingMode === "away") {
     if (mode === "cool" || mode === "dry") {
       return mode;
+    }
+    if (
+      mode === "auto" &&
+      lastRunMode &&
+      !isAcPowerOff(power, {
+        acAutoState,
+        plugEstimatedRunning,
+        statusMode: mode,
+      })
+    ) {
+      return lastRunMode;
     }
     return "auto";
   }

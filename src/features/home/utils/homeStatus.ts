@@ -6,10 +6,7 @@ import type {
   StatusResponse,
   StripStateResponse,
 } from "@/api/types";
-import {
-  deriveAcOperatingMode,
-  getAcOperatingModeLabel,
-} from "@/utils/acOperatingMode";
+import { getAcOperatingModeLabel } from "@/utils/acOperatingMode";
 import { getAcPrimaryStatusLabel, isAcPowerOff } from "@/utils/acMode";
 import { getAcRunningBadge } from "@/utils/acRunning";
 import { resolveAcStateView } from "@/utils/acStateView";
@@ -67,15 +64,13 @@ export function getAcHomePrimaryStatus(
   return { label, tone: "idle" };
 }
 
-export function getAcHomeSecondaryLine(status: StatusResponse): string {
+export function getAcHomeSecondaryLine(
+  status: StatusResponse,
+  acState?: AcStateResponse,
+): string {
   const parts = [formatPowerW(status.plug.power_w)];
-  const operatingLabel = getAcOperatingModeLabel(
-    deriveAcOperatingMode(
-      status.ac_operating_mode,
-      status.ac_auto_enabled,
-      status.ac_away_enabled,
-    ),
-  );
+  const view = resolveAcStateView(status, acState);
+  const operatingLabel = getAcOperatingModeLabel(view.operatingMode);
   if (operatingLabel !== "—") {
     parts.push(operatingLabel);
   }

@@ -83,7 +83,14 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
   const post = (params: AcControlParams) => mutation.mutate(params);
   const actionOptions = getAcActionOptions(operatingMode, mode);
   const actionColumns = actionOptions.length >= 4 ? 2 : 3;
-  const uiActionMode = resolveAcUiActionMode(mode, operatingMode);
+  const uiActionMode = resolveAcUiActionMode({
+    mode,
+    operatingMode,
+    lastRunMode,
+    power: view.power,
+    acAutoState: data.ac_auto_state,
+    plugEstimatedRunning: data.ac_estimated_running,
+  });
   const acPowerOff = isAcPowerOff(view.power, {
     acAutoState: data.ac_auto_state,
     plugEstimatedRunning: data.ac_estimated_running,
@@ -178,8 +185,7 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
 
         <div className={styles.opGrid} role="group" aria-label={getOperatingSectionTitle()}>
           {OPERATING_OPTIONS.map((option) => {
-            const active =
-              !acPowerOff && operatingMode === option.operatingMode;
+            const active = operatingMode === option.operatingMode;
             const pending = isPendingFor(mutation, (p) =>
               matchesOperatingMode(p, option.operatingMode),
             );
@@ -221,7 +227,7 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
           aria-label={getActionSectionTitle(operatingMode)}
         >
           {actionOptions.map((option) => {
-            const active = !acPowerOff && uiActionMode === option.mode;
+            const active = uiActionMode === option.mode;
             const pending = isPendingFor(mutation, (p) => matchesModeChange(p, option.mode, operatingMode));
             return (
               <button

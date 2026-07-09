@@ -61,7 +61,7 @@ export function HomeDomainSummary({
 }: HomeDomainSummaryProps) {
   const acStateQuery = useAcState();
   const acPrimary = getAcHomePrimaryStatus(status, acStateQuery.data);
-  const acSecondary = getAcHomeSecondaryLine(status);
+  const acSecondary = getAcHomeSecondaryLine(status, acStateQuery.data);
   const acTheme = HOME_DOMAIN_THEME.ac;
   const pcTheme = HOME_DOMAIN_THEME.pc;
   const stripTheme = HOME_DOMAIN_THEME.strip;

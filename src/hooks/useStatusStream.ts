@@ -1,5 +1,6 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import { fetchAcState } from "@/api/client";
 import { getStatusStreamUrl, shouldUseMock } from "@/api/http";
 import type { StatusResponse } from "@/api/types";
 
@@ -23,7 +24,7 @@ interface UseStatusStreamOptions {
   onActiveChange: (active: boolean) => void;
 }
 
-const AC_STATE_REFETCH_DEBOUNCE_MS = 400;
+const AC_STATE_REFETCH_DEBOUNCE_MS = 150;
 
 /** GET /api/v1/status/stream — snapshot·status 이벤트로 캐시 갱신. 실패 시 onActiveChange(false). */
 export function useStatusStream({
@@ -50,7 +51,11 @@ export function useStatusStream({
       if (acStateRefetchTimer) clearTimeout(acStateRefetchTimer);
       acStateRefetchTimer = setTimeout(() => {
         acStateRefetchTimer = null;
-        void queryClient.invalidateQueries({ queryKey: acStateQueryKey });
+        void queryClient.fetchQuery({
+          queryKey: acStateQueryKey,
+          queryFn: fetchAcState,
+          staleTime: 0,
+        });
       }, AC_STATE_REFETCH_DEBOUNCE_MS);
     };
 
@@ -100,6 +105,13 @@ export function useStatusStream({
         return;
       }
       void queryClient.invalidateQueries({ queryKey });
+      if (acStateQueryKey) {
+        void queryClient.fetchQuery({
+          queryKey: acStateQueryKey,
+          queryFn: fetchAcState,
+          staleTime: 0,
+        });
+      }
       connect();
     };
 

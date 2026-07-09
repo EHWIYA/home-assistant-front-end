@@ -28,44 +28,86 @@ type AcStatusSlice = Pick<
   | "ac_auto_state"
 >;
 
+type AcStateSlice = Pick<
+  AcStateResponse,
+  | "mode"
+  | "power"
+  | "operating_mode"
+  | "auto_enabled"
+  | "away_enabled"
+  | "last_run_mode"
+  | "running_source"
+>;
+
+function isLogicalLowPower(acState: AcStateSlice | undefined): boolean {
+  return acState?.power === "off" && acState?.running_source === "logical";
+}
+
+/** SSE /status — 플러그·ac_auto_state 실시간 신호 */
 function statusSuggestsRunning(status: AcStatusSlice): boolean {
   if (status.ac_estimated_running) return true;
   if (status.ac_auto_state?.state === "on") return true;
   return false;
 }
 
-function acStateSuggestsOff(
-  acState: Pick<AcStateResponse, "power" | "mode">,
-): boolean {
-  return acState.power === "off" || acState.mode === "off";
+function statusSuggestsOff(status: AcStatusSlice): boolean {
+  if (statusSuggestsRunning(status)) return false;
+  if (status.ac_auto_state?.state === "off") return true;
+  return !status.ac_estimated_running;
 }
 
-/** stale /ac/state가 SSE /status보다 늦을 때 status 쪽을 우선 */
-function shouldPreferStatusOverAcState(
-  status: AcStatusSlice,
-  acState: AcStateSlice,
-): boolean {
-  if (acState.running_source === "logical") return false;
-  if (acState.state_consistent === true && !acStateSuggestsOff(acState)) {
-    return false;
-  }
-  return acStateSuggestsOff(acState) && statusSuggestsRunning(status);
+/** 모드·운전 설정 — SSE /status 우선 (실시간 정본) */
+function resolveMode(status: AcStatusSlice, acState: AcStateSlice | undefined): AcMode {
+  return status.ac_mode ?? acState?.mode ?? "off";
 }
 
-function inferPowerFromStatus(
+function resolveOperatingMode(
   status: AcStatusSlice,
   acState: AcStateSlice | undefined,
-  preferStatus: boolean,
+): AcOperatingMode | null {
+  const fromStatus = deriveAcOperatingMode(
+    status.ac_operating_mode,
+    status.ac_auto_enabled,
+    status.ac_away_enabled,
+  );
+  if (fromStatus != null) return fromStatus;
+  if (!acState) return null;
+  return deriveAcOperatingMode(
+    acState.operating_mode,
+    acState.auto_enabled,
+    acState.away_enabled,
+  );
+}
+
+/**
+ * power 합성 — status(SSE)와 /ac/state 신호를 양방향으로 맞춤.
+ * logical 저전력(제습 등)은 /ac/state를 존중하고, plug·ac_auto_state는 status 우선.
+ */
+function resolveComposedPower(
+  status: AcStatusSlice,
+  acState: AcStateSlice | undefined,
 ): AcStateResponse["power"] {
-  if (!preferStatus && acState?.power != null) {
-    return acState.power;
+  if (!acState) {
+    return statusSuggestsRunning(status) ? "on" : "off";
   }
-  if (acState?.running_source === "logical" && acState.power === "off") {
+
+  if (isLogicalLowPower(acState)) {
     return "off";
   }
-  if (status.ac_estimated_running) return "on";
-  if (status.ac_auto_state?.state === "on") return "on";
-  return acState?.power;
+
+  const statusRunning = statusSuggestsRunning(status);
+  const statusOff = statusSuggestsOff(status);
+  const acPowerOn = acState.power === "on";
+  const acPowerOff = acState.power === "off";
+
+  if (acPowerOff && statusRunning) return "on";
+  if (acPowerOn && statusOff) return "off";
+
+  if (statusRunning) return "on";
+  if (acPowerOn) return "on";
+  if (statusOff && acPowerOff) return "off";
+  if (acState.power === "on" || acState.power === "off") return acState.power;
+  return statusSuggestsRunning(status) ? "on" : "off";
 }
 
 function buildRunningFields(
@@ -73,10 +115,17 @@ function buildRunningFields(
   power: AcStateResponse["power"],
   acState: AcStateSlice | undefined,
   status: AcStatusSlice,
-  preferStatus: boolean,
 ): AcRunningFields {
+  if (isLogicalLowPower(acState)) {
+    return {
+      mode,
+      power: acState!.power,
+      running_source: "logical",
+    };
+  }
+
   if (
-    preferStatus &&
+    power === "on" &&
     acState?.power === "off" &&
     status.ac_estimated_running &&
     acState.running_source !== "logical"
@@ -87,6 +136,7 @@ function buildRunningFields(
       running_source: acState.running_source ?? "plug",
     };
   }
+
   return {
     mode,
     power,
@@ -94,79 +144,21 @@ function buildRunningFields(
   };
 }
 
-function deriveOperatingMode(
-  operatingMode: AcOperatingMode | null | undefined,
-  autoEnabled: boolean | null | undefined,
-  awayEnabled: boolean | null | undefined,
-): AcOperatingMode | null {
-  return deriveAcOperatingMode(operatingMode, autoEnabled, awayEnabled);
-}
-
-type AcStateSlice = Pick<
-  AcStateResponse,
-  | "mode"
-  | "power"
-  | "operating_mode"
-  | "auto_enabled"
-  | "away_enabled"
-  | "last_run_mode"
-  | "running_source"
-  | "state_consistent"
->;
-
-/** /status(SSE)와 /ac/state(폴링)를 병합해 UI에 쓸 단일 뷰 */
+/** /status(SSE)와 /ac/state(폴링)를 신호 합성해 UI 단일 뷰 */
 export function resolveAcStateView(
   status: AcStatusSlice,
   acState: AcStateSlice | undefined,
 ): AcStateView {
-  if (!acState) {
-    const mode = status.ac_mode ?? "off";
-    const power = inferPowerFromStatus(status, undefined, true);
-    return {
-      mode,
-      power,
-      operatingMode: deriveOperatingMode(
-        status.ac_operating_mode,
-        status.ac_auto_enabled,
-        status.ac_away_enabled,
-      ),
-      lastRunMode: status.ac_last_run_mode ?? null,
-      runningFields: buildRunningFields(mode, power, undefined, status, true),
-    };
-  }
-
-  const preferStatus = shouldPreferStatusOverAcState(status, acState);
-
-  const mode = preferStatus
-    ? (status.ac_mode ?? acState.mode ?? "off")
-    : (acState.mode ?? status.ac_mode ?? "off");
-
-  const operatingMode = preferStatus
-    ? deriveOperatingMode(
-        status.ac_operating_mode,
-        status.ac_auto_enabled,
-        status.ac_away_enabled,
-      )
-    : deriveOperatingMode(
-        acState.operating_mode ?? status.ac_operating_mode,
-        acState.auto_enabled ?? status.ac_auto_enabled,
-        acState.away_enabled ?? status.ac_away_enabled,
-      );
-
-  const power = inferPowerFromStatus(status, acState, preferStatus);
-  const lastRunMode = acState.last_run_mode ?? status.ac_last_run_mode ?? null;
+  const mode = resolveMode(status, acState);
+  const operatingMode = resolveOperatingMode(status, acState);
+  const lastRunMode = acState?.last_run_mode ?? status.ac_last_run_mode ?? null;
+  const power = resolveComposedPower(status, acState);
 
   return {
     mode,
     power,
     operatingMode,
     lastRunMode,
-    runningFields: buildRunningFields(
-      mode,
-      power,
-      acState,
-      status,
-      preferStatus,
-    ),
+    runningFields: buildRunningFields(mode, power, acState, status),
   };
 }

@@ -1,18 +1,27 @@
+import { useCallback, useState } from "react";
 import type { CSSProperties } from "react";
 import bellSvg from "cupertino-icons-svg/svg/bell_fill.svg?raw";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
+import { useToast } from "@/components/toast/ToastProvider";
 import { useAcPushToggle } from "@/hooks/useAcPush";
 import { HOME_DOMAIN_THEME } from "@/features/home/utils/homeDomainTheme";
 import { getPwaDisplayMode } from "@/utils/pwaDisplayMode";
 import { isIosDevice } from "@/push/deviceLabel";
+import { reregisterAcPushNotifications } from "@/push/acPush";
+import { readAcPushRegisteredAt } from "@/push/storage";
+import { formatAcPushAlertTime } from "@/push/alertFormat";
+import { SettingsAcPushDevices } from "./SettingsAcPushDevices";
 import { SettingsAcPushRecentAlerts } from "./SettingsAcPushRecentAlerts";
 import styles from "./SettingsAcPushPanel.module.css";
 
 const theme = HOME_DOMAIN_THEME.ac;
 
 export function SettingsAcPushPanel() {
-  const { status, enabled, blockReason, blockMessage, busy, setEnabled } =
+  const { showToast } = useToast();
+  const { status, enabled, blockReason, blockMessage, busy, setEnabled, refresh } =
     useAcPushToggle();
+  const [reregisterBusy, setReregisterBusy] = useState(false);
+  const registeredAt = readAcPushRegisteredAt();
 
   const iosBrowser =
     isIosDevice() &&
@@ -21,6 +30,25 @@ export function SettingsAcPushPanel() {
 
   const toggleDisabled =
     busy || status === "loading" || (status === "blocked" && !enabled);
+
+  const handleReregister = useCallback(async () => {
+    setReregisterBusy(true);
+    try {
+      const result = await reregisterAcPushNotifications();
+      if (!result.ok) {
+        showToast(result.message, { variant: "warn", category: "sync" });
+      } else {
+        showToast("푸시 등록을 갱신했습니다.", { variant: "info", category: "sync" });
+      }
+      await refresh();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "재등록 중 오류가 발생했습니다.";
+      showToast(message, { variant: "error", category: "sync" });
+    } finally {
+      setReregisterBusy(false);
+    }
+  }, [refresh, showToast]);
 
   return (
     <section
@@ -60,7 +88,12 @@ export function SettingsAcPushPanel() {
       ) : null}
 
       {enabled && status === "on" ? (
-        <p className={styles.statusOk}>등록됨 — 이 기기로 푸시를 받습니다.</p>
+        <>
+          <p className={styles.statusOk}>등록됨 — 이 기기로 푸시를 받습니다.</p>
+          {registeredAt ? (
+            <p className={styles.hint}>마지막 등록: {formatAcPushAlertTime(registeredAt)}</p>
+          ) : null}
+        </>
       ) : null}
 
       {blockMessage ? (
@@ -88,6 +121,12 @@ export function SettingsAcPushPanel() {
           <p className={styles.iosNote}>iOS 16.4 이상 · 홈 화면 PWA 필요</p>
         </div>
       ) : null}
+
+      <SettingsAcPushDevices
+        enabled={enabled && status === "on"}
+        onReregister={handleReregister}
+        reregisterBusy={reregisterBusy}
+      />
 
       <div className={styles.recentSection}>
         <h3 className={styles.recentTitle}>최근 알림</h3>

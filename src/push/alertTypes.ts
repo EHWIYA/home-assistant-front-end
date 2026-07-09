@@ -5,12 +5,16 @@ export interface AcPushCheckDetail {
   detail?: string;
 }
 
-/** 저장·표시용 에어컨 푸시 알림 */
+/** 저장·표시용 푸시 알림 (현재 AC 중심, topic으로 확장) */
 export interface AcPushAlert {
   fingerprint: string;
   title: string;
   body: string;
   receivedAt: string;
+  /** 상세 진입 시각 — 미읽음 판별 */
+  readAt?: string;
+  /** NAS 히스토리 API id (Phase 6) */
+  serverId?: string;
   topic?: string;
   url?: string;
   issueId?: string;

@@ -1,5 +1,6 @@
 const ENABLED_KEY = "hwiya-ac-push-enabled";
 const TOKEN_KEY = "hwiya-ac-push-token";
+const REGISTERED_AT_KEY = "hwiya-ac-push-registered-at";
 
 export function readAcPushEnabled(): boolean {
   try {
@@ -35,6 +36,26 @@ export function writeAcPushToken(token: string | null): void {
       localStorage.setItem(TOKEN_KEY, token);
     } else {
       localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function readAcPushRegisteredAt(): string | null {
+  try {
+    return localStorage.getItem(REGISTERED_AT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function writeAcPushRegisteredAt(iso: string | null): void {
+  try {
+    if (iso) {
+      localStorage.setItem(REGISTERED_AT_KEY, iso);
+    } else {
+      localStorage.removeItem(REGISTERED_AT_KEY);
     }
   } catch {
     // ignore

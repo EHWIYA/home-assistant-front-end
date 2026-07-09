@@ -1,13 +1,16 @@
 import type { CSSProperties } from "react";
+import { Link } from "react-router-dom";
 import bellSvg from "cupertino-icons-svg/svg/bell_fill.svg?raw";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { normalizeNotificationBody } from "@/push/alertPayload";
 import { formatAcPushAlertTime } from "@/push/alertFormat";
 import type { AcPushAlert } from "@/push/alertTypes";
+import { getPushTopicMeta, isAcPushAlert } from "@/push/pushTopics";
+import { paths } from "@/routes/paths";
 import { HOME_DOMAIN_THEME } from "@/features/home/utils/homeDomainTheme";
 import styles from "./AcPushAlertCard.module.css";
 
-const theme = HOME_DOMAIN_THEME.ac;
+const defaultTheme = HOME_DOMAIN_THEME.ac;
 
 function formatStatusLabel(status: string | undefined): string | null {
   if (!status?.trim()) {
@@ -36,17 +39,19 @@ export function AcPushAlertCard({ alert, onDismiss, hideDismiss = false }: AcPus
   const body = normalizeNotificationBody(alert.body);
   const statusLabel = formatStatusLabel(alert.status ?? alert.overall);
   const timeLabel = alert.checkedAtKst?.trim() || formatAcPushAlertTime(alert.receivedAt);
+  const topicMeta = getPushTopicMeta(alert);
+  const showAcLink = isAcPushAlert(alert);
 
   return (
     <section
       className={styles.card}
-      style={{ "--ac-alert-accent": theme.accent } as CSSProperties}
+      style={{ "--ac-alert-accent": topicMeta.accent } as CSSProperties}
       aria-label="푸시 알림 상세"
     >
       <header className={styles.head}>
         <div className={styles.headMain}>
           <CupertinoIcon svg={bellSvg} className={styles.headIcon} />
-          <h2 className={styles.title}>에어컨 이상 알림</h2>
+          <h2 className={styles.title}>{topicMeta.label} 알림</h2>
         </div>
         {hideDismiss ? null : (
           <button type="button" className={styles.dismiss} onClick={onDismiss}>
@@ -107,6 +112,12 @@ export function AcPushAlertCard({ alert, onDismiss, hideDismiss = false }: AcPus
           </ul>
         </div>
       ) : null}
+
+      {showAcLink ? (
+        <Link className={styles.acLink} to={paths.ac}>
+          에어컨 화면으로 →
+        </Link>
+      ) : null}
     </section>
   );
 }
@@ -121,7 +132,7 @@ export function AcPushAlertMissingCard({
   return (
     <section
       className={styles.card}
-      style={{ "--ac-alert-accent": theme.accent } as CSSProperties}
+      style={{ "--ac-alert-accent": defaultTheme.accent } as CSSProperties}
       aria-label="푸시 알림 상세"
     >
       <header className={styles.head}>
@@ -146,7 +157,7 @@ export function AcPushAlertLoadingCard() {
   return (
     <section
       className={styles.card}
-      style={{ "--ac-alert-accent": theme.accent } as CSSProperties}
+      style={{ "--ac-alert-accent": defaultTheme.accent } as CSSProperties}
       aria-label="푸시 알림 불러오는 중"
       aria-busy="true"
     >

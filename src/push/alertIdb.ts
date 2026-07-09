@@ -123,3 +123,49 @@ export async function deleteAllAcPushAlertsFromIdb(): Promise<void> {
     db.close();
   }
 }
+
+export async function updateAcPushAlertReadAtInIdb(
+  fingerprint: string,
+  readAt: string,
+): Promise<void> {
+  const db = await openAlertDb();
+  try {
+    const tx = db.transaction(AC_PUSH_IDB_STORE, "readwrite");
+    const store = tx.objectStore(AC_PUSH_IDB_STORE);
+    const record = await requestToPromise(
+      store.get(fingerprint) as IDBRequest<Record<string, unknown> | undefined>,
+    );
+    if (!record) {
+      return;
+    }
+    store.put({ ...record, readAt });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error ?? new Error("IndexedDB update failed"));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export async function markAllAcPushAlertsReadInIdb(readAt: string): Promise<void> {
+  const db = await openAlertDb();
+  try {
+    const tx = db.transaction(AC_PUSH_IDB_STORE, "readwrite");
+    const store = tx.objectStore(AC_PUSH_IDB_STORE);
+    const records = await requestToPromise(
+      store.getAll() as IDBRequest<Record<string, unknown>[]>,
+    );
+    for (const record of records) {
+      if (!record.readAt) {
+        store.put({ ...record, readAt });
+      }
+    }
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error ?? new Error("IndexedDB bulk update failed"));
+    });
+  } finally {
+    db.close();
+  }
+}

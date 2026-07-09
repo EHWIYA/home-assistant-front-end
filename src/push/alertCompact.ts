@@ -28,6 +28,8 @@ export function compactAcPushAlertForStorage(alert: AcPushAlert): Record<string,
   if (alert.overall) compact.overall = alert.overall;
   if (alert.checkedAtKst) compact.checkedAtKst = alert.checkedAtKst;
   if (alert.llmEscalate) compact.llmEscalate = alert.llmEscalate;
+  if (alert.readAt) compact.readAt = alert.readAt;
+  if (alert.serverId) compact.serverId = alert.serverId;
 
   if (alert.summary && alert.summary.length > 0) {
     const summaryJson = JSON.stringify(alert.summary);

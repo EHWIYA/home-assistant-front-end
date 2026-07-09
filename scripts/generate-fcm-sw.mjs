@@ -5,8 +5,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const envPath = join(root, ".env");
 const outPath = join(root, "public", "firebase-messaging-sw.js");
+const logicPath = join(root, "scripts", "push-sw-logic.js");
 
-const FIREBASE_CDN = "11.10.0";
+const FIREBASE_CDN = "12.15.0";
 
 function loadDotEnv(filePath) {
   const env = { ...process.env };
@@ -52,25 +53,12 @@ const config = {
   appId: requireEnv(env, "VITE_FIREBASE_APP_ID"),
 };
 
+const sharedLogic = readFileSync(logicPath, "utf8");
+
 if (!Object.values(config).every(Boolean)) {
   const stub = `// Firebase env 미설정 — .env 또는 GHA Secrets 확인 후 prebuild 실행
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const fingerprint = event.notification.data && event.notification.data.fingerprint;
-  const path = fingerprint ? "/alerts/" + encodeURIComponent(fingerprint) : "/alerts";
-  const target = new URL(path, self.location.origin).href;
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      for (const client of list) {
-        if (client.url.startsWith(self.location.origin) && "focus" in client) {
-          client.navigate(target);
-          return client.focus();
-        }
-      }
-      return clients.openWindow(target);
-    }),
-  );
-});
+${sharedLogic}
+self.addEventListener("notificationclick", handleNotificationClick);
 `;
   writeFileSync(outPath, stub, "utf8");
   console.warn("[generate-fcm-sw] wrote stub (Firebase env incomplete)");
@@ -84,179 +72,37 @@ importScripts("https://www.gstatic.com/firebasejs/${FIREBASE_CDN}/firebase-messa
 firebase.initializeApp(${JSON.stringify(config, null, 2)});
 
 const messaging = firebase.messaging();
-const ALERT_DB = "hwiya-ac-push";
-const ALERT_STORE = "alerts";
-const ALERT_HISTORY_MAX = 30;
-const ALERT_BODY_MAX = 1200;
-const ALERT_TITLE_MAX = 200;
-const ALERT_SUMMARY_JSON_MAX = 4000;
 
-function truncateText(value, max) {
-  if (!value || value.length <= max) {
-    return value || "";
-  }
-  return value.slice(0, max) + "…";
-}
+${sharedLogic}
 
-function compactAlertForStorage(alert) {
-  const compact = {
-    fingerprint: alert.fingerprint,
-    title: truncateText(String(alert.title || ""), ALERT_TITLE_MAX),
-    body: truncateText(String(alert.body || ""), ALERT_BODY_MAX),
-    receivedAt: alert.receivedAt,
-  };
-  if (alert.topic) compact.topic = alert.topic;
-  if (alert.url) compact.url = alert.url;
-  if (alert.issueId) compact.issueId = alert.issueId;
-  if (alert.status) compact.status = alert.status;
-  if (alert.overall) compact.overall = alert.overall;
-  if (alert.checkedAtKst) compact.checkedAtKst = alert.checkedAtKst;
-  if (alert.llmEscalate) compact.llmEscalate = alert.llmEscalate;
-  if (alert.summaryJson) {
-    compact.summaryJson = truncateText(String(alert.summaryJson), ALERT_SUMMARY_JSON_MAX);
-  }
-  return compact;
-}
-
-function openAlertDb() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(ALERT_DB, 1);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains(ALERT_STORE)) {
-        db.createObjectStore(ALERT_STORE, { keyPath: "fingerprint" });
-      }
-    };
-  });
-}
-
-function saveAlertToIdb(alert) {
-  const compact = compactAlertForStorage(alert);
-  return openAlertDb().then((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(ALERT_STORE, "readwrite");
-      tx.objectStore(ALERT_STORE).put(compact);
-      tx.oncomplete = () => {
-        pruneAlerts(db)
-          .catch(() => undefined)
-          .finally(() => {
-            db.close();
-            resolve();
-          });
-      };
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
-  });
-}
-
-function pruneAlerts(db) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(ALERT_STORE, "readonly");
-    const request = tx.objectStore(ALERT_STORE).getAll();
-    request.onsuccess = () => {
-      const records = request.result || [];
-      if (records.length <= ALERT_HISTORY_MAX) {
-        resolve();
-        return;
-      }
-      const stale = records
-        .slice()
-        .sort((a, b) => Date.parse(b.receivedAt || 0) - Date.parse(a.receivedAt || 0))
-        .slice(ALERT_HISTORY_MAX);
-      const pruneTx = db.transaction(ALERT_STORE, "readwrite");
-      const store = pruneTx.objectStore(ALERT_STORE);
-      for (const item of stale) {
-        if (item && item.fingerprint) {
-          store.delete(item.fingerprint);
-        }
-      }
-      pruneTx.oncomplete = () => resolve();
-      pruneTx.onerror = () => reject(pruneTx.error);
-    };
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function buildAlertFromPayload(payload) {
-  const data = payload.data || {};
-  const title =
-    (payload.notification && payload.notification.title) ||
-    data.title ||
-    "에어컨 이상";
-  const body =
-    (payload.notification && payload.notification.body) ||
-    data.body ||
-    "";
-  const fingerprint =
-    (data.fingerprint && String(data.fingerprint).trim()) ||
-    "push-" + Date.now();
-  return {
-    fingerprint,
-    title,
-    body,
-    receivedAt: new Date().toISOString(),
-    topic: data.topic || undefined,
-    url: data.url || undefined,
-    issueId: data.issue_id || data.issueId || undefined,
-    status: data.status || undefined,
-    overall: data.overall || undefined,
-    checkedAtKst: data.checked_at_kst || data.checkedAtKst || undefined,
-    llmEscalate: data.llm_escalate || data.llmEscalate || undefined,
-    summaryJson: data.summary || undefined,
-  };
-}
-
-function buildAlertClickUrl(fingerprint) {
-  const path = fingerprint
-    ? "/alerts/" + encodeURIComponent(fingerprint)
-    : "/alerts";
-  return new URL(path, self.location.origin).href;
-}
-
-messaging.onBackgroundMessage((payload) => {
-  const alert = buildAlertFromPayload(payload);
-  const body = String(alert.body || "").replace(/\\\\n/g, "\\n");
-  const notificationData = Object.assign({}, payload.data || {}, {
+messaging.onBackgroundMessage(function (payload) {
+  var alert = buildAlertFromPayload(payload);
+  var body = String(alert.body || "").replace(/\\\\n/g, "\\n");
+  var notificationData = Object.assign({}, payload.data || {}, {
     fingerprint: alert.fingerprint,
     receivedAt: alert.receivedAt,
     title: alert.title,
     body: alert.body,
+    url: alert.url,
+    topic: alert.topic,
   });
 
   return saveAlertToIdb(alert)
-    .catch(() => undefined)
-    .then(() =>
-      self.registration.showNotification(alert.title, {
-        body,
+    .catch(function () {
+      return undefined;
+    })
+    .then(function () {
+      return self.registration.showNotification(alert.title, {
+        body: body,
         tag: alert.fingerprint,
         icon: "/icons/icon-192.png",
         badge: "/icons/icon-192.png",
         data: notificationData,
-      }),
-    );
+      });
+    });
 });
 
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const fingerprint = event.notification.data && event.notification.data.fingerprint;
-  const target = buildAlertClickUrl(fingerprint);
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      for (const client of list) {
-        if (client.url.startsWith(self.location.origin) && "focus" in client) {
-          client.navigate(target);
-          return client.focus();
-        }
-      }
-      return clients.openWindow(target);
-    }),
-  );
-});
+self.addEventListener("notificationclick", handleNotificationClick);
 `;
 
 writeFileSync(outPath, swSource, "utf8");

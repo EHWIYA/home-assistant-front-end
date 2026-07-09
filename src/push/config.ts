@@ -28,6 +28,22 @@ export function getPushUnregisterUrl(): string {
   );
 }
 
+export function getPushTokensUrl(): string {
+  return import.meta.env.VITE_PUSH_TOKENS_URL ?? `${PUSH_ORIGIN}/api/push/tokens`;
+}
+
+export function getPushTestUrl(): string {
+  return import.meta.env.VITE_PUSH_TEST_URL ?? `${PUSH_ORIGIN}/api/push/test`;
+}
+
+export function getPushStatusUrl(): string {
+  return import.meta.env.VITE_PUSH_STATUS_URL ?? `${PUSH_ORIGIN}/api/push/status`;
+}
+
+export function getPushHistoryUrl(): string {
+  return import.meta.env.VITE_PUSH_HISTORY_URL ?? `${PUSH_ORIGIN}/api/push/history`;
+}
+
 export function isFirebaseConfigured(): boolean {
   const cfg = getFirebaseConfig();
   return Boolean(

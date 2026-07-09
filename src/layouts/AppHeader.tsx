@@ -3,6 +3,7 @@ import { isUsingMock } from "@/api/client";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { BRAND } from "@/config/brand";
 import { useAppRouteHandle } from "@/routes/handle";
+import { AppHeaderAlertButton } from "./AppHeaderAlertButton";
 import styles from "./AppHeader.module.css";
 
 export function AppHeader() {
@@ -27,6 +28,7 @@ export function AppHeader() {
         </div>
 
         <div className={styles.trailing}>
+          <AppHeaderAlertButton />
           {mock ? (
             <span className={styles.mockBadge}>Mock</span>
           ) : (

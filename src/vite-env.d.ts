@@ -13,6 +13,10 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_VAPID_KEY: string;
   readonly VITE_PUSH_REGISTER_URL?: string;
   readonly VITE_PUSH_UNREGISTER_URL?: string;
+  readonly VITE_PUSH_TOKENS_URL?: string;
+  readonly VITE_PUSH_TEST_URL?: string;
+  readonly VITE_PUSH_STATUS_URL?: string;
+  readonly VITE_PUSH_HISTORY_URL?: string;
 }
 
 interface ImportMeta {

@@ -1,5 +1,4 @@
 import { getPwaDisplayMode } from "@/utils/pwaDisplayMode";
-import { paths } from "@/routes/paths";
 import { registerPushToken, unregisterPushToken } from "./api";
 import { getPushDeviceLabel, isIosDevice } from "./deviceLabel";
 import {
@@ -11,6 +10,7 @@ import {
   readAcPushEnabled,
   readAcPushToken,
   writeAcPushEnabled,
+  writeAcPushRegisteredAt,
   writeAcPushToken,
 } from "./storage";
 
@@ -107,6 +107,7 @@ export async function enableAcPushNotifications(): Promise<AcPushEnableResult> {
   await registerPushToken(token, getPushDeviceLabel());
   writeAcPushToken(token);
   writeAcPushEnabled(true);
+  writeAcPushRegisteredAt(new Date().toISOString());
 
   return { ok: true, token };
 }
@@ -124,8 +125,15 @@ export async function disableAcPushNotifications(): Promise<AcPushDisableResult>
   await revokeFcmToken();
   writeAcPushToken(null);
   writeAcPushEnabled(false);
+  writeAcPushRegisteredAt(null);
 
   return { ok: true };
+}
+
+/** 토큰 재발급·NAS 재등록 (권한 복구·SW 업데이트 후) */
+export async function reregisterAcPushNotifications(): Promise<AcPushEnableResult> {
+  await disableAcPushNotifications();
+  return enableAcPushNotifications();
 }
 
 /** 저장된 설정이 ON이면 토큰 재발급·재등록 (SW 업데이트·토큰 갱신 대비) */
@@ -146,26 +154,9 @@ export async function syncAcPushIfEnabled(): Promise<void> {
     if (token !== prev) {
       await registerPushToken(token, getPushDeviceLabel());
       writeAcPushToken(token);
+      writeAcPushRegisteredAt(new Date().toISOString());
     }
   } catch {
     // 백그라운드 동기화 실패는 무시
   }
-}
-
-export function resolvePushNavigationUrl(
-  data: Record<string, string> | undefined,
-): string {
-  const raw = data?.url?.trim();
-  if (!raw) {
-    return paths.ac;
-  }
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    try {
-      const parsed = new URL(raw);
-      return parsed.pathname + parsed.search + parsed.hash;
-    } catch {
-      return paths.ac;
-    }
-  }
-  return raw.startsWith("/") ? raw : paths.ac;
 }

@@ -176,3 +176,16 @@
   color: #9aa0a6;
   line-height: 1.5;
 }
+
+.acLink {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #8eb8dc;
+  text-decoration: none;
+}
+
+.acLink:hover {
+  text-decoration: underline;
+}

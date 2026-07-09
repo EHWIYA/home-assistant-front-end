@@ -5,6 +5,7 @@ import { useMoodMeta, useMoodState } from "@/hooks/useMood";
 import shared from "@/components/status/statusPage.module.css";
 import homeStyles from "./HomePage.module.css";
 import { HomeAlerts } from "./components/HomeAlerts";
+import { HomePushAlertCard } from "./components/HomePushAlertCard";
 import { HomeClimateHero } from "./components/HomeClimateHero";
 import { HomeDomainSummary } from "./components/HomeDomainSummary";
 import { HomeOverviewStrip } from "./components/HomeOverviewStrip";
@@ -32,6 +33,7 @@ export function HomePage() {
             strip={stripQuery.data ?? null}
             stripLoading={stripQuery.isLoading}
           />
+          <HomePushAlertCard />
           <HomeDomainSummary
             status={data}
             strip={stripQuery.data ?? null}

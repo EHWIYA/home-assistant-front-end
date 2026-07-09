@@ -9,6 +9,7 @@ import {
   type AcControlParams,
 } from "@/hooks/useStatus";
 import shared from "@/components/status/statusPage.module.css";
+import { AcPushAlertBanner } from "./components/AcPushAlertBanner";
 import { AcAdvancedPanel } from "./components/AcAdvancedPanel";
 import { AcModeControls } from "./components/AcModeControls";
 import { AcPlugCard } from "./components/AcPlugCard";
@@ -60,6 +61,7 @@ function AcPageContent({
 
   return (
     <div className={shared.page}>
+      <AcPushAlertBanner />
       <AcStatusHero
         data={data}
         acState={acState}

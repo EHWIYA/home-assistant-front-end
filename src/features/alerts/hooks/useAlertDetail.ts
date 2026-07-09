@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { resolveAcPushAlert } from "@/push/alertStorage";
+import { markAcPushAlertRead, resolveAcPushAlert } from "@/push/alertStorage";
 import type { AcPushAlert } from "@/push/alertTypes";
 
 export function useAlertDetail() {
@@ -18,6 +18,10 @@ export function useAlertDetail() {
       }
       setAlert(resolved);
       setLoading(false);
+
+      if (resolved?.fingerprint && !resolved.readAt) {
+        void markAcPushAlertRead(resolved.fingerprint);
+      }
     });
 
     return () => {

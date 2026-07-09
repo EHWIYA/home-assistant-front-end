@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { AcPushForegroundListener } from "@/components/push/AcPushForegroundListener";
+import { PushAlertSyncBootstrap } from "@/components/push/PushAlertSyncBootstrap";
 import { PullToRefreshIndicator } from "@/components/pullToRefresh/PullToRefreshIndicator";
 import { usePullToRefresh } from "@/components/pullToRefresh/usePullToRefresh";
 import { useAppRouteHandle } from "@/routes/handle";
@@ -27,6 +28,7 @@ export function AppShell() {
   return (
     <div className={styles.shell}>
       <AcPushForegroundListener />
+      <PushAlertSyncBootstrap />
       <MainTabNav layout="side" />
 
       <div className={styles.shellBody}>

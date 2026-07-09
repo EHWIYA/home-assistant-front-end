@@ -40,8 +40,15 @@ npm install
 | `VITE_API_BASE_URL` | `http://127.0.0.1:8002` | `https://iot-api.iwhya.kr` |
 | `VITE_API_KEY` | 백엔드 공유 키 | GitHub Secret `VITE_API_KEY` (동일 값) |
 | `VITE_USE_MOCK` | `false` (실 API) | GHA에서 `false` 고정 |
+| `VITE_FIREBASE_API_KEY` | Firebase Console | FCM Web Push |
+| `VITE_FIREBASE_AUTH_DOMAIN` | `hwiya-iot.firebaseapp.com` | FCM |
+| `VITE_FIREBASE_PROJECT_ID` | `hwiya-iot` | FCM |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Console | FCM |
+| `VITE_FIREBASE_APP_ID` | Firebase Console | FCM |
+| `VITE_FIREBASE_VAPID_KEY` | Firebase Console · Web Push | FCM `getToken` |
+| `VITE_PUSH_*_URL` | (선택) NAS push API override | 기본 `https://iot.iwhya.kr/api/push/...` |
 
-로컬 예시는 백엔드 담당자 공유 `.env` 를 참고하세요. 운영 URL·키는 [docs/github-setup.md](docs/github-setup.md).
+로컬 예시는 백엔드 담당자 공유 `.env` 를 참고하세요. 운영 URL·키는 [docs/github-setup.md](docs/github-setup.md). FCM 서비스 계정 JSON은 GitHub에 넣지 않습니다.
 
 NAS 배포용 SSH·Tailscale 키는 GitHub Secrets만 사용합니다.
 

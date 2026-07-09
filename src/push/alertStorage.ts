@@ -1,8 +1,11 @@
 import { compactAcPushAlertForStorage } from "./alertCompact";
+import { emitAcPushAlertEvent } from "./alertEvents";
 import {
   deleteAllAcPushAlertsFromIdb,
+  markAllAcPushAlertsReadInIdb,
   readAcPushAlertFromIdb,
   readAllAcPushAlertsFromIdb,
+  updateAcPushAlertReadAtInIdb,
   writeAcPushAlertToIdb,
 } from "./alertIdb";
 import { parseAcPushAlertFromRecord } from "./alertPayload";
@@ -88,6 +91,14 @@ function ensureLegacyMigration(): Promise<void> {
   return migrationPromise;
 }
 
+export function isAcPushAlertUnread(alert: AcPushAlert): boolean {
+  return !alert.readAt;
+}
+
+export function countUnreadAcPushAlerts(alerts: AcPushAlert[]): number {
+  return alerts.filter(isAcPushAlertUnread).length;
+}
+
 export async function loadAcPushAlertHistory(): Promise<AcPushAlert[]> {
   await ensureLegacyMigration();
   try {
@@ -101,8 +112,29 @@ export async function persistAcPushAlert(alert: AcPushAlert): Promise<void> {
   writeLastFingerprint(alert.fingerprint);
   try {
     await writeAcPushAlertToIdb(alert);
+    emitAcPushAlertEvent({ type: "saved", alert });
   } catch {
     // SW·foreground 공유 저장 실패 시에도 푸시 수신 자체는 유지
+  }
+}
+
+export async function markAcPushAlertRead(fingerprint: string): Promise<void> {
+  const readAt = new Date().toISOString();
+  try {
+    await updateAcPushAlertReadAtInIdb(fingerprint, readAt);
+    emitAcPushAlertEvent({ type: "read", fingerprint });
+  } catch {
+    // ignore
+  }
+}
+
+export async function markAllAcPushAlertsRead(): Promise<void> {
+  const readAt = new Date().toISOString();
+  try {
+    await markAllAcPushAlertsReadInIdb(readAt);
+    emitAcPushAlertEvent({ type: "read-all" });
+  } catch {
+    // ignore
   }
 }
 
@@ -145,11 +177,7 @@ export async function clearAcPushAlertHistory(): Promise<void> {
     // ignore
   }
   await deleteAllAcPushAlertsFromIdb();
-}
-
-/** @deprecated loadAcPushAlertHistory 사용 */
-export async function mergeAcPushAlertHistoryFromIdb(): Promise<AcPushAlert[]> {
-  return loadAcPushAlertHistory();
+  emitAcPushAlertEvent({ type: "cleared" });
 }
 
 export function estimateAcPushAlertBytes(alert: AcPushAlert): number {

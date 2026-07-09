@@ -125,17 +125,19 @@ export function parseAcPushAlertFromRecord(raw: Record<string, unknown>): AcPush
         : typeof raw.llm_escalate === "string"
           ? raw.llm_escalate
           : undefined,
+    readAt: typeof raw.readAt === "string" ? raw.readAt : undefined,
+    serverId:
+      typeof raw.serverId === "string"
+        ? raw.serverId
+        : typeof raw.server_id === "string"
+          ? raw.server_id
+          : undefined,
     summary,
   };
 }
 
 export function buildAlertDetailPath(fingerprint: string): string {
   return paths.alertDetail(fingerprint);
-}
-
-/** @deprecated buildAlertDetailPath 사용 */
-export function buildAcPushDetailPath(fingerprint: string): string {
-  return buildAlertDetailPath(fingerprint);
 }
 
 export function normalizeNotificationBody(body: string): string {

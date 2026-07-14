@@ -184,6 +184,10 @@ export async function fetchAcState(): Promise<AcStateResponse> {
         mode === "off" ? "plug" : plugHigh ? "plug" : "logical",
       state_consistent: true,
       state_source: "mock",
+      power_updated_at: status.plug.power_updated_at ?? null,
+      power_age_seconds: status.plug.power_age_seconds ?? null,
+      power_stale: status.plug.power_stale ?? false,
+      ac_running_confidence: status.ac_running_confidence ?? "high",
     };
   }
   const raw = await apiRequest<Record<string, unknown>>("/api/v1/ac/state");
@@ -195,6 +199,7 @@ export async function fetchAcState(): Promise<AcStateResponse> {
   const normalizedAwayEnabled = raw.away_enabled;
   const normalizedOperatingMode = raw.operating_mode;
   const normalizedLastRunMode = raw.last_run_mode;
+  const normalizedConfidence = raw.ac_running_confidence;
 
   if (normalizedTemperature == null || normalizedHumidity == null) {
     console.warn("[ac] invalid /api/v1/ac/state climate fields", raw);
@@ -231,6 +236,21 @@ export async function fetchAcState(): Promise<AcStateResponse> {
       raw.last_control_result === "success" || raw.last_control_result === "failed"
         ? raw.last_control_result
         : null,
+    power_updated_at:
+      typeof raw.power_updated_at === "string" || raw.power_updated_at == null
+        ? (raw.power_updated_at as string | null | undefined)
+        : undefined,
+    power_age_seconds: toFiniteNumber(raw.power_age_seconds) ?? (
+      raw.power_age_seconds == null ? null : undefined
+    ),
+    power_stale:
+      typeof raw.power_stale === "boolean" ? raw.power_stale : undefined,
+    ac_running_confidence:
+      normalizedConfidence === "high" ||
+      normalizedConfidence === "medium" ||
+      normalizedConfidence === "low"
+        ? normalizedConfidence
+        : undefined,
   };
 }
 

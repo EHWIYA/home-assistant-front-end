@@ -48,6 +48,9 @@ export type ApiErrorPayload =
   | { detail: ApiErrorDetail }
   | { detail: ValidationErrorItem[] };
 
+/** 에어컨 가동 추정 신뢰도 — OpenAPI 2.1.0+ */
+export type AcRunningConfidence = "high" | "medium" | "low";
+
 export interface PlugStatus {
   switch: OnOffAction;
   /** null이면 전력 미수신 — status의 ac_estimated_running은 false */
@@ -55,6 +58,15 @@ export interface PlugStatus {
   energy_kwh: number;
   /** 누적 사용량 기준 요금(원). null이면 미산출 */
   estimated_cost_won: number | null;
+  /** HA sensor.hwiya_home_power last_updated (KST ISO8601). 없으면 null */
+  power_updated_at?: string | null;
+  /** power_updated_at 기준 경과 초. 파싱 불가·미수신 시 null */
+  power_age_seconds?: number | null;
+  /**
+   * true면 플러그 전력이 오래됐거나 시각을 알 수 없음.
+   * 플러그 단독으로 켜짐/꺼짐 UI를 확정하지 말 것. OpenAPI 2.1.0+
+   */
+  power_stale?: boolean;
 }
 
 /** GET /api/v1/status → pc (Tapo HWIYA-PC) */
@@ -132,6 +144,11 @@ export interface StatusResponse {
    */
   ac_estimated_running: boolean;
   /**
+   * 가동 추정 신뢰도. high=신선 플러그, medium=logical, low=stale/미상.
+   * `low` 또는 `plug.power_stale`이면「꺼짐」단정 금지. OpenAPI 2.1.0+
+   */
+  ac_running_confidence?: AcRunningConfidence;
+  /**
    * HA `input_boolean.hwiya_ac_auto_enabled` — 자동 ON/OFF 마스터.
    * `null`: 엔티티 없음/비정상. 변경 API는 2차(읽기 전용 배지).
    */
@@ -208,6 +225,14 @@ export interface AcStateResponse {
   last_control_at?: string | null;
   /** 마지막 제어 결과 */
   last_control_result?: "success" | "failed" | null;
+  /** plug.power_updated_at 와 동일 — OpenAPI 2.1.0+ */
+  power_updated_at?: string | null;
+  /** plug.power_age_seconds 와 동일 */
+  power_age_seconds?: number | null;
+  /** plug.power_stale 와 동일 — true면「꺼짐」플러그 단독 확정 금지 */
+  power_stale?: boolean;
+  /** 가동 추정 신뢰도 — low이면「꺼짐」단정 금지 */
+  ac_running_confidence?: AcRunningConfidence;
 }
 
 export interface PcActionRequest {
@@ -245,7 +270,7 @@ export interface HealthResponse {
   db_reachable?: boolean;
 }
 
-/** GET /api/v1/ac/thresholds — HA 임계값 v3.0 요약 */
+/** GET /api/v1/ac/thresholds — HA 임계값 v4.0 요약 (API 문자열 그대로 표시) */
 export interface AcThresholdRule {
   on: string;
   off: string;

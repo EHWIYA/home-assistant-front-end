@@ -1,6 +1,10 @@
 import type { AcMode, AcOperatingMode, AcStateResponse, StatusResponse } from "@/api/types";
 import { useAcThresholds } from "@/hooks/useStatus";
 import { getAcAutoTransitionBadge } from "@/utils/acAuto";
+import {
+  isAcRunningUncertain,
+  resolveAcRunningConfidence,
+} from "@/utils/acFreshness";
 import { getAcOperatingModeLabel } from "@/utils/acOperatingMode";
 import { getAcModeDisplayText, isAcPowerOff } from "@/utils/acMode";
 import { resolveAcStateView } from "@/utils/acStateView";
@@ -27,6 +31,8 @@ export function AcAdvancedPanel({
 }: AcAdvancedPanelProps) {
   const thresholdsQuery = useAcThresholds();
   const view = resolveAcStateView(data, acState);
+  const uncertain = isAcRunningUncertain(data, acState);
+  const confidence = resolveAcRunningConfidence(data, acState);
   const modeText = getAcModeDisplayText({
     mode: view.mode,
     power: view.power,
@@ -34,12 +40,15 @@ export function AcAdvancedPanel({
     operatingMode: view.operatingMode,
     acAutoState: data.ac_auto_state,
     plugEstimatedRunning: data.ac_estimated_running,
+    isUncertain: uncertain,
   });
-  const powerOff = isAcPowerOff(view.power, {
-    acAutoState: data.ac_auto_state,
-    plugEstimatedRunning: data.ac_estimated_running,
-    statusMode: view.mode,
-  });
+  const powerOff =
+    !uncertain &&
+    isAcPowerOff(view.power, {
+      acAutoState: data.ac_auto_state,
+      plugEstimatedRunning: data.ac_estimated_running,
+      statusMode: view.mode,
+    });
   const help = getModeHelpCopy(view.operatingMode, view.mode, powerOff);
   const mutexLines = thresholdsQuery.data?.mutex
     ? splitMutexLines(thresholdsQuery.data.mutex)
@@ -51,7 +60,7 @@ export function AcAdvancedPanel({
       <div className={styles.body}>
         {showSyncWarning ? (
           <p className={styles.syncWarn} title={syncWarningTitle}>
-            상태를 맞추는 중이에요. 잠시 후 다시 확인해 주세요.
+            설정과 실제 상태가 어긋났습니다. 잠시 후 다시 확인해 주세요.
           </p>
         ) : null}
 
@@ -60,6 +69,8 @@ export function AcAdvancedPanel({
           acState={acState}
           modeText={modeText}
           operatingMode={view.operatingMode}
+          uncertain={uncertain}
+          confidence={confidence}
         />
 
         {help ? (
@@ -77,6 +88,7 @@ export function AcAdvancedPanel({
             <AcPolicyDetails
               thresholds={thresholdsQuery.data}
               loading={thresholdsQuery.isLoading}
+              error={thresholdsQuery.isError}
             />
           </div>
         </details>
@@ -92,9 +104,12 @@ export function AcAdvancedPanel({
               </ul>
             ) : null}
             <ul className={styles.devList}>
-              <li>전원이 꺼지면 「꺼짐」을 먼저 보여 줍니다.</li>
-              <li>가동 여부는 전원·가동 신호를 우선합니다.</li>
-              <li>조건은 서버·Home Assistant 설정과 같습니다.</li>
+              <li>
+                전력 센서가 오래됐거나 신뢰도가 낮으면 「꺼짐」을 단정하지 않고
+                「확인 중」으로 표시합니다.
+              </li>
+              <li>가동 여부는 전원·가동 신호와 freshness(신뢰도)를 함께 봅니다.</li>
+              <li>조건은 서버·Home Assistant 설정(thresholds v4)과 같습니다.</li>
             </ul>
           </div>
         </details>
@@ -108,17 +123,22 @@ function StatusSnapshot({
   acState,
   modeText,
   operatingMode,
+  uncertain,
+  confidence,
 }: {
   data: StatusResponse;
   acState: AcStateResponse | undefined;
   modeText: string;
   operatingMode: AcOperatingMode | null;
+  uncertain: boolean;
+  confidence: ReturnType<typeof resolveAcRunningConfidence>;
 }) {
   const transition = getAcAutoTransitionBadge(data.ac_auto_state);
   const view = resolveAcStateView(data, acState);
   const runningBadge = getAcRunningBadge(
     view.runningFields,
     data.ac_estimated_running,
+    { uncertain, confidence },
   );
   const operatingLabel = getAcOperatingModeLabel(operatingMode);
 

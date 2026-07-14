@@ -4,6 +4,11 @@ import type { AcStateResponse, StatusResponse, WeatherOutdoor } from "@/api/type
 import type { IndoorClimate } from "@/api/types";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { MiniPowerBar } from "@/components/viz/MiniPowerBar";
+import {
+  getAcUncertaintyBannerTitle,
+  isAcRunningUncertain,
+  resolveAcRunningConfidence,
+} from "@/utils/acFreshness";
 import { getAcModeDisplayText } from "@/utils/acMode";
 import {
   getAcOperatingModeLabel,
@@ -32,6 +37,7 @@ interface AcStatusHeroProps {
   showSyncWarning: boolean;
   isSettingMismatch?: boolean;
   syncWarningTitle: string;
+  syncDebugLine?: string | null;
   onReapplyAuto?: () => void;
   reapplyAutoPending?: boolean;
 }
@@ -42,12 +48,15 @@ export function AcStatusHero({
   showSyncWarning,
   isSettingMismatch = false,
   syncWarningTitle,
+  syncDebugLine = null,
   onReapplyAuto,
   reapplyAutoPending = false,
 }: AcStatusHeroProps) {
   const theme = HOME_DOMAIN_THEME.ac;
   const view = resolveAcStateView(data, acState);
   const primary = getAcHomePrimaryStatus(data, acState);
+  const uncertain = isAcRunningUncertain(data, acState);
+  const confidence = resolveAcRunningConfidence(data, acState);
   const modeText = getAcModeDisplayText({
     mode: view.mode,
     power: view.power,
@@ -55,10 +64,12 @@ export function AcStatusHero({
     operatingMode: view.operatingMode,
     acAutoState: data.ac_auto_state,
     plugEstimatedRunning: data.ac_estimated_running,
+    isUncertain: uncertain,
   });
   const runningBadge = getAcRunningBadge(
     view.runningFields,
     data.ac_estimated_running,
+    { uncertain, confidence },
   );
   const dotColor =
     primary.tone === "active" ? theme.accent : TONE_DOT[primary.tone];
@@ -75,6 +86,55 @@ export function AcStatusHero({
         </span>
         <h2 className={styles.title}>에어컨</h2>
       </header>
+
+      {uncertain ? (
+        <p
+          className={styles.uncertaintyBanner}
+          title={getAcUncertaintyBannerTitle(data, acState)}
+          role="status"
+        >
+          전력 센서 미갱신 · 가동 상태 불확실
+        </p>
+      ) : null}
+
+      {showSyncWarning ? (
+        isSettingMismatch && onReapplyAuto ? (
+          <div className={styles.syncBannerRow} title={syncWarningTitle}>
+            <div className={styles.syncBannerCopy}>
+              <p className={styles.syncBannerText}>
+                설정과 실제 상태가 어긋났습니다. (예: 자동인데 mode=off / 제어
+                mode와 전력 불일치)
+              </p>
+              {syncDebugLine ? (
+                <details className={styles.syncDebug}>
+                  <summary>상세</summary>
+                  <p className={styles.syncDebugLine}>{syncDebugLine}</p>
+                </details>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className={styles.syncBannerBtn}
+              disabled={reapplyAutoPending}
+              onClick={onReapplyAuto}
+            >
+              {reapplyAutoPending ? "적용 중…" : "자동 모드 다시 적용"}
+            </button>
+          </div>
+        ) : (
+          <div className={styles.syncBanner} title={syncWarningTitle}>
+            <p className={styles.syncBannerText}>
+              설정과 실제 상태가 어긋났습니다. 잠시 후 다시 확인해 주세요.
+            </p>
+            {syncDebugLine ? (
+              <details className={styles.syncDebug}>
+                <summary>상세</summary>
+                <p className={styles.syncDebugLine}>{syncDebugLine}</p>
+              </details>
+            ) : null}
+          </div>
+        )
+      ) : null}
 
       <div className={styles.statusRow}>
         <span
@@ -127,28 +187,6 @@ export function AcStatusHero({
       </div>
 
       <ClimateGrid indoor={data.indoor} weatherOutdoor={data.weather_outdoor} />
-
-      {showSyncWarning ? (
-        isSettingMismatch && onReapplyAuto ? (
-          <div className={styles.syncBannerRow} title={syncWarningTitle}>
-            <p className={styles.syncBannerText}>
-              설정 불일치 — 자동 모드가 HA에서 꺼져 있어요.
-            </p>
-            <button
-              type="button"
-              className={styles.syncBannerBtn}
-              disabled={reapplyAutoPending}
-              onClick={onReapplyAuto}
-            >
-              {reapplyAutoPending ? "적용 중…" : "자동 모드 다시 적용"}
-            </button>
-          </div>
-        ) : (
-          <p className={styles.syncBanner} title={syncWarningTitle}>
-            장치 상태 동기화 중 — 잠시 후 다시 확인해 주세요.
-          </p>
-        )
-      ) : null}
     </section>
   );
 }

@@ -29,7 +29,7 @@
 
 PWA: Open-Meteo 제거 → `GET /api/v1/weather/local`. mock: `src/api/mock/weather-local.json`
 
-## GET /api/v1/ac/state (OpenAPI 1.5.0+)
+## GET /api/v1/ac/state (OpenAPI 2.1.0+)
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -40,10 +40,14 @@ PWA: Open-Meteo 제거 → `GET /api/v1/weather/local`. mock: `src/api/mock/weat
 | `last_run_mode` | `cool` \| `dry` \| null | `mode=auto` 가동 중 마지막 IR 모드 |
 | `power` | `on` \| `off` | API 합성 가동 여부 |
 | `running_source` | `plug` \| `logical` 등 | 가동 판단 근거 |
-| `state_consistent` | `boolean` | mode·power 정합성 |
+| `state_consistent` | `boolean` | mode·power 정합성 — `false`면 상단 배너 |
 | `state_source` | `string` | 디버그용 합성 설명 |
+| `power_stale` | `boolean` | plug와 동일 — true면「꺼짐」플러그 단독 확정 금지 |
+| `power_age_seconds` | `number \| null` | 전력 센서 경과 초 |
+| `power_updated_at` | `string \| null` | HA 전력 last_updated (KST ISO) |
+| `ac_running_confidence` | `high` \| `medium` \| `low` | `low`이면「꺼짐」단정 금지 |
 
-PWA: `mode=auto` 이고 `power=on` 이면 UI 모드 문구에 `last_run_mode` 반영(예: 자동 (냉방)). 운전모드는 **수동 | 자동 | 외출** 단일 선택(`operating_mode`). `running_source=logical` 이면 저전력 가동 배지.
+PWA: `mode=auto` 이고 `power=on` 이면 UI 모드 문구에 `last_run_mode` 반영(예: 자동 (냉방)). 운전모드는 **수동 | 자동 | 외출** 단일 선택(`operating_mode`). `running_source=logical` 이면 저전력/논리 ON 배지. `power_stale` 또는 `confidence=low` 이면「확인 중」+ 불확실 배너.
 
 ## POST /api/v1/ac
 
@@ -54,13 +58,26 @@ PWA: `mode=auto` 이고 `power=on` 이면 UI 모드 문구에 `last_run_mode` �
   - 401/502/503/504: `{ "detail": { "detail": "<메시지>", "code": "<코드>" } }`
   - 422: `{ "detail": [ { "type", "loc", "msg", ... } ] }` (FastAPI 표준)
 
-## GET /api/v1/status — `ac_estimated_running`
+## GET /api/v1/status — `ac_estimated_running` · freshness (OpenAPI 2.1.0+)
 
-- `boolean` — 스마트플러그 전력(`plug.power_w`, HA `sensor.hwiya_home_power`)이 임계값(기본 50W) 이상이면 `true`
+- `ac_estimated_running` (`boolean`) — 스마트플러그 전력(`plug.power_w`, HA `sensor.hwiya_home_power`)이 임계값(기본 50W) 이상이면 `true`
 - `plug.power_w`가 `null`이면 `false`
 - 실제 AC 전원/IR 상태가 아님. 제어는 `POST /api/v1/ac` 별도
+- `plug.power_stale` / `plug.power_age_seconds` / `plug.power_updated_at` — 전력 freshness
+- `ac_running_confidence`: `high` \| `medium` \| `low` — stale/`low` 시 PWA는「꺼짐」단정 금지
 
-PWA: 플러그 50W 추정은 `/ac/state` 미수신 시 보조 fallback만. 일반 가동 표시는 `/ac/state`의 `power`·`running_source` (`ac_auto_*` 와 구분).
+PWA: 플러그 50W 추정은 `/ac/state` 미수신 시 보조 fallback만. 일반 가동 표시는 `/ac/state`의 `power`·`running_source` (`ac_auto_*` 와 구분). freshness는 SSE snapshot에도 있으면 동일 로직.
+
+**PWA freshness UX (iot-api 2.1.0+)**
+
+| 조건 | UI |
+|------|-----|
+| `power_stale` 또는 `ac_running_confidence=low` | 「확인 중」·불확실 배너. 「꺼짐」단정 금지 (수동 OFF 후에도 stale면 동일) |
+| `confidence=medium` + `running_source=logical` | 「논리 ON(저전력)」 보조 배지 |
+| `confidence=high` | `power` / `ac_estimated_running` 기존 표시 |
+| SSE에 freshness 필드 누락 | 직전 status 캐시의 `power_stale`·`ac_running_confidence` 등 병합 유지 (`mergeStatusFreshness`) |
+
+플러그 카드는 **콘센트 전원**만 표시하며 에어컨 가동 라벨과 분리 (`power_stale` 시 STALE 힌트).
 
 ## GET /api/v1/status — `ac_auto_enabled` · `ac_auto_state` (OpenAPI 1.4.0+)
 
@@ -82,10 +99,18 @@ PWA: 플러그 50W 추정은 `/ac/state` 미수신 시 보조 fallback만. 일�
 
 제어: `POST /api/v1/ac` (`mode` + `operating_mode` 권장). 레거시 `POST /api/v1/ac/auto` 는 mock·하위 호환만.
 
-## GET /api/v1/ac/thresholds (OpenAPI 1.8.0+)
+## GET /api/v1/ac/thresholds (OpenAPI 2.1.0+ · v4.0)
 
-- `version`: `v3.0` — `home_auto`·`away` ON/OFF 문구, `mutex` 보조
-- PWA: 에어컨 탭 「집·외출 자동 조건」. `away` 가 `home_auto` 와 동일하면 외출 HA 정본 fallback (`src/utils/acThresholdFallbacks.ts`)
+- `version`: `v4.0` — `home_auto`·`away` ON/OFF 문구, `mutex` 보조 (서버 문자열을 그대로 표시)
+- PWA: 에어컨 탭 「집·외출 자동 조건」. **하드코딩 폴백 없음** — API 실패 시「일시적으로 임계값을 불러오지 못했습니다」만 표시
+- mock: `src/api/mock/acThresholds.json` (v4.0 예시)
+
+## Push 랜딩 경로 (PWA)
+
+- **주 경로:** 알림함 `/alerts`, 상세 `/alerts/{fingerprint}` (`src/push/alertNavigation.ts` · `scripts/push-sw-logic.js` 동일 규칙)
+- topic `ac` / `ac-anomaly` / `home` 이고 `data.url` 없을 때 기본은 **`/ac`** (SW·앱 공통)
+- 레거시 딥링크 **`/ac?from=push`** (+ optional `fingerprint`) → `useLegacyAcPushRedirect`가 알림함으로 `replace` 리다이렉트
+- 문서·구현 정본: 클릭 랜딩은 **알림함**을 주 경로로 두고, `/ac?from=push`는 하위 호환만 유지
 
 ## GET /api/v1/status — 추정 요금 · `electricity` (OpenAPI 1.5.0+)
 

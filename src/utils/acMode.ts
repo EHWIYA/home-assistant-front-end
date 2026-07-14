@@ -100,6 +100,8 @@ export interface AcModeDisplayInput {
   operatingMode?: AcOperatingMode | null;
   acAutoState?: AcAutoState | null;
   plugEstimatedRunning?: boolean;
+  /** power_stale / confidence=low —「꺼짐」단정 금지 */
+  isUncertain?: boolean;
 }
 
 function acPowerOffHints(input: AcModeDisplayInput): AcPowerOffHints {
@@ -117,7 +119,12 @@ export function getAcModeDisplayText({
   operatingMode,
   acAutoState,
   plugEstimatedRunning,
+  isUncertain = false,
 }: AcModeDisplayInput): string {
+  if (isUncertain) {
+    return "가동 상태 불확실";
+  }
+
   if (isAcPowerOff(power, acPowerOffHints({ mode, acAutoState, plugEstimatedRunning }))) {
     return getAcOffStatusLabel(lastRunMode);
   }
@@ -163,6 +170,8 @@ export interface AcPrimaryStatusInput {
   plugEstimatedRunning?: boolean;
   isRunning: boolean;
   isLowPowerRunning: boolean;
+  /** power_stale / confidence=low —「꺼짐」단정 금지 */
+  isUncertain?: boolean;
 }
 
 /** 상태 카드·홈 요약용 큰 라벨 — mode=dry 단독으로 「제습 중」 금지 */
@@ -175,7 +184,12 @@ export function getAcPrimaryStatusLabel({
   plugEstimatedRunning,
   isRunning,
   isLowPowerRunning,
+  isUncertain = false,
 }: AcPrimaryStatusInput): string {
+  if (isUncertain) {
+    return "확인 중";
+  }
+
   if (isAcPowerOff(power, acPowerOffHints({ mode, acAutoState, plugEstimatedRunning }))) {
     return getAcOffStatusLabel(lastRunMode);
   }

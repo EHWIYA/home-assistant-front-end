@@ -47,12 +47,8 @@ function AcPageContent({
 }) {
   const acStateQuery = useAcState();
   const acState = acStateQuery.data;
-  const { showSyncWarning, isSettingMismatch, syncWarningTitle } = useAcSyncWarning(
-    data,
-    acState,
-    acMutation,
-    acStateQuery,
-  );
+  const { showSyncWarning, isSettingMismatch, syncWarningTitle, syncDebugLine } =
+    useAcSyncWarning(data, acState, acMutation, acStateQuery);
 
   const reapplyAuto = () => {
     if (acMutation.isPending) return;
@@ -68,6 +64,7 @@ function AcPageContent({
         showSyncWarning={showSyncWarning}
         isSettingMismatch={isSettingMismatch}
         syncWarningTitle={syncWarningTitle}
+        syncDebugLine={syncDebugLine}
         onReapplyAuto={reapplyAuto}
         reapplyAutoPending={acMutation.isPending}
       />

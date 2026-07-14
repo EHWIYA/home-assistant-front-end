@@ -6,6 +6,10 @@ import type {
   StatusResponse,
   StripStateResponse,
 } from "@/api/types";
+import {
+  isAcRunningUncertain,
+  resolveAcRunningConfidence,
+} from "@/utils/acFreshness";
 import { getAcOperatingModeLabel } from "@/utils/acOperatingMode";
 import { getAcPrimaryStatusLabel, isAcPowerOff } from "@/utils/acMode";
 import { getAcRunningBadge } from "@/utils/acRunning";
@@ -25,12 +29,17 @@ export function getAcHomePrimaryStatus(
 ): HomeStatusLine {
   const view = resolveAcStateView(status, acState);
   const acAutoState = status.ac_auto_state;
+  const uncertain = isAcRunningUncertain(status, acState);
+  const confidence = resolveAcRunningConfidence(status, acState);
   const runningBadge = getAcRunningBadge(
     view.runningFields,
     status.ac_estimated_running,
+    { uncertain, confidence },
   );
-  const isLowPowerRunning = runningBadge?.label === "가동 중(저전력)";
-  const isRunning = runningBadge != null && !isLowPowerRunning;
+  const isLowPowerRunning =
+    runningBadge?.label === "가동 중(저전력)" ||
+    runningBadge?.label === "논리 ON(저전력)";
+  const isRunning = runningBadge != null && !isLowPowerRunning && !uncertain;
 
   const label = getAcPrimaryStatusLabel({
     mode: view.mode,
@@ -41,8 +50,12 @@ export function getAcHomePrimaryStatus(
     plugEstimatedRunning: status.ac_estimated_running,
     isRunning: isRunning || isLowPowerRunning,
     isLowPowerRunning,
+    isUncertain: uncertain,
   });
 
+  if (uncertain) {
+    return { label, tone: "warn" };
+  }
   if (
     isAcPowerOff(view.power, {
       acAutoState,
@@ -68,7 +81,21 @@ export function getAcHomeSecondaryLine(
   status: StatusResponse,
   acState?: AcStateResponse,
 ): string {
-  const parts = [formatPowerW(status.plug.power_w)];
+  const power = formatPowerW(status.plug.power_w);
+  const uncertain = isAcRunningUncertain(status, acState);
+  const inconsistent = acState?.state_consistent === false;
+
+  if (uncertain && inconsistent) {
+    return `${power} · 전력 미갱신 · 설정 불일치`;
+  }
+  if (uncertain) {
+    return `${power} · 전력 미갱신`;
+  }
+  if (inconsistent) {
+    return `${power} · 설정 불일치`;
+  }
+
+  const parts = [power];
   const view = resolveAcStateView(status, acState);
   const operatingLabel = getAcOperatingModeLabel(view.operatingMode);
   if (operatingLabel !== "—") {

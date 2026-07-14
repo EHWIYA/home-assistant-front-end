@@ -1,14 +1,14 @@
 {
-  "version": "v3.0",
+  "version": "v4.0",
   "home_auto": {
-    "on": "26°C 이상 15분 또는 (24°C 이상·습도 70% 이상 10분)",
-    "off": "24°C 미만·습도 55% 미만(각 10분 유지, 재가동 15분·26°C)",
-    "notes": "집 비움 → 자동 ON 불가, OFF는 조건 충족 시 가능"
+    "on": "실내 ≥27°C 냉방 · 26~26.5°C 제습 · 가동 ≥15W",
+    "off": "실내 <26°C OFF",
+    "notes": "집 자동 v4.0 — HA enforce. 실제 판정은 HA에서 수행."
   },
   "away": {
-    "on": "27°C 이상 또는 습도 60% 이상 10분(실내 26°C 이상)",
-    "off": "27°C 미만 이고 습도 60% 미만",
-    "notes": null
+    "on": "실내 ≥28°C",
+    "off": "실내 <28°C",
+    "notes": "외출은 home_auto와 임계가 다름 (v4.0)."
   },
   "mutex": "manual(auto·away OFF) | auto(auto ON) | away(away ON) — HA input_boolean 상호 배타"
 }

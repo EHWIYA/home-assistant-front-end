@@ -1,6 +1,7 @@
 import type { AcStateResponse, StatusResponse } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { AcControlParams } from "@/hooks/useStatus";
+import { resolveAcStateView } from "@/utils/acStateView";
 
 const RECENT_SUCCESS_SUPPRESS_MS = 30_000;
 
@@ -27,10 +28,11 @@ export function useAcSyncWarning(
   mutation: UseMutationResult<unknown, Error, AcControlParams, unknown>,
   acStateQuery: AcStateQueryFlags,
 ) {
-  const mode = acState?.mode ?? data.ac_mode ?? "off";
+  const view = resolveAcStateView(data, acState);
+  const mode = view.mode;
   const stateConsistent = acState?.state_consistent;
   const stateSource = acState?.state_source;
-  const runningSource = acState?.running_source;
+  const runningSource = view.runningFields.running_source ?? acState?.running_source;
   const lastControlResult = acState?.last_control_result;
   const lastControlAtMs = parseControlTimestamp(acState?.last_control_at);
   const hasLegacyMismatch =
@@ -53,11 +55,26 @@ export function useAcSyncWarning(
 
   const isSettingMismatch = stateConsistent === false;
 
+  const syncDebugLine = [
+    `mode=${mode}`,
+    `operating_mode=${view.operatingMode ?? "—"}`,
+    `power=${view.power ?? "—"}`,
+    `running_source=${runningSource ?? "—"}`,
+    stateSource ? `state_source=${stateSource}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   const syncWarningTitle = stateSource
     ? `state_consistent=false · ${stateSource}${runningSource ? ` · running_source=${runningSource}` : ""}`
     : runningSource
       ? `정합성 확인 중 · running_source=${runningSource}`
       : "mode·power·정합성 확인 중입니다.";
 
-  return { showSyncWarning, isSettingMismatch, syncWarningTitle };
+  return {
+    showSyncWarning,
+    isSettingMismatch,
+    syncWarningTitle,
+    syncDebugLine,
+  };
 }

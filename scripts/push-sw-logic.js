@@ -1,6 +1,7 @@
 /**
  * Service Worker용 공유 로직 — generate-fcm-sw.mjs에서 인라인.
  * 앱 쪽 대응: src/push/alertPayload.ts, alertCompact.ts, alertNavigation.ts
+ * topic 기본 경로·알림함 규칙은 alertNavigation.ts 와 반드시 동기화.
  */
 
 var ALERT_DB = "hwiya-ac-push";

@@ -3,7 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { buildAlertDetailPath } from "@/push/alertPayload";
 import { paths } from "@/routes/paths";
 
-/** 예전 /ac?from=push 링크를 알림함으로 리다이렉트 */
+/** 레거시 `/ac?from=push` 딥링크 → 알림함 통일 (fingerprint 있으면 상세).
+ *  신규 푸시 클릭은 alertNavigation / SW 규칙을 따름 (docs/api.md 「Push 랜딩」).
+ */
 export function useLegacyAcPushRedirect() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

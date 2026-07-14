@@ -3,7 +3,10 @@
     "switch": "on",
     "power_w": 742.0,
     "energy_kwh": 12.34,
-    "estimated_cost_won": 1703
+    "estimated_cost_won": 1703,
+    "power_updated_at": "2026-05-19T11:12:50+09:00",
+    "power_age_seconds": 10,
+    "power_stale": false
   },
   "pc": {
     "switch": "on",
@@ -21,6 +24,7 @@
     "rate_won_per_kwh": 138.0
   },
   "ac_estimated_running": true,
+  "ac_running_confidence": "high",
   "ac_auto_enabled": true,
   "ac_away_enabled": false,
   "ac_operating_mode": "auto",

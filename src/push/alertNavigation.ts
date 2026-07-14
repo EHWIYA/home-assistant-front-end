@@ -22,7 +22,10 @@ function normalizeInAppPath(raw: string): string | null {
   return trimmed.startsWith("/") ? trimmed : null;
 }
 
-/** topic 기반 기본 라우트 — url 없을 때 사용 */
+/** topic 기반 기본 라우트 — url 없을 때 사용.
+ *  SW (`scripts/push-sw-logic.js`)와 동일 규칙 유지. 변경 시 양쪽 동기화.
+ *  AC topic 기본은 /ac; 레거시 /ac?from=push 는 알림함으로 리다이렉트.
+ */
 export function resolveTopicDefaultPath(topic?: string): string | null {
   const normalized = topic?.trim().toLowerCase();
   if (!normalized) {

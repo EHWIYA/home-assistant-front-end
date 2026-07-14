@@ -24,6 +24,7 @@ import {
   isAcPowerOff,
   resolveAcUiActionMode,
 } from "@/utils/acMode";
+import { isAcRunningUncertain } from "@/utils/acFreshness";
 import { resolveAcStateView } from "@/utils/acStateView";
 import { TOAST_DEVICE, TOAST_GUIDE, TOAST_RESOURCE } from "@/utils/toastMessages";
 import styles from "./AcModeControls.module.css";
@@ -83,6 +84,7 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
   const post = (params: AcControlParams) => mutation.mutate(params);
   const actionOptions = getAcActionOptions(operatingMode, mode);
   const actionColumns = actionOptions.length >= 4 ? 2 : 3;
+  const uncertain = isAcRunningUncertain(data, acState);
   const uiActionMode = resolveAcUiActionMode({
     mode,
     operatingMode,
@@ -91,7 +93,8 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
     acAutoState: data.ac_auto_state,
     plugEstimatedRunning: data.ac_estimated_running,
   });
-  const acPowerOff = isAcPowerOff(view.power, {
+  /** 토글 방향용(합성). 표시·스타일은 uncertain일 때 중립. */
+  const composedPowerOff = isAcPowerOff(view.power, {
     acAutoState: data.ac_auto_state,
     plugEstimatedRunning: data.ac_estimated_running,
     statusMode: view.mode,
@@ -103,6 +106,7 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
     operatingMode,
     acAutoState: data.ac_auto_state,
     plugEstimatedRunning: data.ac_estimated_running,
+    isUncertain: uncertain,
   });
 
   useMutationErrorToast(
@@ -133,7 +137,7 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
 
   const handlePowerToggle = () => {
     if (controlsDisabled) return;
-    if (acPowerOff) {
+    if (composedPowerOff) {
       post(buildAcPowerOnRequest(operatingMode, mode, lastRunMode));
       return;
     }
@@ -141,12 +145,30 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
   };
 
   const powerTogglePending = isPendingFor(mutation, (p) =>
-    acPowerOff ? p.mode !== "off" : p.mode === "off",
+    composedPowerOff ? p.mode !== "off" : p.mode === "off",
   );
+
+  const powerToggleClass = uncertain
+    ? styles.powerToggleNeutral
+    : composedPowerOff
+      ? styles.powerToggleOn
+      : styles.powerToggleOff;
+  const powerToggleLabel = uncertain
+    ? "전원"
+    : composedPowerOff
+      ? "켜기"
+      : "끄기";
+  const powerToggleAria = uncertain
+    ? "상태 불확실 — 에어컨 전원 전환"
+    : composedPowerOff
+      ? "에어컨 켜기"
+      : "에어컨 끄기";
 
   return (
     <section
-      className={`${styles.card} ${acPowerOff ? styles.cardPowerOff : ""}`.trim()}
+      className={`${styles.card} ${
+        !uncertain && composedPowerOff ? styles.cardPowerOff : ""
+      }`.trim()}
       style={{ "--ac-accent": theme.accent } as CSSProperties}
       aria-label="에어컨 제어"
     >
@@ -159,21 +181,25 @@ export function AcModeControls({ data, mutation }: AcModeControlsProps) {
         </div>
         <button
           type="button"
-          className={`${styles.powerToggle} ${
-            acPowerOff ? styles.powerToggleOn : styles.powerToggleOff
-          }`.trim()}
+          className={`${styles.powerToggle} ${powerToggleClass}`.trim()}
           disabled={controlsDisabled}
-          aria-label={acPowerOff ? "에어컨 켜기" : "에어컨 끄기"}
+          aria-label={powerToggleAria}
           onClick={handlePowerToggle}
         >
           <span className={styles.powerToggleIcon} aria-hidden>
             <CupertinoIcon svg={powerSvg} className="" />
           </span>
           <span className={styles.powerToggleLabel}>
-            {powerTogglePending ? "…" : acPowerOff ? "켜기" : "끄기"}
+            {powerTogglePending ? "…" : powerToggleLabel}
           </span>
         </button>
       </header>
+
+      {uncertain ? (
+        <p className={styles.warnLine} role="status">
+          전력 센서 미갱신 — 지금 꺼짐/켜짐을 단정하지 않습니다.
+        </p>
+      ) : null}
 
       <div className={styles.section}>
         <div className={styles.sectionHead}>

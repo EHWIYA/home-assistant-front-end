@@ -20,9 +20,23 @@ interface AcPlugCardProps {
   mutation: UseMutationResult<unknown, Error, OnOffAction, unknown>;
 }
 
+function getPlugHint(plug: PlugStatus, plugOn: boolean, highLoad: boolean): string {
+  if (plug.power_stale === true) {
+    return "전력 미갱신 — 콘센트 측정만으로 에어컨 가동을 단정하지 않음";
+  }
+  if (!plugOn) {
+    return "에어컨 전원 차단 (콘센트 OFF ≠ 가동 판정)";
+  }
+  if (highLoad) {
+    return "콘센트 고부하(≥50W) — 에어컨 가동과 별개 표시";
+  }
+  return "대기·저전력일 수 있음 — 콘센트 ≠ 에어컨 가동";
+}
+
 export function AcPlugCard({ plug, mutation }: AcPlugCardProps) {
   const plugOn = plug.switch === "on";
   const highLoad = (plug.power_w ?? 0) >= PLUG_HIGH_W;
+  const stale = plug.power_stale === true;
 
   useMutationErrorToast(
     mutation,
@@ -64,18 +78,18 @@ export function AcPlugCard({ plug, mutation }: AcPlugCardProps) {
         />
         <div>
           <p className={styles.statusLabel}>{plugOn ? "전원 켜짐" : "전원 꺼짐"}</p>
-          <p className={styles.statusHint}>
-            {plugOn
-              ? highLoad
-                ? "가동 중으로 보임 (50W 이상)"
-                : "대기·저전력일 수 있음"
-              : "에어컨 전원 차단"}
-          </p>
+          <p className={styles.statusHint}>{getPlugHint(plug, plugOn, highLoad)}</p>
         </div>
         <span
-          className={`${styles.statePill} ${plugOn ? styles.statePillOn : styles.statePillOff}`.trim()}
+          className={`${styles.statePill} ${
+            stale
+              ? styles.statePillWarn
+              : plugOn
+                ? styles.statePillOn
+                : styles.statePillOff
+          }`.trim()}
         >
-          {plugOn ? "ON" : "OFF"}
+          {stale ? "STALE" : plugOn ? "ON" : "OFF"}
         </span>
       </div>
 
@@ -111,7 +125,10 @@ export function AcPlugCard({ plug, mutation }: AcPlugCardProps) {
               ? "끄기"
               : "켜기"}
         </button>
-        <p className={styles.hint}>HA 자동제어와 연동 · 끄면 집 자동 ON이 멈출 수 있음</p>
+        <p className={styles.hint}>
+          콘센트 전원 ≠ 에어컨 가동 표시. HA 자동제어와 연동 · 끄면 집 자동 ON이
+          멈출 수 있음
+        </p>
       </div>
     </section>
   );

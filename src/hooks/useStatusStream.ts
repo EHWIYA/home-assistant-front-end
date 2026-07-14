@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { fetchAcState } from "@/api/client";
 import { getStatusStreamUrl, shouldUseMock } from "@/api/http";
 import type { StatusResponse } from "@/api/types";
+import { mergeStatusFreshness } from "@/utils/acFreshness";
 
 function applyStatusEvent(
   queryClient: QueryClient,
@@ -11,7 +12,8 @@ function applyStatusEvent(
 ): void {
   try {
     const parsed = JSON.parse(raw) as StatusResponse;
-    queryClient.setQueryData(queryKey, parsed);
+    const previous = queryClient.getQueryData<StatusResponse>(queryKey);
+    queryClient.setQueryData(queryKey, mergeStatusFreshness(previous, parsed));
   } catch {
     // malformed SSE payload — ignore
   }

@@ -17,6 +17,9 @@ export function formatApiError(error: unknown, fallback: string): string {
     if (error.code === "ac_auto_plug_state_mismatch") {
       return "자동제어와 플러그 상태가 일치하지 않습니다. 새로고침 후 다시 시도해 주세요.";
     }
+    if (error.code === "plug_cut_unsafe") {
+      return "먼저 리모컨(IR)으로 에어컨을 끈 뒤, soft-off 확인 후 콘센트를 끄세요.";
+    }
     if (error.code?.startsWith("hejhome_")) {
       return `헤이홈 연동 오류: ${error.message}`;
     }

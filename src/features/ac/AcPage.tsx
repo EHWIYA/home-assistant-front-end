@@ -4,6 +4,7 @@ import type { StatusResponse } from "@/api/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import {
   useAcControl,
+  useAcRecover,
   useAcState,
   usePlugToggle,
   type AcControlParams,
@@ -22,6 +23,7 @@ export function AcPage() {
 
   const plugMutation = usePlugToggle();
   const acMutation = useAcControl();
+  const recoverMutation = useAcRecover();
 
   return (
     <StatusQueryGate loadingMessage="에어컨 상태 불러오는 중…">
@@ -30,6 +32,7 @@ export function AcPage() {
           data={data}
           acMutation={acMutation}
           plugMutation={plugMutation}
+          recoverMutation={recoverMutation}
         />
       )}
     </StatusQueryGate>
@@ -40,10 +43,12 @@ function AcPageContent({
   data,
   acMutation,
   plugMutation,
+  recoverMutation,
 }: {
   data: StatusResponse;
   acMutation: UseMutationResult<unknown, Error, AcControlParams, unknown>;
   plugMutation: ReturnType<typeof usePlugToggle>;
+  recoverMutation: ReturnType<typeof useAcRecover>;
 }) {
   const acStateQuery = useAcState();
   const acState = acStateQuery.data;
@@ -71,7 +76,12 @@ function AcPageContent({
       <div className={shared.pageSplit}>
         <div className={shared.pageStack}>
           <AcModeControls data={data} mutation={acMutation} />
-          <AcPlugCard plug={data.plug} mutation={plugMutation} />
+          <AcPlugCard
+            plug={data.plug}
+            acState={acState}
+            mutation={plugMutation}
+            recoverMutation={recoverMutation}
+          />
         </div>
         <AcAdvancedPanel
           data={data}

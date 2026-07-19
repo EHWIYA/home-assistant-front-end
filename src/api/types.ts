@@ -233,6 +233,28 @@ export interface AcStateResponse {
   power_stale?: boolean;
   /** 가동 추정 신뢰도 — low이면「꺼짐」단정 금지 */
   ac_running_confidence?: AcRunningConfidence;
+  /** 전력 &lt; 가동임계 → IR soft-off 확인. 콘센트 OFF 게이트 1차 */
+  soft_off?: boolean | null;
+  /** true일 때만 POST /plug action=off 허용 (가동 중 hard-cut 방지) */
+  plug_cut_safe?: boolean | null;
+}
+
+/** POST /api/v1/ac/recover */
+export type AcRecoverForceIr = "auto" | "off" | "cool" | "dry" | "smart";
+
+export interface AcRecoverRequest {
+  force_ir?: AcRecoverForceIr | null;
+}
+
+export interface AcRecoverResponse {
+  ok?: boolean;
+  request_id?: string | null;
+  chosen_ir?: string | null;
+  steps?: string[];
+  soft_off?: boolean | null;
+  plug_cut_safe?: boolean | null;
+  power_w?: number | null;
+  detail?: string | null;
 }
 
 export interface PcActionRequest {

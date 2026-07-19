@@ -9,6 +9,8 @@ import type {
   AcLastRunMode,
   AcMode,
   AcOperatingMode,
+  AcRecoverRequest,
+  AcRecoverResponse,
   AcStateResponse,
   AcThresholdsResponse,
   PcActionRequest,
@@ -251,7 +253,29 @@ export async function fetchAcState(): Promise<AcStateResponse> {
       normalizedConfidence === "low"
         ? normalizedConfidence
         : undefined,
+    soft_off: typeof raw.soft_off === "boolean" ? raw.soft_off : null,
+    plug_cut_safe:
+      typeof raw.plug_cut_safe === "boolean" ? raw.plug_cut_safe : null,
   };
+}
+
+export async function recoverAc(
+  body: AcRecoverRequest = { force_ir: "auto" },
+): Promise<AcRecoverResponse> {
+  if (shouldUseMock()) {
+    await new Promise((r) => setTimeout(r, 300));
+    return {
+      ok: true,
+      chosen_ir: body.force_ir ?? "auto",
+      soft_off: true,
+      plug_cut_safe: true,
+      detail: "mock recover",
+    };
+  }
+  return apiRequest<AcRecoverResponse>("/api/v1/ac/recover", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export async function fetchAcThresholds(): Promise<AcThresholdsResponse> {

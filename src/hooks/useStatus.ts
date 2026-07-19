@@ -4,6 +4,7 @@ import {
   fetchAcState,
   fetchAcThresholds,
   fetchStatus,
+  recoverAc,
   setAc,
   setPc,
   setPlug,
@@ -12,6 +13,7 @@ import type {
   AcActionRequest,
   AcActionResponse,
   AcOperatingMode,
+  AcRecoverForceIr,
   AcStateResponse,
   OnOffAction,
   StatusResponse,
@@ -196,6 +198,22 @@ export function usePlugToggle() {
     mutationFn: (action: PlugSwitch) => setPlug({ action }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: AC_STATE_QUERY_KEY });
+    },
+  });
+}
+
+export function useAcRecover() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (force_ir: AcRecoverForceIr = "auto") =>
+      recoverAc({ force_ir }),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: AC_STATE_QUERY_KEY }),
+      ]);
     },
   });
 }

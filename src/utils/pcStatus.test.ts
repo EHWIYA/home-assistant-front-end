@@ -1,8 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { requestPcWake } from "./pcStatus";
+import { getPcNetworkStatusLabel, requestPcWake } from "./pcStatus";
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe("PC boot/network wording", () => {
+  it("keeps LAN boot confirmation distinct from plug state", () => {
+    expect(getPcNetworkStatusLabel(true, "idle")).toBe("부팅/네트워크 확인됨");
+    expect(getPcNetworkStatusLabel(false, "polling")).toContain("패킷 전송됨");
+    expect(getPcNetworkStatusLabel(false, "unconfirmed")).toContain(
+      "부팅이 아직 확인되지 않았습니다",
+    );
+    expect(getPcNetworkStatusLabel(false, "idle")).toBe("PC 네트워크 응답 없음");
+  });
 });
 
 describe("PC Wake-on-LAN confirmation", () => {

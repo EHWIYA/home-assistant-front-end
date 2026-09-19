@@ -6,8 +6,10 @@ import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import { useToast } from "@/components/toast/ToastProvider";
 import { HOME_DOMAIN_THEME } from "@/features/home/utils/homeDomainTheme";
 import { useMutationErrorToast } from "@/hooks/useMutationErrorToast";
+import { usePcBootConfirmation } from "@/hooks/useStatus";
 import { TOAST_DEVICE, TOAST_GUIDE } from "@/utils/toastMessages";
 import {
+  getPcNetworkStatusLabel,
   getPcStatusLabel,
   isPcControllable,
   requestPcToggle,
@@ -27,6 +29,8 @@ export function PcControlPanel({ pc, mutation, wakeMutation }: PcControlPanelPro
   const pcOn = pc.switch === "on";
   const controllable = isPcControllable(pc);
   const { showToast } = useToast();
+  const bootConfirmation = usePcBootConfirmation();
+  const wakeBusy = wakeMutation.isPending || bootConfirmation.state === "polling";
 
   useMutationErrorToast(mutation, TOAST_DEVICE.pc, TOAST_GUIDE.retry, "control");
   useMutationErrorToast(wakeMutation, TOAST_DEVICE.pc, TOAST_GUIDE.retry, "control");
@@ -37,13 +41,14 @@ export function PcControlPanel({ pc, mutation, wakeMutation }: PcControlPanelPro
   };
 
   const wake = () => {
-    if (wakeMutation.isPending) return;
+    if (wakeBusy) return;
     requestPcWake(() => {
       wakeMutation.mutate(undefined, {
         onSuccess: () => {
-          showToast("깨우기 패킷을 보냈습니다. PC 부팅 상태는 별도로 확인해 주세요.", {
+          showToast("깨우기 패킷을 보냈습니다. PC 부팅/네트워크 확인을 시작합니다.", {
             category: "control",
           });
+          bootConfirmation.start();
         },
       });
     });
@@ -130,14 +135,34 @@ export function PcControlPanel({ pc, mutation, wakeMutation }: PcControlPanelPro
 
       <div className={styles.wakeBlock} role="group" aria-labelledby="pc-wake-title">
         <h3 id="pc-wake-title" className={styles.wakeTitle}>PC 깨우기</h3>
+        <div className={styles.networkStatus} aria-live="polite">
+          <span
+            className={`${styles.networkDot} ${
+              pc.network_reachable || bootConfirmation.state === "confirmed"
+                ? styles.networkDotOn
+                : styles.networkDotOff
+            }`.trim()}
+            aria-hidden
+          />
+          <div>
+            <p className={styles.networkTitle}>PC 네트워크 · 부팅 확인</p>
+            <p className={styles.networkText}>
+              {getPcNetworkStatusLabel(pc.network_reachable, bootConfirmation.state)}
+            </p>
+          </div>
+        </div>
         <button
           type="button"
           className={styles.wakeBtn}
-          disabled={wakeMutation.isPending}
+          disabled={wakeBusy}
           aria-describedby="pc-wake-hint"
           onClick={wake}
         >
-          {wakeMutation.isPending ? "패킷 전송 중…" : "PC 깨우기 (WoL)"}
+          {wakeMutation.isPending
+            ? "패킷 전송 중…"
+            : bootConfirmation.state === "polling"
+              ? "부팅 확인 중…"
+              : "PC 깨우기 (WoL)"}
         </button>
         <p id="pc-wake-hint" className={styles.hint}>
           PC가 꺼져 있을 때 사용하세요. 콘센트 전원은 변경하지 않고 깨우기 패킷만 보냅니다.

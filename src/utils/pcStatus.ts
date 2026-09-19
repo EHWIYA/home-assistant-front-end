@@ -1,4 +1,5 @@
 import type { PcStatus } from "@/api/types";
+import type { PcBootConfirmationState } from "./pcBootConfirmation";
 
 export const PC_OFF_CONFIRM =
   "콘센트 전원을 끕니다. PC가 안전하게 종료되지 않을 수 있습니다.";
@@ -20,6 +21,22 @@ export function isPcControllable(pc: PcStatus): boolean {
     pc.switch !== "unavailable" &&
     pc.switch !== "unknown"
   );
+}
+
+export function getPcNetworkStatusLabel(
+  networkReachable: boolean,
+  confirmation: PcBootConfirmationState,
+): string {
+  if (networkReachable || confirmation === "confirmed") {
+    return "부팅/네트워크 확인됨";
+  }
+  if (confirmation === "polling") {
+    return "패킷 전송됨 · 부팅/네트워크 확인 중…";
+  }
+  if (confirmation === "unconfirmed") {
+    return "패킷 전송됨 · 부팅이 아직 확인되지 않았습니다.";
+  }
+  return "PC 네트워크 응답 없음";
 }
 
 export function requestPcToggle(

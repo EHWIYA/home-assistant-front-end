@@ -212,6 +212,50 @@
   color: #d1c4e9;
 }
 
+.networkStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.networkDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.networkDotOn {
+  background: #66bb6a;
+  box-shadow: 0 0 0 2px rgba(102, 187, 106, 0.22);
+}
+
+.networkDotOff {
+  background: #6b7280;
+}
+
+.networkTitle,
+.networkText {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.networkTitle {
+  font-size: 0.75rem;
+  color: #9aa0a6;
+}
+
+.networkText {
+  margin-top: 0.125rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
 .wakeBtn {
   display: block;
   width: 100%;

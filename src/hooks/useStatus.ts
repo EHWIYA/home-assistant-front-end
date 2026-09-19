@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchAcState,
   fetchAcThresholds,
@@ -28,6 +28,10 @@ import {
   usePollingIntervalMs,
 } from "@/hooks/usePollingInterval";
 import { useStatusStream } from "@/hooks/useStatusStream";
+import {
+  pollPcBootConfirmation,
+  type PcBootConfirmationState,
+} from "@/utils/pcBootConfirmation";
 
 export const STATUS_QUERY_KEY = ["status"] as const;
 export const AC_STATE_QUERY_KEY = ["ac-state"] as const;
@@ -387,4 +391,46 @@ export function usePcToggle() {
 
 export function usePcWake() {
   return useMutation({ mutationFn: wakePc });
+}
+
+export function usePcBootConfirmation(): {
+  state: PcBootConfirmationState;
+  start: () => void;
+} {
+  const queryClient = useQueryClient();
+  const [state, setState] = useState<PcBootConfirmationState>("idle");
+  const controllerRef = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      const controller = controllerRef.current;
+      controllerRef.current = null;
+      controller?.abort();
+    },
+    [],
+  );
+
+  const start = useCallback(() => {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setState("polling");
+
+    void pollPcBootConfirmation(
+      () =>
+        queryClient.fetchQuery({
+          queryKey: STATUS_QUERY_KEY,
+          queryFn: fetchStatus,
+          staleTime: 0,
+        }),
+      { signal: controller.signal },
+    ).then((result) => {
+      if (controllerRef.current !== controller) return;
+      controllerRef.current = null;
+      if (result === "confirmed") setState("confirmed");
+      if (result === "timeout") setState("unconfirmed");
+    });
+  }, [queryClient]);
+
+  return { state, start };
 }

@@ -76,6 +76,8 @@ export interface PcStatus {
   energy_today_kwh: number;
   energy_month_kwh: number;
   online: boolean;
+  /** HA ping 기준 PC LAN 응답. Tapo cloud/콘센트 상태와 별개 */
+  network_reachable: boolean;
   wifi_signal_level: number;
   overload: boolean;
   /** power_w >= PC_POWER_THRESHOLD_W(기본 50W) */

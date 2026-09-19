@@ -266,6 +266,10 @@ export interface PcActionResponse {
   switch: OnOffAction;
 }
 
+export interface PcWakeResponse {
+  ok: boolean;
+}
+
 /** GET /api/v1/strip/state · POST /api/v1/strip/channels/{n} */
 export type StripChannelNumber = 1 | 2 | 3 | 4;
 

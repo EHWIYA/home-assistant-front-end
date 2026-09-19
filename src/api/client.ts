@@ -15,6 +15,7 @@ import type {
   AcThresholdsResponse,
   PcActionRequest,
   PcActionResponse,
+  PcWakeResponse,
   PlugActionRequest,
   StatusResponse,
 } from "./types";
@@ -303,4 +304,12 @@ export async function setPc(
     method: "POST",
     body: JSON.stringify(action),
   });
+}
+
+export async function wakePc(): Promise<PcWakeResponse> {
+  if (shouldUseMock()) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { ok: true };
+  }
+  return apiRequest<PcWakeResponse>("/api/v1/pc/wake", { method: "POST" });
 }

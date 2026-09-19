@@ -8,6 +8,7 @@ import {
   setAc,
   setPc,
   setPlug,
+  wakePc,
 } from "@/api/client";
 import type {
   AcActionRequest,
@@ -382,4 +383,8 @@ export function usePcToggle() {
       void queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
     },
   });
+}
+
+export function usePcWake() {
+  return useMutation({ mutationFn: wakePc });
 }

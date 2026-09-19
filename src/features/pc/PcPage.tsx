@@ -1,6 +1,6 @@
 import { StatusQueryGate } from "@/components/status/StatusQueryGate";
 import { StatusFooter } from "@/components/status/StatusFooter";
-import { usePcToggle } from "@/hooks/useStatus";
+import { usePcToggle, usePcWake } from "@/hooks/useStatus";
 import shared from "@/components/status/statusPage.module.css";
 import { PcControlPanel } from "./components/PcControlPanel";
 import { PcEnergyPanel } from "./components/PcEnergyPanel";
@@ -8,6 +8,7 @@ import { PcStatusHero } from "./components/PcStatusHero";
 
 export function PcPage() {
   const pcMutation = usePcToggle();
+  const pcWakeMutation = usePcWake();
 
   return (
     <StatusQueryGate loadingMessage="PC 상태 불러오는 중…">
@@ -19,7 +20,7 @@ export function PcPage() {
                 <PcStatusHero pc={data.pc} />
                 <PcEnergyPanel pc={data.pc} />
               </div>
-              <PcControlPanel pc={data.pc} mutation={pcMutation} />
+              <PcControlPanel pc={data.pc} mutation={pcMutation} wakeMutation={pcWakeMutation} />
             </div>
           ) : (
             <p className={shared.message}>

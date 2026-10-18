@@ -88,6 +88,7 @@ export function HomeDomainSummary({
             <PowerLevelBars
               heights={getPowerLevelHeights(status.plug.power_w)}
               color={acTheme.accent}
+              label="현재 전력 수준"
             />
           </div>
         }
@@ -108,9 +109,10 @@ export function HomeDomainSummary({
                 color={pcTheme.accent}
                 label={`전력 ${formatPowerW(status.pc.power_w)}`}
               />
-              <PowerLevelBars
-                heights={getPowerLevelHeights(status.pc.power_w)}
-                color={pcTheme.accent}
+            <PowerLevelBars
+              heights={getPowerLevelHeights(status.pc.power_w)}
+              color={pcTheme.accent}
+              label="현재 전력 수준"
               />
             </div>
           }

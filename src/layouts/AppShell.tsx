@@ -27,6 +27,9 @@ export function AppShell() {
 
   return (
     <div className={styles.shell}>
+      <a className="skipLink" href="#main-content">
+        본문으로 건너뛰기
+      </a>
       <AcPushForegroundListener />
       <PushAlertSyncBootstrap />
       <MainTabNav layout="side" />
@@ -35,7 +38,9 @@ export function AppShell() {
         <AppHeader />
 
         <main
+          id="main-content"
           ref={mainRef}
+          tabIndex={-1}
           className={`${styles.main} ${hideTabBar ? styles.mainNoTabBar : ""}`.trim()}
           {...handlers}
         >

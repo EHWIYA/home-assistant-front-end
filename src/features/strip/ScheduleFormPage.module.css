@@ -36,7 +36,7 @@
 }
 
 .label {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #9aa0a6;
 }
@@ -52,7 +52,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: #9aa0a6;
   cursor: pointer;
@@ -91,13 +91,13 @@
 
 .errorDetail {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: #e57373;
 }
 
 .hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: #9aa0a6;
 }
 

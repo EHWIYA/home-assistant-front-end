@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import moonSvg from "cupertino-icons-svg/svg/moon_fill.svg?raw";
 import type { CSSProperties } from "react";
 import { CupertinoIcon } from "@/components/icons/CupertinoIcon";
 import {
@@ -6,6 +7,7 @@ import {
   type HomeDomainKey,
 } from "@/features/home/utils/homeDomainTheme";
 import { MAIN_TABS, type MainTabId } from "@/routes/tabs";
+import { paths } from "@/routes/paths";
 import styles from "./SettingsQuickLinksPanel.module.css";
 
 const TAB_THEME: Record<Exclude<MainTabId, "settings">, HomeDomainKey> = {
@@ -53,6 +55,22 @@ export function SettingsQuickLinksPanel() {
             </Link>
           );
         })}
+        <Link
+          to={paths.mood}
+          className={styles.tile}
+          style={
+            {
+              "--tile-accent": HOME_DOMAIN_THEME.mood.accent,
+              "--tile-soft": HOME_DOMAIN_THEME.mood.accentSoft,
+            } as CSSProperties
+          }
+        >
+          <span className={styles.iconPill}>
+            <CupertinoIcon svg={moonSvg} className="" />
+          </span>
+          <span className={styles.tileLabel}>무드등</span>
+          <span className={styles.tileDesc}>전원·밝기·색상</span>
+        </Link>
       </div>
     </section>
   );

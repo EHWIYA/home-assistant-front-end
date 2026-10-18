@@ -21,6 +21,8 @@ export function formatExecutedAt(iso: string): string {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
+      timeZone: "Asia/Seoul",
+      timeZoneName: "short",
     });
   } catch {
     return iso;

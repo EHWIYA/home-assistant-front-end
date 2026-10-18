@@ -261,10 +261,10 @@ function RunsPanel({ loading, error, runs }: RunsPanelProps) {
         >
           {run.scheduled_at ? (
             <>
-              예정 {formatExecutedAt(run.scheduled_at)} → 실행{" "}
+              예정 <time dateTime={run.scheduled_at}>{formatExecutedAt(run.scheduled_at)}</time> → 실행{" "}
             </>
           ) : null}
-          {formatExecutedAt(run.executed_at)} —{" "}
+          <time dateTime={run.executed_at}>{formatExecutedAt(run.executed_at)}</time> —{" "}
           {run.success ? "성공" : "실패"}
           {run.detail ? ` (${run.detail})` : ""}
         </li>

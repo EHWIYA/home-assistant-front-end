@@ -34,6 +34,11 @@ import { WeekdayPicker } from "./components/WeekdayPicker";
 import shared from "@/components/status/statusPage.module.css";
 import styles from "./ScheduleFormPage.module.css";
 
+type ValidationError = {
+  field: "name" | "time" | "days" | "preset" | "action";
+  message: string;
+};
+
 export function ScheduleFormPage() {
   const { n, id } = useParams<{ n?: string; id?: string }>();
   const routeChannel = parseChannelRouteParam(n);
@@ -65,7 +70,7 @@ export function ScheduleFormPage() {
   const [includeSubstitute, setIncludeSubstitute] = useState(
     DEFAULT_SCHEDULE_FORM.include_substitute,
   );
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<ValidationError | null>(null);
 
   const editSchedule = useMemo(() => {
     const list = schedulesQuery.data;
@@ -137,23 +142,26 @@ export function ScheduleFormPage() {
   function buildBody(): ScheduleCreateBody | null {
     const trimmed = name.trim();
     if (!trimmed) {
-      setValidationError("이름을 입력하세요.");
+      setValidationError({ field: "name", message: "이름을 입력하세요." });
       return null;
     }
     if (!isValidTimeKst(timeKst)) {
-      setValidationError("시간 형식이 올바르지 않습니다.");
+      setValidationError({ field: "time", message: "시간 형식이 올바르지 않습니다." });
       return null;
     }
     if (daysOfWeek.length === 0) {
-      setValidationError("요일을 하나 이상 선택하세요.");
+      setValidationError({ field: "days", message: "요일을 하나 이상 선택하세요." });
       return null;
     }
     if (actionType === "preset" && !presetName.trim()) {
-      setValidationError("프리셋을 선택하세요.");
+      setValidationError({ field: "preset", message: "프리셋을 선택하세요." });
       return null;
     }
     if (routeChannel != null && actionType === "preset") {
-      setValidationError("채널 스케줄 화면에서는 채널 제어만 등록할 수 있습니다.");
+      setValidationError({
+        field: "action",
+        message: "채널 스케줄 화면에서는 채널 제어만 등록할 수 있습니다.",
+      });
       return null;
     }
     setValidationError(null);
@@ -268,18 +276,31 @@ export function ScheduleFormPage() {
               id="schedule-name"
               className={styles.input}
               value={name}
+              aria-invalid={validationError?.field === "name"}
+              aria-describedby={
+                validationError?.field === "name" ? "schedule-name-error" : undefined
+              }
               onChange={(e) => setName(e.target.value)}
               placeholder="예: 아침 콘센트"
               maxLength={80}
             />
+            {validationError?.field === "name" ? (
+              <p id="schedule-name-error" className={styles.errorDetail} role="alert">
+                {validationError.message}
+              </p>
+            ) : null}
           </div>
 
           {routeChannel == null ? (
             <div className={styles.field}>
-              <span className={styles.label}>동작 유형</span>
+              <label className={styles.label} htmlFor="schedule-action-type">
+                동작 유형
+              </label>
               <select
+                id="schedule-action-type"
                 className={styles.select}
                 value={actionType}
+                aria-invalid={validationError?.field === "action"}
                 onChange={(e) =>
                   setActionType(e.target.value as ScheduleActionType)
                 }
@@ -290,6 +311,11 @@ export function ScheduleFormPage() {
               <p className={styles.hint}>
                 프리셋 스케줄은 채널별 목록에 표시되지 않습니다.
               </p>
+              {validationError?.field === "action" ? (
+                <p className={styles.errorDetail} role="alert">
+                  {validationError.message}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
@@ -302,8 +328,11 @@ export function ScheduleFormPage() {
             ) : (
               <div className={styles.row}>
                 <div className={styles.field}>
-                  <span className={styles.label}>채널</span>
+                  <label className={styles.label} htmlFor="schedule-channel">
+                    채널
+                  </label>
                   <select
+                    id="schedule-channel"
                     className={styles.select}
                     value={channelNumber}
                     onChange={(e) =>
@@ -327,10 +356,17 @@ export function ScheduleFormPage() {
             )
           ) : (
             <div className={styles.field}>
-              <span className={styles.label}>프리셋</span>
+              <label className={styles.label} htmlFor="schedule-preset">
+                프리셋
+              </label>
               <select
+                id="schedule-preset"
                 className={styles.select}
                 value={presetName}
+                aria-invalid={validationError?.field === "preset"}
+                aria-describedby={
+                  validationError?.field === "preset" ? "schedule-preset-error" : undefined
+                }
                 onChange={(e) => setPresetName(e.target.value)}
               >
                 <option value="">선택…</option>
@@ -340,17 +376,32 @@ export function ScheduleFormPage() {
                   </option>
                 ))}
               </select>
+              {validationError?.field === "preset" ? (
+                <p id="schedule-preset-error" className={styles.errorDetail} role="alert">
+                  {validationError.message}
+                </p>
+              ) : null}
             </div>
           )}
 
           <div className={styles.field}>
             <span className={styles.label}>시간</span>
             <TimeKstPicker12h value={timeKst} onChange={setTimeKst} />
+            {validationError?.field === "time" ? (
+              <p className={styles.errorDetail} role="alert">
+                {validationError.message}
+              </p>
+            ) : null}
           </div>
 
           <div className={styles.field}>
             <span className={styles.label}>반복 요일</span>
             <WeekdayPicker value={daysOfWeek} onChange={setDaysOfWeek} />
+            {validationError?.field === "days" ? (
+              <p className={styles.errorDetail} role="alert">
+                {validationError.message}
+              </p>
+            ) : null}
           </div>
 
           <HolidayOptions
@@ -360,10 +411,11 @@ export function ScheduleFormPage() {
             onIncludeSubstituteChange={setIncludeSubstitute}
           />
 
-          {validationError ? (
-            <p className={styles.errorDetail}>{validationError}</p>
+          {mutationError ? (
+            <p className={styles.errorDetail} role="alert">
+              저장하지 못했습니다. 네트워크 연결을 확인한 뒤 다시 시도하세요.
+            </p>
           ) : null}
-          {mutationError ? <p className={styles.errorDetail}>저장 실패</p> : null}
 
           <div className={styles.actions}>
             <Button type="submit" fullWidth disabled={pending}>

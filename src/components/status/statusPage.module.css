@@ -121,14 +121,14 @@
 
 .updated {
   margin: 0.5rem 0 0;
-  font-size: 0.75rem;
-  color: #6b7280;
+  font-size: 0.875rem;
+  color: #9aa0a6;
   text-align: center;
 }
 
 .fetching {
-  font-size: 0.75rem;
-  color: #6b7280;
+  font-size: 0.875rem;
+  color: #9aa0a6;
   text-align: center;
   margin: 0;
 }

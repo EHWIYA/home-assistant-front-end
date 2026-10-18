@@ -54,6 +54,23 @@ button {
   outline-offset: 2px;
 }
 
+.skipLink {
+  position: fixed;
+  z-index: 100;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 8px;
+  background: #e8eaed;
+  color: #0f1419;
+  font-weight: 700;
+  transform: translateY(-200%);
+}
+
+.skipLink:focus-visible {
+  transform: translateY(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

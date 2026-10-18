@@ -68,7 +68,7 @@ export function SettingsAccessPanel() {
         rel="noopener noreferrer"
       >
         <CupertinoIcon svg={arrowUpRightSvg} className={styles.ctaIcon} />
-        <span>iot.iwhya.kr 열기</span>
+        <span>iot.iwhya.kr 열기 (새 창)</span>
       </a>
 
       <ol className={styles.steps}>

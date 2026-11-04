@@ -10,6 +10,47 @@ Home Assistant 기반 기기 제어 기능을 React PWA와 FastAPI API로 연결
 - PC 콘센트 제어
 - 멀티탭 개별 제어와 스케줄 등록·수정·삭제
 
+## 담당한 구현과 문제 해결
+
+프런트엔드의 API 응답 처리, 에어컨 상태 합성, 홈·상세 화면의 상태 표시를 보완했습니다.
+아래 사례는 EHWIYA 계정의 변경 이력과 현재 코드에서 확인할 수 있습니다.
+
+### 1. 같은 에어컨이 화면마다 다르게 표시되는 문제
+
+실시간 `/status`와 폴링으로 읽는 `/ac/state`가 서로 다른 값을 줄 때,
+홈 요약과 상세 화면에서 가동 상태가 다르게 보이는 문제가 있었습니다.
+
+각 화면에서 따로 판단하던 상태를 `resolveAcStateView()`로 합성했습니다.
+운전 설정은 SSE 상태를 우선하고, 상세 응답의 논리적 저전력 상태는 별도로 다룹니다.
+값을 단순히 한쪽 응답으로 덮어쓰기보다, 신호의 의미에 따라 우선순위를 정했습니다.
+
+- **반영 내용:** 합성된 상태를 제어 UI와 홈 요약에 연결하고 운전 설정과 가동 표시를 구분
+- **근거:** [상태 합성 수정 커밋](https://github.com/EHWIYA/home-assistant-front-end/commit/f860ceb5099870c59f2fbc60b48ac6fd22889638) · [상태 합성 코드](src/utils/acStateView.ts)
+
+### 2. 오래된 전력값을 근거로 ‘꺼짐’을 확정하는 문제
+
+전력값이 낮더라도 오래된 측정값이거나 가동 추정 신뢰도가 낮으면,
+이를 실제 전원 꺼짐과 같은 상태로 표시하기 어렵습니다.
+
+`power_stale`과 `ac_running_confidence`를 상태 판단에 반영했습니다.
+측정값이 오래됐거나 신뢰도가 `low`이면 ‘꺼짐’ 대신 ‘확인 중’을 표시합니다.
+또한 SSE 응답에서 freshness 필드가 빠졌을 때 이전 메타데이터를 병합하도록 구성했습니다.
+
+- **기술적 판단:** 가동 여부와 데이터 신뢰도를 구분하고, 불확실성을 화면에 표현
+- **검증 코드:** stale·low 조건, 홈 요약의 ‘확인 중’ 표시, 저전력 논리 상태, SSE 필드 누락에 대한 [단위 테스트](src/utils/acFreshness.test.ts)
+- **근거:** [stale·신뢰도 반영 커밋](https://github.com/EHWIYA/home-assistant-front-end/commit/ffe6c14f0a7138fafa3f764e5f80f0ba4cb33eee) · [freshness 판단 코드](src/utils/acFreshness.ts)
+
+## 설계 선택
+
+| 선택 | 코드에 반영한 방식 |
+| --- | --- |
+| 화면과 기기 연동 분리 | React PWA는 `iot-api`만 호출하고 Home Assistant 연동은 API 경계 뒤에 둠 |
+| 화면별 판단 중복 축소 | 상태 합성과 신뢰도 판단을 공통 함수로 분리 |
+| 데이터 불확실성 표시 | 낮은 신뢰도를 전원 꺼짐으로 바꾸지 않고 ‘확인 중’으로 표현 |
+
+위 테스트는 상태 판단 함수와 표시 결과를 확인하는 코드입니다.
+실기기 전체 동작이나 운영 중 오표시 발생률을 측정한 결과와는 구분합니다.
+
 ## 구조와 기술
 
 ```text
@@ -136,4 +177,5 @@ src/hooks/        # useStatus
 `public/icons/` — SVG 원본(`icon.svg`)에서 `npm run icons`로 192/512/apple-touch PNG 생성.
 
 </details>
+
 

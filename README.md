@@ -1,6 +1,42 @@
-# Hwiya IoT Web (PWA)
+# Hwiya IoT · 모바일 기기 제어 PWA
 
-모바일 퍼스트 PWA — [iot-api](https://iot-api.iwhya.kr)만 호출합니다. Home Assistant REST는 프론트에서 사용하지 않습니다.
+에어컨·PC 콘센트·멀티탭의 상태 조회와 제어를 한 화면 흐름으로 묶은 모바일 웹입니다.
+Home Assistant 기반 기기 제어 기능을 React PWA와 FastAPI API로 연결합니다.
+
+## 주요 기능
+
+- 홈에서 기기 상태를 요약하고 빠르게 제어
+- 에어컨과 플러그 상태 조회 및 제어
+- PC 콘센트 제어
+- 멀티탭 개별 제어와 스케줄 등록·수정·삭제
+
+## 구조와 기술
+
+```text
+React PWA → iot-api (FastAPI) → Home Assistant
+```
+
+프런트엔드는 `iot-api`만 호출합니다. Home Assistant REST를 직접 호출하지 않도록
+화면과 기기 연동의 경계를 분리했습니다.
+
+| 영역 | 기술 |
+| --- | --- |
+| 화면 | React, TypeScript, Vite, CSS Modules |
+| API 데이터 관리 | TanStack Query |
+| 모바일 웹 | vite-plugin-pwa |
+| 연동 서버 | FastAPI, Home Assistant |
+
+## 코드와 문서
+
+- [화면별 구현](src/features/)
+- [API 클라이언트·타입](src/api/)
+- [API 계약](docs/api.md)
+- [배포 설정 안내](docs/github-setup.md)
+
+운영 화면은 Tailscale 접속이 필요한 환경입니다. 공개 방문자는 코드와 문서로 구조를 확인할 수 있습니다.
+
+<details>
+<summary>개발·환경 설정·배포 안내</summary>
 
 ## 화면
 
@@ -98,3 +134,6 @@ src/hooks/        # useStatus
 ## 아이콘
 
 `public/icons/` — SVG 원본(`icon.svg`)에서 `npm run icons`로 192/512/apple-touch PNG 생성.
+
+</details>
+

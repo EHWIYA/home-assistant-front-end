@@ -1,0 +1,30 @@
+[Unit]
+Description=IoT frontend explicitly approved one-off verification
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 -I -B /usr/local/libexec/iot-web-publisher/oneoff_verify.py watch
+ExecStopPost=/usr/bin/python3 -I -B /usr/local/libexec/iot-web-publisher/oneoff_verify.py cleanup
+RuntimeMaxSec=1800
+TimeoutStopSec=180
+KillMode=control-group
+UMask=0077
+MemoryMax=768M
+CPUQuota=100%
+TasksMax=96
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE CAP_FOWNER
+RestrictSUIDSGID=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/iot-web-publisher/v2 /mnt/HDD500GB/backups/managed/staging/front-release-store /etc/iot-web-publisher /home/iwh/.cache/nas-workload/exclusive.lock
+ReadOnlyPaths=/etc/iot-web-publisher/policy.json /etc/iot-web-publisher/recovery-first.json
+InaccessiblePaths=/home/iwh/apps/ledger-weight /home/iwh/apps/iot/api /home/iwh/.env /home/iwh/.ssh
+StandardOutput=journal
+StandardError=journal

@@ -1,4 +1,4 @@
-# 기본은 기존 연결/수동 보관. FRONT_AUTO_PIPELINE_ENABLED=true일 때도 enqueue만 수행. NAS auto gate는 별도다.
+# 기본은 기존 연결/수동 보관. 상시 flag 또는 명시한 단일 SHA도 enqueue만 수행. NAS auto gate는 별도다.
 name: IoT Web OIDC and stage-only verification
 
 on:
@@ -61,7 +61,7 @@ jobs:
         run: python3 .github/scripts/check-ci-oidc.py transport
 
   build-stage-artifact:
-    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.stage_only) || (github.event_name == 'push' && vars.FRONT_AUTO_PIPELINE_ENABLED == 'true'))
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.stage_only) || (github.event_name == 'push' && (vars.FRONT_AUTO_PIPELINE_ENABLED == 'true' || (vars.FRONT_V2_VERIFY_SHA != '' && github.sha == vars.FRONT_V2_VERIFY_SHA))))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -102,7 +102,7 @@ jobs:
           retention-days: 7
 
   verify-input-profile:
-    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.stage_only && inputs.verify_build_inputs) || (github.event_name == 'push' && vars.FRONT_AUTO_PIPELINE_ENABLED == 'true'))
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.stage_only && inputs.verify_build_inputs) || (github.event_name == 'push' && (vars.FRONT_AUTO_PIPELINE_ENABLED == 'true' || (vars.FRONT_V2_VERIFY_SHA != '' && github.sha == vars.FRONT_V2_VERIFY_SHA))))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -235,7 +235,7 @@ jobs:
 
 
   enqueue-release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.FRONT_AUTO_PIPELINE_ENABLED == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.FRONT_AUTO_PIPELINE_ENABLED == 'true' || (vars.FRONT_V2_VERIFY_SHA != '' && github.sha == vars.FRONT_V2_VERIFY_SHA))
     needs: [oidc-connect, build-stage-artifact, verify-input-profile, stage-only]
     runs-on: ubuntu-latest
     timeout-minutes: 5

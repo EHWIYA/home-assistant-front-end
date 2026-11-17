@@ -21,6 +21,26 @@ class Backend:
   if request['sha']!=self.head:raise PermissionError('stale')
   return {'profile':gate.profile_zip(raw),'checked_at':time.monotonic(),'evidence':{'scope':'fixture','source':request['sha']}}
 class CoordinatorTests(unittest.TestCase):
+ def test_enqueue_rechecks_closed_window_inside_queue_lock(self):
+  import contextlib
+  @contextlib.contextmanager
+  def close_window(layout,name):
+   cfg=dict(self.config,allow_enqueue=False);gate.write_json(layout.config,cfg,layout,replace=True);yield
+  with mock.patch.object(gate,'management_lock',close_window),self.assertRaises(PermissionError):self.submit('a',100)
+  self.assertEqual(gate.queue_rows(self.layout),[])
+  self.assertFalse((self.layout.store/'queue-payloads').exists())
+ def test_exact_request_requires_closed_window_and_rejects_other_pending(self):
+  self.submit('a',100);request={'run_id':100,'attempt':1,'sha':'a'*40}
+  with self.assertRaises(PermissionError):self.tick(expected_request=request)
+  self.submit('b',101);gate.write_json(self.layout.config,dict(self.config,allow_enqueue=False),self.layout,replace=True)
+  with self.assertRaises(PermissionError):self.tick(expected_request=request)
+  self.assertEqual(self.build_calls,0);self.assertEqual(self.exec_calls,0)
+ def test_exact_request_promotes_only_approved_triple(self):
+  self.submit('a',100);gate.write_json(self.layout.config,dict(self.config,allow_enqueue=False),self.layout,replace=True)
+  with self.assertRaises(PermissionError):self.tick(expected_request={'run_id':100,'attempt':2,'sha':'a'*40})
+  result=self.tick(expected_request={'run_id':100,'attempt':1,'sha':'a'*40})
+  self.assertTrue(result['ok']);self.assertEqual(self.exec_calls,1)
+
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name);self.mask=os.umask(0o022);self.addCleanup(os.umask,self.mask)
   self.layout=engine.Layout.fixture(self.root,trust_uid=os.getuid(),live_uid=os.getuid());l=self.layout

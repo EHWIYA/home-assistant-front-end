@@ -113,6 +113,8 @@ def enqueue(layout,value,raw):
  verify_store(layout)
  value=request_value(value);profile_zip(raw);qid=core.digest(json.dumps(value,sort_keys=True).encode())[:32]
  with management_lock(layout,'queue'):
+  # 창을 닫는 root 변경과 잠금 진입 전 요청 사이의 경합에서도 접수를 막는다.
+  if not engine.read_config(layout,require_enabled=False)[0]['allow_enqueue']:raise PermissionError('잠금 내 요청 접수 비활성')
   managed_dir(layout.base/'queue',layout);managed_dir(layout.store/'queue-payloads',layout)
   path=layout.base/'queue'/(qid+'.json')
   if path.exists():
@@ -276,12 +278,21 @@ def commit_result(layout,rid,result,*,recovered=False,fault=None):
   config,_=engine.read_config(layout,require_enabled=False);config.update(auto_enabled=False,allow_enqueue=False);write_json(layout.config,config,layout,replace=True)
  return receipt
 
-def process_one(layout,*,backend=None,builder=None,executor=None,fault=None,cleanup=None):
+def process_one(layout,*,backend=None,builder=None,executor=None,fault=None,cleanup=None,expected_request=None):
  owner(layout);config,_=engine.read_config(layout,require_enabled=False)
  if not config['auto_enabled']:return {'ok':True,'state':'disabled','deployment_confirmed':False}
+ expected_request=None if expected_request is None else request_value(expected_request)
+ expected_qid=None if expected_request is None else core.digest(json.dumps(expected_request,sort_keys=True).encode())[:32]
  verify_store(layout)
  backend=backend or GitHub();builder=builder or (lambda request,work,profile:default_builder(layout,request,work,profile));executor=executor or (lambda rid,action='execute':default_executor(layout,rid,action))
  with management_lock(layout,'controller'):
+  expected_row=None
+  if expected_request is not None:
+   with management_lock(layout,'queue'):
+    if engine.read_config(layout,require_enabled=False)[0]['allow_enqueue']:raise PermissionError('단발 검증 전 접수 창을 닫아야 함')
+    rows=queue_rows(layout);matches=[r for r in rows if r['request_id']==expected_qid and r['request']==expected_request]
+    if len(matches)!=1 or any(r['request_id']!=expected_qid and r['state'] in {'queued','waiting','building','executing'} for r in rows):raise PermissionError('승인한 단발 요청 이외의 작업')
+    expected_row=matches[0]
   # 미완료 transaction이 있으면 최신 요청보다 먼저 현재 slot을 복구/확정한다.
   intents=layout.base/'intents'
   if intents.exists():
@@ -293,6 +304,7 @@ def process_one(layout,*,backend=None,builder=None,executor=None,fault=None,clea
    if len(pending)>1:raise PermissionError('복수 미완료 transaction')
    if pending:
     rid=pending[0]
+    if expected_row is not None and expected_row['release_id']!=rid:raise PermissionError('다른 단발 intent 복구 거부')
     try:maintenance_wait(layout,rid)
     except Pending:return {'ok':False,'state':'waiting','release_id':rid,'error':'WaitingMaintenance','deployment_confirmed':False}
     receipts=layout.store/'releases'/rid/'receipts'
@@ -319,7 +331,7 @@ def process_one(layout,*,backend=None,builder=None,executor=None,fault=None,clea
      import continuous_build
      continuous_build.cleanup_build(rid,continuous_build.load_config())
     row.update(state='interrupted',result={'error':'InterruptedBuild','deployment_confirmed':False});write_json(layout.base/'queue'/(row['request_id']+'.json'),row,layout,replace=True)
-  candidates=[r for r in queue_rows(layout) if r['state'] in {'queued','waiting'} and r.get('retry_at_ns',0)<=time.time_ns()]
+  candidates=[r for r in queue_rows(layout) if r['state'] in {'queued','waiting'} and r.get('retry_at_ns',0)<=time.time_ns() and (expected_qid is None or r['request_id']==expected_qid)]
   if not candidates:return {'ok':True,'state':'idle','deployment_confirmed':False}
   row=max(candidates,key=lambda r:r['created_at_ns']);qid=row['request_id'];request=row['request'];path=layout.base/'queue'/(qid+'.json')
   try:

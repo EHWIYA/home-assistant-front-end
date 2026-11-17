@@ -32,11 +32,20 @@ class EnqueueTests(unittest.TestCase):
  def test_manual_stage_and_readiness_never_enqueue_with_auto_flag_on(self):
   import re,yaml
   value=yaml.load((Path(__file__).parents[1]/'workflows/deploy.yml').read_text(),Loader=yaml.BaseLoader)
-  def check(name,event,stage=False,verify=False,flag='true',needs=None):
-   text=value['jobs'][name]['if'];values={'github.event_name':event,'github.ref':'refs/heads/main','vars.FRONT_AUTO_PIPELINE_ENABLED':flag,'inputs.stage_only':stage,'inputs.verify_build_inputs':verify}
+  def check(name,event,stage=False,verify=False,flag='true',needs=None,sha='a'*40,once='',ref='refs/heads/main'):
+   text=value['jobs'][name]['if'];values={'github.event_name':event,'github.ref':ref,'github.sha':sha,'vars.FRONT_AUTO_PIPELINE_ENABLED':flag,'vars.FRONT_V2_VERIFY_SHA':once,'inputs.stage_only':stage,'inputs.verify_build_inputs':verify}
    for key,item in values.items():text=text.replace(key,repr(item))
    text=re.sub(r"needs\['([^']+)'\]\.result",lambda m:repr((needs or {}).get(m[1],'success')),text);text=text.replace('&&',' and ').replace('||',' or ');text=re.sub(r'!(?!=)',' not ',text)
    return bool(eval(text,{'__builtins__':{}},{'always':lambda:True}))
   self.assertTrue(check('build-stage-artifact','workflow_dispatch',stage=True));self.assertFalse(check('verify-input-profile','workflow_dispatch',stage=True));self.assertTrue(check('stage-only','workflow_dispatch',stage=True,needs={'verify-input-profile':'skipped'}));self.assertFalse(check('enqueue-release','workflow_dispatch',stage=True))
   self.assertFalse(check('build-stage-artifact','workflow_dispatch'));self.assertFalse(check('enqueue-release','workflow_dispatch'));self.assertFalse(check('enqueue-release','push',flag=''));self.assertTrue(check('enqueue-release','push'))
+  for job in ['build-stage-artifact','verify-input-profile','enqueue-release']:
+   with self.subTest(job=job):
+    self.assertFalse(check(job,'push',flag='',once=''))
+    self.assertTrue(check(job,'push',flag='',once='a'*40))
+    self.assertFalse(check(job,'push',flag='',once='b'*40))
+    self.assertFalse(check(job,'push',flag='',once='true'))
+    self.assertFalse(check(job,'push',flag='',once='a'*40,ref='refs/heads/other'))
+    self.assertFalse(check(job,'workflow_dispatch',flag='',once='a'*40))
+  self.assertFalse(check('enqueue-release','workflow_dispatch',stage=True,verify=True,flag='',once='a'*40))
 if __name__=='__main__':unittest.main()

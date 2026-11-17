@@ -11,6 +11,11 @@ GitHub `FRONT_AUTO_PIPELINE_ENABLED`도 활성화하지 않았다. 아래 설계
 - 같은 `deploy.yml`의 기존 OIDC 제한을 유지한다. 자동 경로는 main push와 명시적 flag가
   모두 필요하다. 수동 readiness/stage는 접수하지 않는다. artifact 이름은 run+attempt를
   포함한다. CI의 접수 성공은 운영 반영 성공이 아니며 NAS가 전체 CI 성공 후 처리한다.
+  상시 flag를 켜지 않는 단발 검증에는 `FRONT_V2_VERIFY_SHA`에 정확한 커밋 SHA를
+  지정할 수 있다. 해당 main push의 빌드·지문·접수만 허용하며 다른 SHA/branch나 수동
+  dispatch를 허용하지 않는다. 접수 job 종료와 queue 결속 확인 전에는 변수를 지우지 않고,
+  완료/실패 뒤에는 제거한다. 이는 CI 선택일 뿐 NAS 승격 권한이 아니다. 재시도도 같은
+  SHA만 선택하므로 root에서 run/attempt를 추가 확인해야 하며 timer는 비활성으로 둔다.
 - 전용 SSH의 고정 `enqueue RUN ATTEMPT SHA`는 64KiB 이하의 공개 입력 지문 ZIP만
   받는다. CI의 단기 actions:read 토큰으로 다운로드하며 NAS PAT나 새 장기 키는 없다.
   root가 GitHub 공식 artifact digest·run/attempt·repo/main·성공 job·최신 HEAD를 재검사한다.
@@ -135,3 +140,20 @@ systemd 시작 40초(종료 5초), SSH 연결 작업 55초다. 종료 신호는 
 적용한다. rollback도 공식 GitHub 최신 main과 성공 CI를 요구하므로 main 진행·GitHub 장애
 시 자동 rollback은 거부된다. 실제 승격 전에는 HDD 복구 사본과 root 승인 아래의 수동
 복구 절차를 준비하며, 확인 없이 원장을 수정하거나 이 검사를 완화하지 않는다.
+
+### 명시 승인된 V2 단발 운영 검증
+
+`oneoff_verify.py`는 root 전용이며 SSH/일반 dispatcher에 노출하지 않는다. 상시 GitHub
+`FRONT_AUTO_PIPELINE_ENABLED`와 NAS timer는 계속 꺼둔다. 검토한 정확한 commit의
+`FRONT_V2_VERIFY_SHA`만 CI 선택에 쓰고, NAS에서는 먼저 auto=false인 접수 창만 연다.
+CI 전체 성공 뒤 선택 변수를 제거하고, root `submit`이 queue 잠금으로 접수 창을 닫고
+정확한 run/attempt/SHA와 다른 진행 작업이 없음을 확인한다. 그 뒤 one-off unit이
+`process_one(expected_request=...)` 한 번만 수행한다.
+
+one-off unit은 watch의 finally와 `ExecStopPost` 모두 cleanup을 실행한다. cleanup은
+해당 role unit 종료를 먼저 확인한 뒤 gate fingerprint를 바꾼다. 새 role 결과가 exact
+intent/action/실제 종료와 결속되고 healthy면 원장을 확정한다. 그렇지 않으면 정확한
+현재 release만 `recovering`으로 바꾸고 기존 role 복구·`commit_result`를 사용한다.
+기존 current JSON을 그대로 되돌려 enriched rollback tree와 불일치시키지 않는다.
+마지막에 auto/allow=false를 readback한다. 정비 표식/다른 요청/애매한 결과는 복구를
+추측하지 않고 gate를 닫아 보고한다. 이 단발 unit을 timer로 enable하지 않는다.

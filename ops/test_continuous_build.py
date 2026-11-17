@@ -247,8 +247,13 @@ class PrivateBuildTests(unittest.TestCase):
 
     def test_production_config_cannot_override_path_or_image(self):
         config = dict(self.config)
-        with self.assertRaises(build.BuildError):
-            build.validate_config(config)
+        # GitHub runner에는 NAS 전용 역할 계정이 없다. 계정 조회만 격리하고
+        # 일반 dict의 실제 production 고정 경로 검사는 그대로 실행한다.
+        role = SimpleNamespace(pw_uid=994, pw_gid=994)
+        with mock.patch.object(build.pwd, 'getpwnam', return_value=role) as lookup:
+            with self.assertRaisesRegex(build.BuildError, 'fixed build config mismatch'):
+                build.validate_config(config)
+        lookup.assert_called_once_with('iot-web-publisher')
         self.config['image_id'] = 'node:latest'
         with self.assertRaises(build.BuildError):
             self.run_build()

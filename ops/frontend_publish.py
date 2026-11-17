@@ -51,11 +51,11 @@ def decode(value):
     return json.loads(value, object_pairs_hook=pairs)
 
 
-def plain(path, directory=False):
+def plain(path, directory=False, owner_uids=None):
     info = path.lstat()
     if stat.S_ISLNK(info.st_mode) or not (stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode)):
         raise ValueError('symlink/특수 파일 거부')
-    if info.st_uid != os.getuid():
+    if info.st_uid not in ({os.getuid()} if owner_uids is None else owner_uids):
         raise ValueError('소유자 불일치')
     return info
 
@@ -63,6 +63,7 @@ def plain(path, directory=False):
 class Context:
     def __init__(self, root):
         self.root = Path(root).absolute()
+        self.owner_uids = {os.getuid()}
         self.check()
 
     def check(self):
@@ -92,6 +93,12 @@ class Context:
         self.check()
         return self.root / name
 
+    def hash(self, path):
+        return tree_sha(path, self.owner_uids)
+
+    def manifest(self, path):
+        return manifest(path, self.owner_uids)
+
 
 class Boundary:
     def __init__(self, blocked, locked):
@@ -113,9 +120,9 @@ class Boundary:
             yield
 
 
-def read_descriptor(fd, limit, device):
+def read_descriptor(fd, limit, device, owner_uids=None):
     before = os.fstat(fd)
-    if (not stat.S_ISREG(before.st_mode) or before.st_uid != os.getuid() or
+    if (not stat.S_ISREG(before.st_mode) or before.st_uid not in ({os.getuid()} if owner_uids is None else owner_uids) or
             before.st_dev != device or not 0 <= before.st_size <= limit):
         raise ValueError('일반 파일/소유자/장치/크기 오류')
     data = bytearray()
@@ -131,41 +138,43 @@ def read_descriptor(fd, limit, device):
     return bytes(data)
 
 
-def read_tree_file(root, name, limit=FILE_LIMIT):
+def read_tree_file(root, name, limit=FILE_LIMIT, owner_uids=None):
     parts = Path(name).parts
     if not parts or name.startswith('/') or '..' in parts or len(parts) > 32:
         raise ValueError('tree 상대 경로 오류')
-    info = plain(root, True)
+    owners = {os.getuid()} if owner_uids is None else owner_uids
+    info = plain(root, True, owners)
     directory = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
         opened = os.fstat(directory)
-        if opened.st_uid != os.getuid() or (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino):
+        if opened.st_uid not in owners or (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino):
             raise ValueError('tree root가 열기 중 변경됨')
         for part in parts[:-1]:
             nxt = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
             os.close(directory)
             directory = nxt
             parent = os.fstat(directory)
-            if parent.st_uid != os.getuid() or parent.st_dev != info.st_dev:
+            if parent.st_uid not in owners or parent.st_dev != info.st_dev:
                 raise ValueError('tree 부모 소유자/장치 오류')
         fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
         try:
-            return read_descriptor(fd, limit, info.st_dev)
+            return read_descriptor(fd, limit, info.st_dev, owners)
         finally:
             os.close(fd)
     finally:
         os.close(directory)
 
 
-def manifest(root):
-    device = plain(root, True).st_dev
+def manifest(root, owner_uids=None):
+    owners = {os.getuid()} if owner_uids is None else owner_uids
+    device = plain(root, True, owners).st_dev
     result, total, visited = {}, 0, 0
     def walk(directory, prefix, depth):
         nonlocal total, visited
         if depth > 32:
             raise ValueError('tree 깊이 초과')
         current = os.fstat(directory)
-        if current.st_uid != os.getuid() or current.st_dev != device:
+        if current.st_uid not in owners or current.st_dev != device:
             raise ValueError('tree 디렉터리 소유자/장치 오류')
         with os.scandir(directory) as entries:
             for entry in entries:
@@ -174,7 +183,7 @@ def manifest(root):
                     raise ValueError('tree 항목 수 초과')
                 info = entry.stat(follow_symlinks=False)
                 name = prefix + entry.name
-                if info.st_uid != os.getuid() or info.st_dev != device or len(name) > 512:
+                if info.st_uid not in owners or info.st_dev != device or len(name) > 512:
                     raise ValueError('tree 항목 소유자/장치/경로 오류')
                 if stat.S_ISDIR(info.st_mode):
                     child = os.open(entry.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
@@ -187,7 +196,7 @@ def manifest(root):
                         raise ValueError('tree 파일 수 초과')
                     fd = os.open(entry.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
                     try:
-                        data = read_descriptor(fd, FILE_LIMIT, device)
+                        data = read_descriptor(fd, FILE_LIMIT, device, owners)
                     finally:
                         os.close(fd)
                     total += len(data)
@@ -204,8 +213,8 @@ def manifest(root):
     return result
 
 
-def tree_sha(root):
-    return digest(json.dumps(manifest(root), sort_keys=True, separators=(',', ':')).encode())
+def tree_sha(root, owner_uids=None):
+    return digest(json.dumps(manifest(root, owner_uids), sort_keys=True, separators=(',', ':')).encode())
 
 
 def allowed_name(name):
@@ -329,27 +338,27 @@ def write_new(root, name, data):
         os.close(fd)
 
 
-def copy_tree(source, target):
-    files = manifest(source)
+def copy_tree(source, target, owner_uids=None):
+    files = manifest(source, owner_uids)
     target.mkdir(mode=0o755)
     for name, expected in files.items():
-        data = read_tree_file(source, name)
+        data = read_tree_file(source, name, owner_uids=owner_uids)
         if digest(data) != expected:
             raise ValueError('복사 중 source 변경')
         write_new(target, name, data)
-    if manifest(target) != files:
+    if manifest(target, owner_uids) != files:
         raise ValueError('복사본 manifest 불일치')
 
 
-def merge_immutable(source, target):
-    for name, expected in manifest(source).items():
+def merge_immutable(source, target, owner_uids=None):
+    for name, expected in manifest(source, owner_uids).items():
         if name in MUTABLE:
             continue
-        data = read_tree_file(source, name)
+        data = read_tree_file(source, name, owner_uids=owner_uids)
         if digest(data) != expected:
             raise ValueError('자산 병합 중 source 변경')
         try:
-            present = read_tree_file(target, name)
+            present = read_tree_file(target, name, owner_uids=owner_uids)
         except FileNotFoundError:
             write_new(target, name, data)
         else:
@@ -389,8 +398,8 @@ def read_state(context):
 
 def rename_exchange(context, first, second):
     first, second = context.tree(first), context.tree(second)
-    plain(first, True)
-    plain(second, True)
+    plain(first, True, context.owner_uids)
+    plain(second, True, context.owner_uids)
     if first.stat().st_dev != second.stat().st_dev:
         raise ValueError('같은 파일 시스템 필요')
     libc = ctypes.CDLL(None, use_errno=True)
@@ -403,6 +412,8 @@ def rename_exchange(context, first, second):
         error = ctypes.get_errno()
         raise OSError(error, '원자 교환 실패')
     fsync_dir(context.root)
+    for parent in {first.parent, second.parent}:
+        fsync_dir(parent)
 
 
 def prepare(context, raw, receipt, revision, run_id, expected_live_sha, boundary):
@@ -414,32 +425,35 @@ def prepare(context, raw, receipt, revision, run_id, expected_live_sha, boundary
             old = read_state(context)
             if old['revision'] == revision and old['run_id'] == run_id and old['archive_sha256'] == digest(raw):
                 key = {'prepared': 'baseline_sha', 'active': 'candidate_sha', 'rolled_back': 'rollback_sha'}.get(old['phase'])
-                if key is None or tree_sha(live) != old[key]:
+                if key is None or context.hash(live) != old[key]:
                     raise ValueError('중복 요청의 실제 상태 불일치')
                 return old
             raise ValueError('기존 리허설 원장 보존: 새 root 필요')
-        if tree_sha(live) != expected_live_sha:
+        if context.hash(live) != expected_live_sha:
             raise ValueError('운영 사본 기준 manifest 변경')
-        current_files = manifest(live)
-        current_size = sum(len(read_tree_file(live, name)) for name in current_files)
+        current_files = context.manifest(live)
+        current_size = sum(len(read_tree_file(live, name, owner_uids=context.owner_uids)) for name in current_files)
         required = 2 * (current_size + sum(map(len, files.values())))
-        if shutil.disk_usage(context.root).free < required + COPY_RESERVE:
+        if shutil.disk_usage(context.tree('candidate').parent).free < required + COPY_RESERVE:
             raise ValueError('리허설 복사 용량/보호 여유 부족')
         candidate, previous = context.tree('candidate'), context.tree('previous')
         candidate.mkdir(mode=0o755)
         for name, data in files.items():
             write_new(candidate, name, data)
-        copy_tree(live, previous)
-        merge_immutable(live, candidate)
-        merge_immutable(candidate, previous)
-        if tree_sha(live) != expected_live_sha:
+        copy_tree(live, previous, context.owner_uids)
+        merge_immutable(live, candidate, context.owner_uids)
+        merge_immutable(candidate, previous, context.owner_uids)
+        if context.hash(live) != expected_live_sha:
             raise ValueError('준비 중 기준 manifest 변경')
         state = {'phase': 'prepared', 'revision': revision, 'run_id': run_id,
                  'archive_sha256': digest(raw), 'baseline_sha': expected_live_sha,
-                 'candidate_sha': tree_sha(candidate), 'rollback_sha': tree_sha(previous),
-                 'promotion_allowed': False, 'production_changed': False, 'scope': 'rehearsal'}
+                 'candidate_sha': context.hash(candidate), 'rollback_sha': context.hash(previous),
+                 'promotion_allowed': getattr(context, 'scope', 'rehearsal') == 'production',
+                 'production_changed': False, 'scope': getattr(context, 'scope', 'rehearsal')}
         fsync_dir(candidate)
         fsync_dir(previous)
+        fsync_dir(candidate.parent)
+        fsync_dir(previous.parent)
         journal(context, state)
         return state
 
@@ -451,13 +465,14 @@ def activate(context, run_id, boundary, fault=None):
             raise ValueError('오래되거나 다른 run 거부')
         live, candidate = context.tree('live'), context.tree('candidate')
         previous = context.tree('previous')
-        if not previous.exists() or tree_sha(previous) != state['rollback_sha']:
+        if not previous.exists() or context.hash(previous) != state['rollback_sha']:
             raise ValueError('검증된 복구 사본이 없거나 변경됨')
-        if state['phase'] == 'active' and tree_sha(live) == state['candidate_sha']:
+        if state['phase'] == 'active' and context.hash(live) == state['candidate_sha']:
             return dict(state, idempotent=True)
-        if state['phase'] != 'prepared' or tree_sha(live) != state['baseline_sha'] or tree_sha(candidate) != state['candidate_sha']:
+        if state['phase'] != 'prepared' or context.hash(live) != state['baseline_sha'] or context.hash(candidate) != state['candidate_sha']:
             raise ValueError('교체 전 상태/manifest 불일치')
         state['phase'] = 'exchange_pending'
+        state['production_changed'] = None if state.get('scope') == 'production' else False
         journal(context, state)
         if fault:
             fault('before_exchange')
@@ -465,6 +480,7 @@ def activate(context, run_id, boundary, fault=None):
         if fault:
             fault('after_exchange')
         state['phase'] = 'active'
+        state['production_changed'] = state.get('scope') == 'production'
         journal(context, state)
         return state
 
@@ -475,9 +491,9 @@ def rollback(context, run_id, boundary, fault=None):
         live, previous = context.tree('live'), context.tree('previous')
         if state['run_id'] != run_id:
             raise ValueError('다른 run 거부')
-        if state['phase'] == 'rolled_back' and tree_sha(live) == state['rollback_sha']:
+        if state['phase'] == 'rolled_back' and context.hash(live) == state['rollback_sha']:
             return dict(state, idempotent=True)
-        if state['phase'] != 'active' or tree_sha(live) != state['candidate_sha'] or tree_sha(previous) != state['rollback_sha']:
+        if state['phase'] != 'active' or context.hash(live) != state['candidate_sha'] or context.hash(previous) != state['rollback_sha']:
             raise ValueError('복구 전 상태/manifest 불일치')
         state['phase'] = 'rollback_pending'
         journal(context, state)
@@ -487,6 +503,7 @@ def rollback(context, run_id, boundary, fault=None):
         if fault:
             fault('after_exchange')
         state['phase'] = 'rolled_back'
+        state['production_changed'] = state.get('scope') == 'production'
         journal(context, state)
         return state
 
@@ -494,9 +511,9 @@ def rollback(context, run_id, boundary, fault=None):
 def recover(context, boundary):
     with boundary.enter():
         state = read_state(context)
-        live = tree_sha(context.tree('live'))
+        live = context.hash(context.tree('live'))
         if state['phase'] == 'exchange_pending':
-            other = tree_sha(context.tree('candidate'))
+            other = context.hash(context.tree('candidate'))
             if (live, other) == (state['baseline_sha'], state['candidate_sha']):
                 state['phase'] = 'prepared'
             elif (live, other) == (state['candidate_sha'], state['baseline_sha']):
@@ -504,7 +521,7 @@ def recover(context, boundary):
             else:
                 raise ValueError('중단 상태 불명확: 자동 추측 복구 금지')
         elif state['phase'] == 'rollback_pending':
-            other = tree_sha(context.tree('previous'))
+            other = context.hash(context.tree('previous'))
             if (live, other) == (state['candidate_sha'], state['rollback_sha']):
                 state['phase'] = 'active'
             elif (live, other) == (state['rollback_sha'], state['candidate_sha']):
@@ -513,6 +530,7 @@ def recover(context, boundary):
                 raise ValueError('복구 중단 상태 불명확')
         else:
             raise ValueError('복구할 pending 상태 아님')
+        state['production_changed'] = state.get('scope') == 'production' and state['phase'] != 'prepared'
         journal(context, state)
         return state
 

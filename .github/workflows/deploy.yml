@@ -10,6 +10,10 @@ on:
         description: '빌드 산출물을 NAS HDD에 보관만 하기 (운영 반영 없음)'
         type: boolean
         default: false
+      publisher_readiness:
+        description: '전용 권한 준비 상태만 확인 (운영 승격 없음)'
+        type: boolean
+        default: false
       verify_build_inputs:
         description: '기존 빌드 입력 지문만 확인 (실키 번들은 공개 artifact에 올리지 않음)'
         type: boolean
@@ -86,7 +90,7 @@ jobs:
       - name: Check preparation boundaries
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
       - name: Check disabled publisher and isolated rollback boundaries
-        run: python3 -m unittest discover -s ops -p test_frontend_publish.py -v
+        run: python3 -m unittest discover -s ops -p "test_*.py" -v
       - name: Prepare archive without NAS access
         run: bash .github/scripts/deploy-to-nas.sh --prepare-only
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -184,3 +188,47 @@ jobs:
           path: ${{ runner.temp }}/front-stage-receipt.json
           if-no-files-found: error
           retention-days: 7
+
+  publisher-readiness:
+    if: github.event_name == 'workflow_dispatch' && inputs.publisher_readiness && github.ref == 'refs/heads/main'
+    needs: [oidc-connect]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify identity
+        env:
+          TS_OIDC_CLIENT_ID: ${{ vars.TS_OIDC_CLIENT_ID }}
+          TS_OIDC_AUDIENCE: ${{ vars.TS_OIDC_AUDIENCE }}
+        run: python3 .github/scripts/check-ci-oidc.py identity
+      - uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4
+        with:
+          oauth-client-id: ${{ vars.TS_OIDC_CLIENT_ID }}
+          audience: ${{ vars.TS_OIDC_AUDIENCE }}
+          tags: tag:iot-web-ci
+          timeout: '30s'
+          retry: '1'
+      - name: Verify pinned NAS host
+        env:
+          NAS_SSH_HOST_KEYS: ${{ vars.NAS_SSH_HOST_KEYS }}
+        run: python3 .github/scripts/check-ci-oidc.py transport
+      - name: Check fixed publisher readiness only
+        env:
+          NAS_PUBLISH_SSH_KEY: ${{ secrets.NAS_PUBLISH_SSH_KEY }}
+          NAS_SSH_HOST_KEYS: ${{ vars.NAS_SSH_HOST_KEYS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          key_file="$RUNNER_TEMP/front-publish-key"
+          host_file="$RUNNER_TEMP/front-publish-known-hosts"
+          trap 'rm -f -- "$key_file" "$host_file"' EXIT
+          test -n "$NAS_PUBLISH_SSH_KEY"
+          printf '%s\n' "$NAS_PUBLISH_SSH_KEY" > "$key_file"
+          printf '%s\n' "$NAS_SSH_HOST_KEYS" | awk '$2=="ssh-ed25519" {print "100.88.40.125", $2, $3}' > "$host_file"
+          unset NAS_PUBLISH_SSH_KEY
+          timeout --signal=TERM --kill-after=5s 55s ssh -F /dev/null -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$host_file" -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 -T iwh@100.88.40.125 'iot-web-publish readiness'

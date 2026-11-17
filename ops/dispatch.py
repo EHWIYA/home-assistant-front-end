@@ -23,10 +23,15 @@ def read_regular(path,limit,owner):
 def main():
  if len(sys.argv)!=1 or os.geteuid()!=0 or os.environ.get('SUDO_USER')!='iwh':raise PermissionError('fixed sudo entry required')
  signal.alarm(3)
- raw=sys.stdin.buffer.read(1025)
+ raw=sys.stdin.buffer.read(100*1024+1)
  signal.alarm(0)
- if len(raw)>1024:raise ValueError('oversize request')
+ if len(raw)>100*1024:raise ValueError('oversize request')
  obj=json.loads(raw,object_pairs_hook=pairs)
+ if isinstance(obj,dict) and obj.get('operation') in {'continuous-enqueue','continuous-status'}:
+  sys.path.insert(0,'/usr/local/libexec/iot-web-publisher')
+  import continuous_gateway
+  print(json.dumps(continuous_gateway.dispatch_request(obj),ensure_ascii=False));return 0
+ if len(raw)>1024:raise ValueError('legacy oversize request')
  if set(obj)!={'operation'} or obj['operation'] not in OPS:raise ValueError('invalid request')
  lock=os.open('/run/lock/iot-web-publisher-dispatch.lock',os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600)
  try:

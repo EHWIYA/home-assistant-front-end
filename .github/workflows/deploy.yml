@@ -1,4 +1,4 @@
-# push는 연결 검사만, 수동 stage_only는 HDD 보관만. 운영 배포/재시작 없음.
+# 기본은 기존 연결/수동 보관. FRONT_AUTO_PIPELINE_ENABLED=true일 때도 enqueue만 수행. NAS auto gate는 별도다.
 name: IoT Web OIDC and stage-only verification
 
 on:
@@ -61,7 +61,7 @@ jobs:
         run: python3 .github/scripts/check-ci-oidc.py transport
 
   build-stage-artifact:
-    if: github.event_name == 'workflow_dispatch' && inputs.stage_only && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.stage_only) || (github.event_name == 'push' && vars.FRONT_AUTO_PIPELINE_ENABLED == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -95,14 +95,14 @@ jobs:
         run: bash .github/scripts/deploy-to-nas.sh --prepare-only
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: front-stage-${{ github.run_id }}
+          name: front-stage-${{ github.run_id }}-${{ github.run_attempt }}
           path: .ci-artifacts/front-${{ github.sha }}-${{ github.run_id }}/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
 
   verify-input-profile:
-    if: github.event_name == 'workflow_dispatch' && inputs.stage_only && inputs.verify_build_inputs && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.stage_only && inputs.verify_build_inputs) || (github.event_name == 'push' && vars.FRONT_AUTO_PIPELINE_ENABLED == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -128,14 +128,14 @@ jobs:
       - name: Preserve blinded input verification metadata
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: front-input-profile-${{ github.run_id }}
+          name: front-input-profile-${{ github.run_id }}-${{ github.run_attempt }}
           path: .ci-artifacts/build-input-profile.json
           if-no-files-found: error
           retention-days: 7
 
   stage-only:
-    if: github.event_name == 'workflow_dispatch' && inputs.stage_only && github.ref == 'refs/heads/main'
-    needs: [oidc-connect, build-stage-artifact]
+    if: always() && github.ref == 'refs/heads/main' && needs['oidc-connect'].result == 'success' && needs['build-stage-artifact'].result == 'success' && (needs['verify-input-profile'].result == 'success' || (needs['verify-input-profile'].result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.stage_only && !inputs.verify_build_inputs))
+    needs: [oidc-connect, build-stage-artifact, verify-input-profile]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -147,7 +147,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: front-stage-${{ github.run_id }}
+          name: front-stage-${{ github.run_id }}-${{ github.run_attempt }}
           path: .ci-artifacts/front-${{ github.sha }}-${{ github.run_id }}
       - name: Verify identity and reject wrong audience
         env:
@@ -184,7 +184,7 @@ jobs:
           cat "$RUNNER_TEMP/front-stage-receipt.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: front-stage-receipt-${{ github.run_id }}
+          name: front-stage-receipt-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/front-stage-receipt.json
           if-no-files-found: error
           retention-days: 7
@@ -232,3 +232,40 @@ jobs:
           printf '%s\n' "$NAS_SSH_HOST_KEYS" | awk '$2=="ssh-ed25519" {print "100.88.40.125", $2, $3}' > "$host_file"
           unset NAS_PUBLISH_SSH_KEY
           timeout --signal=TERM --kill-after=5s 55s ssh -F /dev/null -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$host_file" -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 -T iwh@100.88.40.125 'iot-web-publish readiness'
+
+
+  enqueue-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.FRONT_AUTO_PIPELINE_ENABLED == 'true'
+    needs: [oidc-connect, build-stage-artifact, verify-input-profile, stage-only]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify identity and reject wrong audience
+        env:
+          TS_OIDC_CLIENT_ID: ${{ vars.TS_OIDC_CLIENT_ID }}
+          TS_OIDC_AUDIENCE: ${{ vars.TS_OIDC_AUDIENCE }}
+        run: python3 .github/scripts/check-ci-oidc.py identity
+      - uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4
+        with:
+          oauth-client-id: ${{ vars.TS_OIDC_CLIENT_ID }}
+          audience: ${{ vars.TS_OIDC_AUDIENCE }}
+          tags: tag:iot-web-ci
+          timeout: '30s'
+          retry: '1'
+      - name: Verify pinned NAS host and isolation
+        env:
+          NAS_SSH_HOST_KEYS: ${{ vars.NAS_SSH_HOST_KEYS }}
+        run: python3 .github/scripts/check-ci-oidc.py transport
+      - name: Enqueue identifiers and public fingerprint proof only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAS_PUBLISH_SSH_KEY: ${{ secrets.NAS_PUBLISH_SSH_KEY }}
+          NAS_SSH_HOST_KEYS: ${{ vars.NAS_SSH_HOST_KEYS }}
+        run: python3 .github/scripts/enqueue-front-release.py

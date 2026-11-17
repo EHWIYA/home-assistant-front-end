@@ -1,0 +1,9 @@
+[Unit]
+Description=IoT frontend release queue tick (disabled until separately approved)
+[Timer]
+OnBootSec=60
+OnUnitInactiveSec=30
+AccuracySec=5
+Unit=iot-web-continuous.service
+[Install]
+WantedBy=timers.target

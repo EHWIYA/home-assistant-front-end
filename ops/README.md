@@ -1,4 +1,49 @@
-# 운영 승격 비활성·격리 리허설
+# 프런트엔드 승격 경로
+
+## 연속 반영 V2 — 구현 완료, 운영 비활성
+
+2026-11-17 구현은 기존 일회성 V1과 별도다. 실제 설치의
+`/etc/iot-web-publisher/continuous.json`은 `auto_enabled:false`,
+`allow_enqueue:false`이며 `iot-web-continuous.timer`도 disabled/inactive다.
+GitHub `FRONT_AUTO_PIPELINE_ENABLED`도 활성화하지 않았다. 아래 설계는 운영 재개 승인이나
+실제 운영 연속 반영 검증을 대신하지 않는다.
+
+- 같은 `deploy.yml`의 기존 OIDC 제한을 유지한다. 자동 경로는 main push와 명시적 flag가
+  모두 필요하다. 수동 readiness/stage는 접수하지 않는다. artifact 이름은 run+attempt를
+  포함한다. CI의 접수 성공은 운영 반영 성공이 아니며 NAS가 전체 CI 성공 후 처리한다.
+- 전용 SSH의 고정 `enqueue RUN ATTEMPT SHA`는 64KiB 이하의 공개 입력 지문 ZIP만
+  받는다. CI의 단기 actions:read 토큰으로 다운로드하며 NAS PAT나 새 장기 키는 없다.
+  root가 GitHub 공식 artifact digest·run/attempt·repo/main·성공 job·최신 HEAD를 재검사한다.
+  API 제한·미완료 CI·정비는 대기, 오래된 SHA는 거부한다.
+- root private builder는 고정 이미지/선택된 입력만 사용한다. 설치 단계만 네트워크를
+  허용하고 컴파일은 network none/read-only 컨테이너다. Docker socket·앱 소스·개인 환경을
+  컨테이너에 노출하지 않는다. 공통 빌드 잠금·메모리 제한·HDD 2GiB 여유 하한을 적용한다.
+- 릴리스별 계획·부모/current 포인터·단기 intent·복구 tar·검증 영수증은 root가 봉인한다.
+  `iot-web-release@<UUID>`는 역할 계정으로 공통 정비 잠금 안에서 준비→교환→검증한다.
+  candidate/previous는 live와 같은 부모의 `.publisher-v2-<UUID>-candidate/-previous`다.
+  기존 live의 소유자나 0755 권한을 바꾸지 않는다. V1 보호 경로는 계속 읽기 전용이다.
+- 새 index는 이전 immutable 자산을 포함하고 복구본도 실패 후보의 immutable 자산을
+  보존한다. 실패 시 해당 root intent의 exact slot만 복구한다. 파일 복구 성공과 HTTP
+  정상 검증은 별도다. 복구 검증 실패는 접수/자동 반영을 모두 차단한다. 중단 원장과
+  오래된 result를 재사용하지 않으며 root 포인터는 검증된 새 결과에만 전진한다.
+
+격리 systemd에서 A→B→C, D 실패→C 복구, E/F 후속 반영, 정비/CI 대기, 중복/오래된
+요청 거부, www-data 읽기, 오래된 result 거부를 확인했다. 이 입력·CI는 합성 fixture다.
+별도로 실제 e3fc96d 소스와 기존 성공 CI 지문으로 비공개 Docker 빌드가 성공했다.
+새 GitHub CI·운영 V2 반영·상시 timer는 이번 검증에 포함하지 않는다.
+
+원장 1000개·병합 tree 64MiB/1024파일·아카이브 32MiB 상한은 자동 확대하지 않는다.
+같은 고정 자산 URL의 바이트 변경은 거부하므로 새 해시 URL을 사용해야 한다.
+private workspace/cache와 실패 증거를 자동 삭제하지 않는다. building 중단은 known sealed
+UUID의 자기 컨테이너만 정리하고 interrupted로 노출한다. 같은 요청의 자동 재실행은 없으며
+운영자 확인/별도 승인 후 새 실행이 필요하다. 실패 fixture를 새 물리 경로로 재사용하지 않는다.
+
+복구: 우선 root flags 두 개와 timer를 비활성으로 유지한다. 진행 중인 정확한 intent·live·
+HDD 복구 사본을 대조하고 승인된 recovery만 실행한다. 원장을 초기화하거나 다른 릴리스
+복구본을 추측해 사용하지 않는다. 설치 전 복원 자료와 실제 검사 원본은
+`/mnt/HDD500GB/backups/managed/permanent/snapshots/front-continuous-implementation-20261117`에 있다.
+
+## 기존 V1 비활성 리허설 문서
 
 `frontend_publish.py publish`는 인자/환경과 관계없이 항상 거부한다. 운영 승인 flag·SSH 키·gateway나 자동화 활성화를 추가하지 않는다. 기존 `/home/iwh/apps/iot/web/dist`와 apps 하위는 리허설 root가 될 수 없다.
 

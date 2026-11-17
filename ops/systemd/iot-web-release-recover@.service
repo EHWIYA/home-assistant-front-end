@@ -1,0 +1,37 @@
+[Unit]
+Description=IoT frontend sealed release %i
+[Service]
+Type=oneshot
+User=iot-web-publisher
+Group=iot-web-publisher
+ExecStart=/usr/bin/python3 -I -B /usr/local/libexec/iot-web-publisher/continuous_release.py recover --release %i
+TimeoutStartSec=40
+TimeoutStopSec=5
+KillMode=control-group
+UMask=0022
+MemoryMax=512M
+CPUQuota=100%
+TasksMax=64
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+ReadWritePaths=/var/lib/iot-web-publisher/v2/releases/%i /home/iwh/apps/iot/web /home/iwh/.cache/iot-stack-watchdog.lock
+ReadOnlyPaths=-/home/iwh/apps/iot/web/.publisher-candidate -/home/iwh/apps/iot/web/.publisher-previous
+ReadOnlyPaths=/home/iwh/apps/iot/web/bin /home/iwh/apps/iot/web/README.md
+ReadOnlyPaths=/home/iwh/apps/iot/web/nginx-iot-iwhya-http-bootstrap.conf /home/iwh/apps/iot/web/nginx-iot-iwhya.conf
+ReadOnlyPaths=/home/iwh/apps/iot/web/.dist-pc-boot-staging-20260919T222305+0900 /home/iwh/apps/iot/web/.dist-wol-staging-20260919T212347+0900
+InaccessiblePaths=-/run/docker.sock -/var/run/docker.sock -/mnt/HDD1TB/docker-data
+InaccessiblePaths=/home/iwh/apps/ledger-weight /home/iwh/apps/iot/api /home/iwh/.env /home/iwh/.ssh /home/iwh/backup
+StandardOutput=null
+StandardError=null

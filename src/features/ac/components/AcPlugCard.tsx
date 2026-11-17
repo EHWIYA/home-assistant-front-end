@@ -141,7 +141,12 @@ export function AcPlugCard({
       </div>
 
       <div className={styles.metaRow}>
-        <span className={styles.metaPill}>누적 {plug.energy_kwh.toFixed(2)} kWh</span>
+        <span className={styles.metaPill}>
+          누적{" "}
+          {typeof plug.energy_kwh === "number" && Number.isFinite(plug.energy_kwh)
+            ? `${plug.energy_kwh.toFixed(2)} kWh`
+            : "데이터 없음"}
+        </span>
         {plug.estimated_cost_won != null ? (
           <span className={styles.metaPill}>
             {formatEstimatedCostWon(plug.estimated_cost_won)}

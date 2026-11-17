@@ -117,6 +117,15 @@ def prepare(root, revision, run_id, target):
                'created_at': now, 'bundle': bundle, 'archive_sha256': sha(archive.read_bytes()),
                'files': {n: sha(b) for n, b in sorted(files.items())},
                'remote_authentication': False, 'production_changed': False}
+    if os.environ.get('FRONT_PRODUCTION_CANDIDATE') == 'true':
+        profile_path = root / '.ci-artifacts/build-input-profile.json'
+        if profile_path.is_symlink() or not profile_path.is_file():
+            raise ValueError('운영 후보 입력 profile 누락')
+        profile = json.loads(profile_path.read_text())
+        if profile.get('profile') != 'production_candidate' or profile.get('all_required_present') is not True:
+            raise ValueError('운영 후보 입력 profile 오류')
+        receipt['build_input_profile'] = profile
+        receipt['candidate_kind'] = 'production_candidate_unpublished'
     p = release / 'receipt.json'
     p.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\n')
     p.chmod(0o600)

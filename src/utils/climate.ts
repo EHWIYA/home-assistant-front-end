@@ -1,12 +1,14 @@
 import type { IndoorClimate, WeatherOutdoor } from "@/api/types";
 
-export function formatClimateValue(value: number): string {
-  return value.toFixed(1);
+export function formatClimateValue(value: number | null | undefined): string {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toFixed(1)
+    : "—";
 }
 
 export function formatTemperatureHumidity(
-  temperature: number,
-  humidity: number,
+  temperature: number | null | undefined,
+  humidity: number | null | undefined,
 ): string {
   return `${formatClimateValue(temperature)}°C · 습도 ${formatClimateValue(humidity)}%`;
 }

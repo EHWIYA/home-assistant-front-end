@@ -80,13 +80,17 @@ export function buildAcActionControlRequest(
   return buildAcModeControlRequest(targetMode, effective);
 }
 
-/** 제어 카드 헤더 — IR·논리 전원 끄기 (플러그와 별도) */
+/** 제어 카드 헤더 — IR·논리 전원 끄기 (플러그와 별도). 자동제어 즉시 해제. */
 export function buildAcPowerOffRequest(
-  operatingMode: AcOperatingMode | null | undefined,
+  _operatingMode: AcOperatingMode | null | undefined,
 ): AcActionRequest {
+  // 기존 호출 형태를 유지하되 전원 끄기에는 이전 운영 모드를 적용하지 않는다.
+  void _operatingMode;
   return {
     mode: "off",
-    operating_mode: operatingMode ?? "manual",
+    operating_mode: "manual",
+    auto_enabled: false,
+    away_enabled: false,
   };
 }
 

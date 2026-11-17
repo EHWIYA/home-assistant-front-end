@@ -1,104 +1,48 @@
-# NAS 배포 — build → deploy(Tailscale + scripts)
-# Secrets: NAS_HOST, NAS_USER, NAS_SSH_KEY, NAS_DEPLOY_PATH, TS_AUTH_KEY
-# 스크립트: .github/scripts/ · NAS: scripts/nas/post-deploy.sh
-
-name: Deploy to NAS
+# 연결 전환 단계: 실제 빌드/배포/재시작은 별도 승인 전까지 실행하지 않는다.
+name: IoT Web OIDC connection only
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-concurrency:
-  group: deploy-nas
-  cancel-in-progress: true
+permissions:
+  contents: read
 
-env:
-  VITE_USE_MOCK: "false"
+concurrency:
+  group: front-oidc-connect
+  cancel-in-progress: false
 
 jobs:
-  build:
+  oidc-connect:
+    name: OIDC and NAS transport verification
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: npm
+          persist-credentials: false
 
-      - run: npm ci
-
-      - name: Build
+      - name: Verify identity and reject wrong audience
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
-          VITE_IOT_API_KEY: ${{ secrets.VITE_IOT_API_KEY }}
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
-        run: |
-          export VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://iot-api.iwhya.kr}"
-          export VITE_API_KEY="${VITE_API_KEY:-${VITE_IOT_API_KEY:-}}"
-          if [ -z "${VITE_API_KEY:-}" ]; then
-            echo "::error::VITE_API_KEY Secret 미설정 — iot-api X-API-Key와 동일 값을 GitHub Secrets에 등록하세요."
-            exit 1
-          fi
-          for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID VITE_FIREBASE_VAPID_KEY; do
-            eval "val=\${$key:-}"
-            if [ -z "$val" ]; then
-              echo "::error::${key} Secret 미설정 — FCM Web Push 빌드에 필요합니다."
-              exit 1
-            fi
-          done
-          npm run build
+          TS_OIDC_CLIENT_ID: ${{ vars.TS_OIDC_CLIENT_ID }}
+          TS_OIDC_AUDIENCE: ${{ vars.TS_OIDC_AUDIENCE }}
+        run: python3 .github/scripts/check-ci-oidc.py identity
 
-      - uses: actions/upload-artifact@v4
+      - name: Connect ephemeral CI node
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4
         with:
-          name: dist
-          path: dist/
-          retention-days: 1
+          oauth-client-id: ${{ vars.TS_OIDC_CLIENT_ID }}
+          audience: ${{ vars.TS_OIDC_AUDIENCE }}
+          tags: tag:iot-web-ci
+          timeout: "30s"
+          retry: "1"
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check deploy credentials
-        id: deploy_check
+      - name: Verify NAS host key and network isolation
         env:
-          NAS_HOST: ${{ secrets.NAS_HOST }}
-          NAS_USER: ${{ secrets.NAS_USER }}
-          NAS_SSH_KEY: ${{ secrets.NAS_SSH_KEY }}
-          TS_AUTH_KEY: ${{ secrets.TS_AUTH_KEY }}
-        run: bash .github/scripts/check-deploy-secrets.sh
-
-      - uses: actions/download-artifact@v4
-        if: steps.deploy_check.outputs.skip != 'true'
-        with:
-          name: dist
-          path: dist
-
-      - name: Connect Tailscale
-        if: steps.deploy_check.outputs.skip != 'true'
-        uses: tailscale/github-action@v4
-        with:
-          authkey: ${{ secrets.TS_AUTH_KEY }}
-          ping: ${{ secrets.NAS_HOST }}
-
-      - name: Deploy to NAS
-        if: steps.deploy_check.outputs.skip != 'true'
-        env:
-          NAS_HOST: ${{ secrets.NAS_HOST }}
-          NAS_USER: ${{ secrets.NAS_USER }}
-          NAS_DEPLOY_PATH: ${{ secrets.NAS_DEPLOY_PATH }}
-          NAS_SSH_KEY: ${{ secrets.NAS_SSH_KEY }}
-        run: bash .github/scripts/deploy-to-nas.sh
-
-      - name: Deploy skipped
-        if: steps.deploy_check.outputs.skip == 'true'
-        run: echo "NAS secrets 미설정 — build만 완료"
+          NAS_SSH_HOST_KEYS: ${{ vars.NAS_SSH_HOST_KEYS }}
+        run: python3 .github/scripts/check-ci-oidc.py transport

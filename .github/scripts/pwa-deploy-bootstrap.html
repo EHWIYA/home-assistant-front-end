@@ -1,0 +1,36 @@
+<!-- iot-pwa-deploy-bootstrap -->
+<script>
+(function () {
+  var KEY = "iot-deploy-bundle";
+  function clearSwAndCaches() {
+    if (!("serviceWorker" in navigator)) return Promise.resolve();
+    return navigator.serviceWorker.getRegistrations()
+      .then(function (regs) {
+        return Promise.all(regs.map(function (r) { return r.unregister(); }));
+      })
+      .then(function () {
+        if (!("caches" in window)) return;
+        return caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        });
+      });
+  }
+  fetch("/version.json", { cache: "no-store", credentials: "same-origin" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (v) {
+      if (!v || !v.bundle) return;
+      var prev = localStorage.getItem(KEY);
+      localStorage.setItem(KEY, v.bundle);
+      if (prev && prev !== v.bundle) {
+        return clearSwAndCaches().then(function () { location.reload(); });
+      }
+    })
+    .catch(function () {});
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.ready.then(function (reg) {
+      reg.update();
+      setInterval(function () { reg.update(); }, 3600000);
+    }).catch(function () {});
+  }
+})();
+</script>

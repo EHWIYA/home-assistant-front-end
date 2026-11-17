@@ -34,3 +34,6 @@ public/firebase-messaging-sw.js
 *.njsproj
 *.sln
 *.sw?
+
+# 격리 배포 준비 산출물
+.ci-artifacts/
